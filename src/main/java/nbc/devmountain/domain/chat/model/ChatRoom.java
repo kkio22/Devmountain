@@ -24,12 +24,16 @@ public class ChatRoom {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(nullable = false)
     private String chatroomName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RoomType type;
 
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
     private LocalDateTime deletedAt;
-
 }
