@@ -35,11 +35,27 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // JPA + Hibernate
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.hibernate.orm:hibernate-core:6.4.4.Final' // Hibernate 6 이상일 경우
+
+    // DB Driver (예: MySQL 사용 시)
+    implementation 'com.mysql:mysql-connector-j:8.3.0'
+
+    // Spring Security
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
     // 테스트
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+bootJar {
+    enabled = true
+    archiveFileName = 'app.jar' // Dockerfile에서 COPY app.jar 와 일치하게
+    mainClass = 'nbc.devmountain.MountainApplication'
 }
 
 tasks.named('test') {
