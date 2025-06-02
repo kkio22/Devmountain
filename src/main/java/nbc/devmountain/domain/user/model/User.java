@@ -62,7 +62,7 @@ public class User {
     }
 
     public enum LoginType {
-        GOOGLE, KAKAO, NAVER, EMAIL
+        GOOGLE, KAKAO, NAVER, EMAIL, APPLE
     }
 
     public enum Role {
