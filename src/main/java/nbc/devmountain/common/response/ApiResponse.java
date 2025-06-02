@@ -1,25 +1,39 @@
 package nbc.devmountain.common.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Builder;
 
-@Getter
-@AllArgsConstructor
-public class ApiResponse<T> {
-    private final boolean success;
-    private final String message;
-    private final int status;
-    private final T data;
-
-    public static <T> ApiResponse<T> success(T data) {
-        return ApiResponse.of(true, "성공", 200, data);
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record ApiResponse<T>(
+        boolean success,
+        int status,
+        String message,
+        T result
+) {
+    public static <T> ApiResponse<T> of(boolean success, String message, int status, T result) {
+        return ApiResponse.<T>builder()
+                .success(success)
+                .status(status)
+                .message(message)
+                .result(result)
+                .build();
     }
 
-    public static ApiResponse<Void> fail(String message, int status) {
-        return ApiResponse.of(false, message, status, null);
+    public static ApiResponse<Void> error(String message, int status) {
+        return ApiResponse.<Void>builder()
+                .success(false)
+                .status(status)
+                .message(message)
+                .build();
     }
 
-    public static <T> ApiResponse<T> of(boolean success, String message, int status, T data) {
-        return new ApiResponse<>(success, message, status, data);
+    public static <T> ApiResponse<T> success(T result) {
+        return ApiResponse.<T>builder()
+                .success(true)
+                .status(200)
+                .message("요청이 성공했습니다.")
+                .result(result)
+                .build();
     }
 }
