@@ -12,7 +12,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "ChatMessages")
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class ChatMessage {
     @Id

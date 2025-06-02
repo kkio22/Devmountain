@@ -11,7 +11,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "ChatRooms")
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class ChatRoom {
     @Id
@@ -29,4 +31,5 @@ public class ChatRoom {
     private LocalDateTime createdAt;
 
     private LocalDateTime deletedAt;
+
 }
