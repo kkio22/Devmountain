@@ -9,7 +9,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "ChatRoom")
+@Table(name = "ChatRooms")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
@@ -27,4 +27,6 @@ public class ChatRoom {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    private LocalDateTime deletedAt;
 }
