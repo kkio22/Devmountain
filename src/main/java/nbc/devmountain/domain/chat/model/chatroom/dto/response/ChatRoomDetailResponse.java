@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chatroom.dto.response;
+package nbc.devmountain.domain.chat.model.chatroom.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Getter;
 import nbc.devmountain.domain.chat.model.ChatRoom;
-import nbc.devmountain.domain.chatmessage.dto.response.ChatMessageResponse;
+import nbc.devmountain.domain.chat.model.chatmessage.dto.response.ChatMessageResponse;
 
 @Builder
 @Getter

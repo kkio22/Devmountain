@@ -1,15 +1,18 @@
-package nbc.devmountain.domain.chatroom.dto.response;
+package nbc.devmountain.domain.chat.model.chatroom.dto.response;
 
 import java.time.LocalDateTime;
 
 import lombok.Builder;
+import lombok.Getter;
 import nbc.devmountain.domain.chat.model.ChatRoom;
 
 @Builder
-public record ChatRoomResponse(Long chatroomId,
-							   String chatroomName,
-							   LocalDateTime createdAt,
-							   String roomType) {
+@Getter
+public class ChatRoomResponse {
+	private Long chatroomId;
+	private String chatroomName;
+	private LocalDateTime createdAt;
+	private String roomType;
 
 	public static ChatRoomResponse from(ChatRoom chatRoom) {
 		return ChatRoomResponse.builder()
@@ -18,6 +21,5 @@ public record ChatRoomResponse(Long chatroomId,
 			.createdAt(chatRoom.getCreatedAt())
 			.roomType(chatRoom.getType().toString())
 			.build();
-
 	}
 }

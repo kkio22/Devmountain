@@ -1,8 +1,7 @@
-package nbc.devmountain.domain.chatroom.controller;
+package nbc.devmountain.domain.chat.model.chatroom.controller;
 
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,10 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.response.ApiResponse;
-import nbc.devmountain.domain.chatroom.dto.request.ChatRoomRequest;
-import nbc.devmountain.domain.chatroom.dto.response.ChatRoomDetailResponse;
-import nbc.devmountain.domain.chatroom.dto.response.ChatRoomResponse;
-import nbc.devmountain.domain.chatroom.service.ChatRoomService;
+import nbc.devmountain.domain.chat.model.chatroom.dto.request.ChatRoomRequest;
+import nbc.devmountain.domain.chat.model.chatroom.dto.response.ChatRoomDetailResponse;
+import nbc.devmountain.domain.chat.model.chatroom.dto.response.ChatRoomResponse;
+import nbc.devmountain.domain.chat.model.chatroom.service.ChatRoomService;
 
 @RestController
 @RequestMapping("/chatrooms")
