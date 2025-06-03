@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.model.RoomType;
+import nbc.devmountain.domain.chatroom.dto.response.ChatRoomDetailResponse;
 import nbc.devmountain.domain.chatroom.dto.response.ChatRoomResponse;
 import nbc.devmountain.domain.chatroom.repository.ChatRoomRepository;
 import nbc.devmountain.domain.user.model.User;
@@ -44,5 +45,16 @@ public class ChatRoomService {
 		return chatRoomList.stream()
 			.map(ChatRoomResponse::from)
 			.toList();
+	}
+
+	public ChatRoomDetailResponse findChatRoom(long userId, Long chatroomId) {
+		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+		if (!chatRoom.getUser().getUserId().equals(userId)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+		}
+
+		return ChatRoomDetailResponse.from(chatRoom);
 	}
 }
