@@ -2,6 +2,7 @@ package nbc.devmountain.domain.chat.model.chatroom.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,25 +29,27 @@ public class ChatRoomController {
 
 	@PostMapping
 	public ResponseEntity<ApiResponse<ChatRoomResponse>> createChatRoom(@RequestBody ChatRoomRequest request) {
-		long userId = 1L;
+		long userId = 1L; //@AuthenticationPrincipal 에서 받을예정
+
+		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(userId, request.chatroomName());
 		return ResponseEntity.ok(
-			ApiResponse.success(chatRoomService.createChatRoom(userId, request.chatroomName())));
+			ApiResponse.of(true,"채팅방 생성 성공", HttpStatus.CREATED.value(),chatRoom));
 	}
 
 	@GetMapping
 	public ResponseEntity<ApiResponse<List<ChatRoomResponse>>> findAllChatRooms() {
 		long userId = 1L;
-
+		List<ChatRoomResponse> chatRooms = chatRoomService.findAllChatRooms(userId);
 		return ResponseEntity.ok(
-			ApiResponse.success(chatRoomService.findAllChatRooms(userId)));
+			ApiResponse.of(true,"채팅방 목록 조회",HttpStatus.OK.value(), chatRooms));
 	}
 
 	@GetMapping("/{chatroomId}")
 	public ResponseEntity<ApiResponse<ChatRoomDetailResponse>> findChatRoom(@PathVariable Long chatroomId) {
 		long userId = 1L;
-
+		ChatRoomDetailResponse chatRoom = chatRoomService.findChatRoom(userId, chatroomId);
 		return ResponseEntity.ok(
-			ApiResponse.success(chatRoomService.findChatRoom(userId, chatroomId)));
+			ApiResponse.of(true,"채팅방 상세 조회",HttpStatus.OK.value(), chatRoom));
 	}
 
 	@PatchMapping("/{chatroomId}")
@@ -54,9 +57,9 @@ public class ChatRoomController {
 		@PathVariable Long chatroomId,
 		@RequestBody ChatRoomRequest request) {
 		long userId = 1L;
-
+		ChatRoomResponse response = chatRoomService.updateChatRoomName(userId, chatroomId, request.chatroomName());
 		return ResponseEntity.ok(
-			ApiResponse.success(chatRoomService.updateChatRoomName(userId, chatroomId, request.chatroomName())));
+			ApiResponse.of(true,"채팅방 이름 수정 완료",HttpStatus.OK.value(),response));
 	}
 
 	@DeleteMapping("/{chatroomId}")
@@ -64,11 +67,7 @@ public class ChatRoomController {
 		long userId = 1L;
 		chatRoomService.deleteChatRoom(userId, chatroomId);
 		return ResponseEntity.ok(
-			ApiResponse.of(
-				true,
-				"채팅방이 삭제되었습니다."
-				, 200
-				, null)
+			ApiResponse.of(true, "채팅방이 삭제되었습니다.", HttpStatus.OK.value(), null)
 		);
 	}
 

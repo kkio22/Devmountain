@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chatroom.service;
+package nbc.devmountain.domain.chat.model.chatroom.service;
 
 import java.util.List;
 
@@ -10,9 +10,9 @@ import org.springframework.web.server.ResponseStatusException;
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.model.RoomType;
-import nbc.devmountain.domain.chatroom.dto.response.ChatRoomDetailResponse;
-import nbc.devmountain.domain.chatroom.dto.response.ChatRoomResponse;
-import nbc.devmountain.domain.chatroom.repository.ChatRoomRepository;
+import nbc.devmountain.domain.chat.model.chatroom.dto.response.ChatRoomDetailResponse;
+import nbc.devmountain.domain.chat.model.chatroom.dto.response.ChatRoomResponse;
+import nbc.devmountain.domain.chat.model.chatroom.repository.ChatRoomRepository;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 
@@ -32,7 +32,7 @@ public class ChatRoomService {
 			ChatRoom.builder()
 				.user(user)
 				.chatroomName(chatroomName)
-				.type(RoomType.FREE)
+				.type(RoomType.valueOf(user.getMembershipLevel().name()))
 				.build());
 
 		return ChatRoomResponse.from(chatRoom);
@@ -40,12 +40,10 @@ public class ChatRoomService {
 
 	@Transactional(readOnly = true)
 	public List<ChatRoomResponse> findAllChatRooms(long userId) {
-		User user = userRepository.findById(userId)
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-		List<ChatRoom> chatRoomList = chatRoomRepository.findAllByUser(user);
+		List<ChatRoom> chatRooms = chatRoomRepository.findAllByUserId(userId);
 
-		return chatRoomList.stream()
+		return chatRooms.stream()
 			.map(ChatRoomResponse::from)
 			.toList();
 	}
