@@ -1,0 +1,52 @@
+package nbc.devmountain.domain.order.service;
+
+
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import nbc.devmountain.domain.order.dto.OrderResponseDto;
+import nbc.devmountain.domain.order.dto.OrderStatusUpdateDto;
+import nbc.devmountain.domain.order.model.Order;
+import nbc.devmountain.domain.order.model.OrderStatus;
+import nbc.devmountain.domain.order.repository.OrderRepository;
+import nbc.devmountain.domain.user.model.User;
+import nbc.devmountain.domain.user.repository.UserRepository;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class OrderService {
+    private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
+    private static final int FIXED_PRICE = 15000; // 위 값은 .env에 담아서 사용하든 어떤 특정 값에 저장하도록 수정하기
+
+    public OrderResponseDto createOrder(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        Order order = Order.builder()
+                .user(user)
+                .price(FIXED_PRICE)
+                .status(OrderStatus.PENDING)
+                .build();
+        return OrderResponseDto.from(orderRepository.save(order));
+    }
+
+    public List<OrderResponseDto> getOrdersByUser(Long userId) {
+        return orderRepository.findByUser_UserId(userId).stream()
+                .map(OrderResponseDto::from)
+                .toList();
+    }
+
+    public OrderResponseDto getOrderById(Long orderId) {
+        return orderRepository.findById(orderId)
+                .map(OrderResponseDto::from)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
+    }
+
+    public void updateOrderStatus(Long orderId, OrderStatusUpdateDto dto) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found"));
+        order.updateOrderStatus(dto.status());
+    }
+}
