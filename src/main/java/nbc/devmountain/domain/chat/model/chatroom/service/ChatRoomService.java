@@ -24,24 +24,20 @@ public class ChatRoomService {
 	private final UserRepository userRepository;
 
 	@Transactional
-	public ChatRoomResponse createChatRoom(Long userId, String chatroomName) {
-		User user = userRepository.findById(userId)
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+	public ChatRoomResponse createChatRoom(User user, String chatroomName) {
+		ChatRoom chatRoom = ChatRoom.builder()
+			.user(user)
+			.chatroomName(chatroomName)
+			.type(RoomType.valueOf(user.getMembershipLevel().name()))
+			.build();
 
-		ChatRoom chatRoom = chatRoomRepository.save(
-			ChatRoom.builder()
-				.user(user)
-				.chatroomName(chatroomName)
-				.type(RoomType.valueOf(user.getMembershipLevel().name()))
-				.build());
-
-		return ChatRoomResponse.from(chatRoom);
+		return ChatRoomResponse.from(chatRoomRepository.save(chatRoom));
 	}
 
 	@Transactional(readOnly = true)
-	public List<ChatRoomResponse> findAllChatRooms(long userId) {
+	public List<ChatRoomResponse> findAllChatRooms(User user) {
 
-		List<ChatRoom> chatRooms = chatRoomRepository.findAllByUserId(userId);
+		List<ChatRoom> chatRooms = chatRoomRepository.findAllByUser(user);
 
 		return chatRooms.stream()
 			.map(ChatRoomResponse::from)
@@ -49,11 +45,11 @@ public class ChatRoomService {
 	}
 
 	@Transactional(readOnly = true)
-	public ChatRoomDetailResponse findChatRoom(long userId, Long chatroomId) {
+	public ChatRoomDetailResponse findChatRoom(User user, Long chatroomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-		if (!chatRoom.getUser().getUserId().equals(userId)) {
+		if (!chatRoom.getUser().getUserId().equals(user.getUserId())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 
@@ -61,11 +57,11 @@ public class ChatRoomService {
 	}
 
 	@Transactional
-	public ChatRoomResponse updateChatRoomName(long userId, Long chatroomId, String newName) {
+	public ChatRoomResponse updateChatRoomName(User user, Long chatroomId, String newName) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-		if (!chatRoom.getUser().getUserId().equals(userId)) {
+		if (!chatRoom.getUser().getUserId().equals(user.getUserId())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 		chatRoom.updateName(newName);
@@ -74,11 +70,11 @@ public class ChatRoomService {
 	}
 
 	@Transactional
-	public void deleteChatRoom(long userId, Long chatroomId) {
+	public void deleteChatRoom(User user, Long chatroomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-		if (!chatRoom.getUser().getUserId().equals(userId)) {
+		if (!chatRoom.getUser().getUserId().equals(user.getUserId())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 		chatRoom.delete();

@@ -46,7 +46,7 @@ public class ChatRoom {
 	private LocalDateTime deletedAt;
 
 	//연관관계 편의메서드
-	public void setMessages(ChatMessage message) {
+	public void addMessages(ChatMessage message) {
 		messages.add(message);
 		message.setChatRoom(this);
 	}
