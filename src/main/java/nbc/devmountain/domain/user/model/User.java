@@ -1,12 +1,31 @@
 package nbc.devmountain.domain.user.model;
 
-import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import nbc.devmountain.domain.category.model.UserCategory;
 
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -50,8 +69,13 @@ public class User {
     @Column(name = "membership_level")
     private MembershipLevel membershipLevel;
 
+    // 카테고리 연관관계 추가
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "userCategoryId")
+    private List<UserCategory> userCategory = new ArrayList<>();
+
     @Builder
-    public User(String email, String password, String name, String phoneNumber, LoginType loginType, Role role, MembershipLevel membershipLevel) {
+    public User(String email, String password, String name, String phoneNumber, LoginType loginType, Role role, MembershipLevel membershipLevel, List<UserCategory> userCategory) {
         this.email = email;
         this.password = password;
         this.name = name;
@@ -59,6 +83,14 @@ public class User {
         this.loginType = loginType;
         this.role = role;
         this.membershipLevel = membershipLevel;
+        this.userCategory = userCategory;
+    }
+
+    public void updateProfile(String password, String name, String phoneNumber, List<UserCategory> userCategory) {
+        this.password = password;
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.userCategory = userCategory;
     }
 
     public enum LoginType {
