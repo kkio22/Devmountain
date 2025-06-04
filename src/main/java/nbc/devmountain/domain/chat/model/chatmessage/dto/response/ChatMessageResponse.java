@@ -15,8 +15,8 @@ import nbc.devmountain.domain.chat.model.ChatMessage;
 @Builder
 public class ChatMessageResponse {
 
-	private Long chatId;
 	private Long chatroomId;
+	private Long chatId;
 	private Long userId;
 	private String message;
 	private Boolean isAiResponse;
@@ -27,9 +27,9 @@ public class ChatMessageResponse {
 		return ChatMessageResponse.builder()
 			.chatId(chatMessage.getChatId())
 			.chatroomId(chatMessage.getChatRoom().getChatroomId())
-			.userId(chatMessage.getUser() == null ? 0L : chatMessage.getUser().getUserId())
+			.userId(chatMessage.getUser().getUserId())
 			.message(chatMessage.getMessage())
-			.isAiResponse(chatMessage.getUser().getUserId().equals(0L))
+			.isAiResponse(chatMessage.getIsAiResponse())
 			.createdAt(chatMessage.getCreatedAt())
 			.updatedAt(chatMessage.getUpdatedAt())
 			.build();
