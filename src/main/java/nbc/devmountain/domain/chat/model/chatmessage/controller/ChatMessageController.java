@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.response.ApiResponse;
-import nbc.devmountain.domain.chat.model.chatmessage.dto.request.ChatMessagRequest;
+import nbc.devmountain.domain.chat.model.chatmessage.dto.request.ChatMessageRequest;
 import nbc.devmountain.domain.chat.model.chatmessage.dto.response.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.chatmessage.service.ChatMessageService;
 import nbc.devmountain.domain.user.model.User;
@@ -29,7 +29,7 @@ public class ChatMessageController {
 	public ResponseEntity<ApiResponse<ChatMessageResponse>> createMessage(
 		@PathVariable(required = false) Long chatroomId,
 		@AuthenticationPrincipal User user,
-		@RequestBody ChatMessagRequest request){
+		@RequestBody ChatMessageRequest request){
 
 		ChatMessageResponse message = chatMessageService.createMessage(user, chatroomId, request.getMessage());
 		return ResponseEntity.ok(

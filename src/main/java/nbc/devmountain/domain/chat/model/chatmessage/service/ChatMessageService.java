@@ -30,24 +30,23 @@ public class ChatMessageService {
 		//채팅방을 지정하지 않았을 때 새로운 채팅방 생성
 		ChatRoom chatRoom;
 
-		if (chatRoomId == null) {
-
-			ChatRoom newChatRoom = ChatRoom.builder()
-				.user(user)
-				.chatroomName("채팅방 : "+LocalDate.now().toString())
-				.type(RoomType.valueOf(user.getMembershipLevel().name()))
-				.build();
-
-			chatRoom = chatRoomRepository.save(newChatRoom);
-
-		} else { //채팅방 id 입력된경우
-
+		if (chatRoomId != null) {
 			chatRoom = chatRoomRepository.findById(chatRoomId)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
 			if (!chatRoom.getUser().getUserId().equals(user.getUserId())) {
 				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 			}
+
+		} else {
+			ChatRoom newChatRoom = ChatRoom.builder()
+				.user(user)
+				.chatroomName("채팅방 : " + LocalDate.now().toString())
+				.type(RoomType.valueOf(user.getMembershipLevel().name()))
+				.build();
+
+			chatRoom = chatRoomRepository.save(newChatRoom);
+
 		}
 		ChatMessage chatMessage = ChatMessage.builder()
 			.chatRoom(chatRoom)
@@ -55,9 +54,7 @@ public class ChatMessageService {
 			.message(message)
 			.isAiResponse(false)
 			.build();
-
 		chatRoom.addMessages(chatMessage);
-
 		return ChatMessageResponse.from(chatMessageRepository.save(chatMessage));
 	}
 }

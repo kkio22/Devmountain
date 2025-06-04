@@ -25,6 +25,10 @@ public class ChatRoomService {
 
 	@Transactional
 	public ChatRoomResponse createChatRoom(User user, String chatroomName) {
+		if(userRepository.findById(user.getUserId()).isEmpty()){
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+		}
+
 		ChatRoom chatRoom = ChatRoom.builder()
 			.user(user)
 			.chatroomName(chatroomName)
