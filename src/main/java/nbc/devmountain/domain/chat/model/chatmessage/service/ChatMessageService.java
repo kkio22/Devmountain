@@ -1,6 +1,7 @@
 package nbc.devmountain.domain.chat.model.chatmessage.service;
 
-import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -10,7 +11,6 @@ import org.springframework.web.server.ResponseStatusException;
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.chat.model.ChatRoom;
-import nbc.devmountain.domain.chat.model.RoomType;
 import nbc.devmountain.domain.chat.model.chatmessage.dto.response.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.chatmessage.repository.ChatMessageRepository;
 import nbc.devmountain.domain.chat.model.chatroom.repository.ChatRoomRepository;
@@ -26,35 +26,42 @@ public class ChatMessageService {
 	private final UserRepository userRepository;
 
 	@Transactional
-	public ChatMessageResponse createMessage(User user, Long chatRoomId, String message) {
-		//채팅방을 지정하지 않았을 때 새로운 채팅방 생성
-		ChatRoom chatRoom;
+	public ChatMessageResponse createMessage(Long userId, Long chatRoomId, String message) {
 
-		if (chatRoomId != null) {
-			chatRoom = chatRoomRepository.findById(chatRoomId)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		User user = userRepository.findById(userId)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-			if (!chatRoom.getUser().getUserId().equals(user.getUserId())) {
-				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-			}
+		ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-		} else {
-			ChatRoom newChatRoom = ChatRoom.builder()
-				.user(user)
-				.chatroomName("채팅방 : " + LocalDate.now().toString())
-				.type(RoomType.valueOf(user.getMembershipLevel().name()))
-				.build();
-
-			chatRoom = chatRoomRepository.save(newChatRoom);
-
+		if (!chatRoom.getUser().getUserId().equals(user.getUserId())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
+
 		ChatMessage chatMessage = ChatMessage.builder()
 			.chatRoom(chatRoom)
 			.user(user)
 			.message(message)
 			.isAiResponse(false)
 			.build();
+
 		chatRoom.addMessages(chatMessage);
+
 		return ChatMessageResponse.from(chatMessageRepository.save(chatMessage));
+	}
+
+	public List<ChatMessageResponse> getMessages(Long userId, Long roomId) {
+		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+		if (!chatRoom.getUser().getUserId().equals(userId)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+		}
+
+		List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomId(roomId);
+
+		return chatMessages.stream()
+			.map(ChatMessageResponse::from)
+			.collect(Collectors.toList());
 	}
 }
