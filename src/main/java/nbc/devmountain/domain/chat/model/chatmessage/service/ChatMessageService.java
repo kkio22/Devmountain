@@ -49,6 +49,23 @@ public class ChatMessageService {
 
 		return ChatMessageResponse.from(chatMessageRepository.save(chatMessage));
 	}
+	@Transactional
+	public ChatMessageResponse createAIMessage(Long chatRoomId,String message){
+		ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+		ChatMessage aiChatMessage = ChatMessage.builder()
+			.chatRoom(chatRoom)
+			.user(null)
+			.message(message)
+			.isAiResponse(true)
+			.build();
+
+		chatRoom.addMessages(aiChatMessage);
+		return ChatMessageResponse.from(chatMessageRepository.save(aiChatMessage));
+	}
+
+
 
 	public List<ChatMessageResponse> getMessages(Long userId, Long roomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
