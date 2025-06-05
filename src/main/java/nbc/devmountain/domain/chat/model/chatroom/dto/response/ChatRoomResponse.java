@@ -11,8 +11,8 @@ import nbc.devmountain.domain.chat.model.ChatRoom;
 public class ChatRoomResponse {
 	private Long chatroomId;
 	private String chatroomName;
-	private LocalDateTime createdAt;
 	private String roomType;
+	private LocalDateTime createdAt;
 
 	public static ChatRoomResponse from(ChatRoom chatRoom) {
 		return ChatRoomResponse.builder()
