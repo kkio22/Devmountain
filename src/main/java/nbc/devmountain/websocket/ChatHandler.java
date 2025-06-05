@@ -1,10 +1,9 @@
 package nbc.devmountain.websocket;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URI;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -12,65 +11,108 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
-import nbc.devmountain.domain.chat.model.ChatMessage;
+import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.chat.model.chatmessage.dto.response.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.chatmessage.service.ChatMessageService;
 import nbc.devmountain.domain.user.model.User;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ChatHandler extends TextWebSocketHandler {
-
 	private final ChatMessageService chatMessageService;
+	private final ObjectMapper objectMapper;
 
-	/**메세지 입력시 호출되는 메서드*/
+	//ConcurrentHashMap-여러 스레드에서 접근하는걸 막아줌(Lock) 사용. 동시성문제해결
+
+	// roomId   : WebSocketSession
+	private final Map<Long, WebSocketSession> activeSessions = new ConcurrentHashMap<>();
+	//sessionId : roomId
+	private final Map<String, Long> sessionToRoom = new ConcurrentHashMap<>();
+
+	/**웹소켓이 연결되면 호출되는 메서드*/
+	@Override
+	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+		Long roomId = getRoomId(session);
+		User user = (User)session.getAttributes().get("user");
+
+		//세션 등록
+		activeSessions.put(roomId, session);
+		sessionToRoom.put(session.getId(), roomId);
+
+		log.info("WebSocket 연결");
+
+	}
+
+	/**메세지 발송시 호출되는 메서드*/
 	@Override
 	protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-		User user = (User)session.getAttributes().get("user"); //로그인 유저
-		String payload = message.getPayload(); //사용자 입력메세지
-		Long roomId = getRoomId(session);
+		User user = (User)session.getAttributes().get("user");
+		String payload = message.getPayload(); //사용자가 보낸 텍스트
+		Long roomId = sessionToRoom.get(session.getId());
 
-		//비로그인 유저
-		if(user==null){
-		//검색 5회 제한 걸기
-		}
-
-		//사용자 요청 저장
-		ChatMessageResponse userMessage = chatMessageService.createMessage(user, roomId, payload);
-
-		//AI 응답 생성
-
-		//AI 응답 저장
-		// chatMessageService.save
-
-		session.sendMessage(new TextMessage(
-			buildJsonMessage()//
-		));
-	}
-
-
-	/**uri 어떤 채팅방 id로 들어왔는지*/
-	private Long getRoomId(WebSocketSession session) {
-
-		String query = session.getUri().getQuery();
-		String[] params = query.split("=");
-		try{
-			return Long.parseLong(params[1]);
-		}catch (Exception e){
-			throw new IllegalArgumentException("Invalid roomId in URI: " + query);
-		}
-	}
-	/**AI 응답 JSON 형식으로 파싱*/
-	public String buildJsonMessage(ChatMessage msg){
+		ChatMessageResponse userMessage;
+		//사용자 메세지
 		try {
-			return new ObjectMapper().writeValueAsString(ChatMessageResponse.from(msg));
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException("JSON 변환실패",e);
+			if (user != null) { //유저가 보낸 메세지 저장
+				userMessage = chatMessageService.createMessage(user.getUserId(), roomId, payload);
+			} else { //비로그인 유저면 임시생성
+				userMessage = ChatMessageResponse.builder()
+					.chatId(System.currentTimeMillis())
+					.chatroomId(roomId)
+					.userId(null)
+					.message(payload)
+					.isAiResponse(false)
+					.createdAt(LocalDateTime.now())
+					.updatedAt(LocalDateTime.now())
+					.build();
+			}
+			//사용자 메세지 전송
+			if (session.isOpen()) {
+				String jsonMessage = objectMapper.writeValueAsString(userMessage);
+				session.sendMessage(new TextMessage(jsonMessage));
+			}
+			//AI 응답 요청
+			//AI 응답 데이터베이스 저장하기
+			// chatMessageService.createAIMessage(roomId, AI 응답)
+
+		}catch (Exception e){
+			log.error("메세지 처리 실패",e);
 		}
 	}
-}
 
+	@Override
+	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+		String sessionId = session.getId();
+		Long roomId = sessionToRoom.remove(sessionId);
+		if(roomId != null){
+			activeSessions.remove(roomId);
+		}
+		log.info("WebSocket 연결 종료");
+	}
+
+	private Long getRoomId(WebSocketSession session) {
+		//ws://localhost:8080/ws/chat?roomId= 에서 roomId= 만 가져옴
+		URI uri = session.getUri(); //c
+		String query = uri.getQuery();
+
+		if (query == null || !query.contains("roomId=")) {
+			throw new IllegalArgumentException("roomId parameter required");
+		}
+		String[] params = query.split("&");
+		for (String param : params) {
+			if (param.startsWith("roomId=")) {
+				try {
+					return Long.parseLong(param.split("=")[1]);
+				} catch (NumberFormatException e) {
+					throw new IllegalArgumentException("Invalid roomId format");
+				}
+			}
+		}
+		throw new IllegalArgumentException("roomId parameter not found");
+	}
+
+}
