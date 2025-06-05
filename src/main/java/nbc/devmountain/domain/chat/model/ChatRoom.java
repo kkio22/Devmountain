@@ -27,7 +27,6 @@ public class ChatRoom {
 	@JoinColumn(name = "user_id")
 	private User user;
 
-	@Column(nullable = false)
 	private String chatroomName;
 
 	@Enumerated(EnumType.STRING)
@@ -37,8 +36,7 @@ public class ChatRoom {
 	//채팅방 단건 조회를 위한 양방향 맵핑
 	@OneToMany(mappedBy = "chatRoom"
 		, cascade = CascadeType.ALL
-		, orphanRemoval = true
-		, fetch = FetchType.LAZY)
+		, orphanRemoval = true)
 	private List<ChatMessage> messages = new ArrayList<>();
 
 	@CreatedDate
@@ -48,7 +46,7 @@ public class ChatRoom {
 	private LocalDateTime deletedAt;
 
 	//연관관계 편의메서드
-	public void setMessages(ChatMessage message) {
+	public void addMessages(ChatMessage message) {
 		messages.add(message);
 		message.setChatRoom(this);
 	}

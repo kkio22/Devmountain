@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chatroom.service;
+package nbc.devmountain.domain.chat.model.chatroom.service;
 
 import java.util.List;
 
@@ -10,9 +10,9 @@ import org.springframework.web.server.ResponseStatusException;
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.model.RoomType;
-import nbc.devmountain.domain.chatroom.dto.response.ChatRoomDetailResponse;
-import nbc.devmountain.domain.chatroom.dto.response.ChatRoomResponse;
-import nbc.devmountain.domain.chatroom.repository.ChatRoomRepository;
+import nbc.devmountain.domain.chat.model.chatroom.dto.response.ChatRoomDetailResponse;
+import nbc.devmountain.domain.chat.model.chatroom.dto.response.ChatRoomResponse;
+import nbc.devmountain.domain.chat.model.chatroom.repository.ChatRoomRepository;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 
@@ -24,38 +24,36 @@ public class ChatRoomService {
 	private final UserRepository userRepository;
 
 	@Transactional
-	public ChatRoomResponse createChatRoom(Long userId, String chatroomName) {
-		User user = userRepository.findById(userId)
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+	public ChatRoomResponse createChatRoom(User user, String chatroomName) {
+		if(userRepository.findById(user.getUserId()).isEmpty()){
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+		}
 
-		ChatRoom chatRoom = chatRoomRepository.save(
-			ChatRoom.builder()
-				.user(user)
-				.chatroomName(chatroomName)
-				.type(RoomType.FREE)
-				.build());
+		ChatRoom chatRoom = ChatRoom.builder()
+			.user(user)
+			.chatroomName(chatroomName)
+			.type(RoomType.valueOf(user.getMembershipLevel().name()))
+			.build();
 
-		return ChatRoomResponse.from(chatRoom);
+		return ChatRoomResponse.from(chatRoomRepository.save(chatRoom));
 	}
 
 	@Transactional(readOnly = true)
-	public List<ChatRoomResponse> findAllChatRooms(long userId) {
-		User user = userRepository.findById(userId)
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+	public List<ChatRoomResponse> findAllChatRooms(User user) {
 
-		List<ChatRoom> chatRoomList = chatRoomRepository.findAllByUser(user);
+		List<ChatRoom> chatRooms = chatRoomRepository.findAllByUser(user);
 
-		return chatRoomList.stream()
+		return chatRooms.stream()
 			.map(ChatRoomResponse::from)
 			.toList();
 	}
 
 	@Transactional(readOnly = true)
-	public ChatRoomDetailResponse findChatRoom(long userId, Long chatroomId) {
+	public ChatRoomDetailResponse findChatRoom(User user, Long chatroomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-		if (!chatRoom.getUser().getUserId().equals(userId)) {
+		if (!chatRoom.getUser().getUserId().equals(user.getUserId())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 
@@ -63,11 +61,11 @@ public class ChatRoomService {
 	}
 
 	@Transactional
-	public ChatRoomResponse updateChatRoomName(long userId, Long chatroomId, String newName) {
+	public ChatRoomResponse updateChatRoomName(User user, Long chatroomId, String newName) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-		if (!chatRoom.getUser().getUserId().equals(userId)) {
+		if (!chatRoom.getUser().getUserId().equals(user.getUserId())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 		chatRoom.updateName(newName);
@@ -76,11 +74,11 @@ public class ChatRoomService {
 	}
 
 	@Transactional
-	public void deleteChatRoom(long userId, Long chatroomId) {
+	public void deleteChatRoom(User user, Long chatroomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-		if (!chatRoom.getUser().getUserId().equals(userId)) {
+		if (!chatRoom.getUser().getUserId().equals(user.getUserId())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 		chatRoom.delete();
