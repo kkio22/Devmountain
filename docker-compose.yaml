@@ -24,5 +24,19 @@ services:
     ports:
       - "${REDIS_PORT}:6379"
 
+  postgres:
+    image: postgres:15
+    container_name: devmountain-postgres
+    ports:
+      - "${POSTGRES_PORT} : 5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE}
+    volumes:
+      - devmountain-postgres-volume:/var/lib/postgresql/data
+    platform: linux/arm64
+
+
 volumes:
   devmountain-mysql-volume:
+  devmountain-postgres-volume:
