@@ -86,12 +86,23 @@ public class User {
         this.userCategory = userCategory;
     }
 
-    public void updateProfile(String password, String name, String phoneNumber, List<UserCategory> userCategory) {
+    public void updatePassword(String password) {
         this.password = password;
-        this.name = name;
-        this.phoneNumber = phoneNumber;
-        this.userCategory = userCategory;
     }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updatePhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void updateCategories(List<UserCategory> newCategories) {
+        this.userCategory.clear();
+        this.userCategory.addAll(newCategories);
+    }
+
 
     public enum LoginType {
         GOOGLE, KAKAO, NAVER, EMAIL, APPLE

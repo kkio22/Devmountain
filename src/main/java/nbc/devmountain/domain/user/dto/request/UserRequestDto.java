@@ -1,5 +1,6 @@
 package nbc.devmountain.domain.user.dto.request;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.validation.constraints.Email;
@@ -23,7 +24,6 @@ public class UserRequestDto {
 	private final String phoneNumber;
 	@NotBlank
 	private final User.Role role;
-	@NotBlank
-	private final List<Category> category;
+	private final List<Category.CategoryName> category = new ArrayList<>();
 
 }
