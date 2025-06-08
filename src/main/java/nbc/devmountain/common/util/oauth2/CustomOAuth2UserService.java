@@ -39,7 +39,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 		}
 
 		// OAuth2 등록 ID 추출
-		String registrationId = userRequest.getClientRegistration().getRegistrationId(); // google, naver
+		String registrationId = userRequest.getClientRegistration().getRegistrationId(); // google, naver, kakao
 		// id 추출
 		String userNameAttribute = userRequest.getClientRegistration()
 			.getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
@@ -56,7 +56,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 					.password(passwordEncoder.encode("0000")) // 임시 비번
 					.name(attributes.getName())
 					.phoneNumber("010-0000-0000")
-					.loginType(User.LoginType.GOOGLE) // 추후 kakao 등 추가 예정
+					.loginType(attributes.getLoginType()) // 추후 kakao 등 추가 예정
 					.role(User.Role.USER) // 기본 admin설정
 					.membershipLevel(User.MembershipLevel.FREE) // 기본 membership 설정
 					.build()

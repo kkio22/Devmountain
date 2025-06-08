@@ -37,6 +37,7 @@ public class SecurityConfig {
 				.userInfoEndpoint(userInfo -> userInfo
 					.userService(customOAuth2UserService)) // 사용자 정보 처리
 				.defaultSuccessUrl("/users/test") // 로그인 성공 후 이동할 페이지
+				// 추후 프론트 개발 후 url 수정
 			)
 			.formLogin(form -> form.disable());
 
