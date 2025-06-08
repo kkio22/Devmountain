@@ -1,14 +1,16 @@
 package nbc.devmountain.domain.lecture.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import nbc.devmountain.domain.category.model.*;
 
 @Entity
-@Table(name = "Lecture")
+@Table(name = "lecture")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
@@ -33,7 +35,6 @@ public class Lecture {
 	private int regularPrice;
 	private boolean isFree;
 	private int discountRate;
-
 
 
 	@Builder
