@@ -20,7 +20,7 @@ public class Lecture {
 	@Column(columnDefinition = "TEXT")
 	private String thumbnailUrl;
 	private String title;
-	private String instuctor;
+	private String instructor;
 	@Column(columnDefinition = "TEXT")
 	private String description;
 	private int reviewCount;
@@ -34,13 +34,15 @@ public class Lecture {
 	private boolean isFree;
 	private int discountRate;
 
+
+
 	@Builder
-	public Lecture(int itemId, String thumbnailUrl, String title, String instuctor, String description, int reviewCount,
+	public Lecture(int itemId, String thumbnailUrl, String title, String instructor, String description, int reviewCount,
 		int studentCount, int likeCount, int star, String levelCode, boolean isDiscount, int payPrice, int regularPrice, boolean isFree, int discountRate) {
 		this.itemId = itemId;
 		this.thumbnailUrl = thumbnailUrl;
 		this.title = title;
-		this.instuctor = instuctor;
+		this.instructor = instructor;
 		this.description = description;
 		this.reviewCount = reviewCount;
 		this.studentCount = studentCount;

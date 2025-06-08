@@ -24,18 +24,13 @@ public class LectureCategory {
 	private String title;
 
 	@ManyToOne
-	@JoinColumn(name = "metaData_id")
-	private MetaData metaData;
-
-	@ManyToOne
 	@JoinColumn(name = "LectureCategory_id")
 	private LectureCategory parent; // 이거 좀 생각해 봐야할 듯
 
 	@Builder
-	public LectureCategory(int id, String title, MetaData metaData, LectureCategory parent){
+	public LectureCategory(int id, String title, LectureCategory parent){
 		this.id = id;
 		this.title = title;
-		this.metaData = metaData;
 		this.parent = parent;
 	}
 
