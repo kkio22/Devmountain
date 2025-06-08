@@ -20,38 +20,39 @@ public class Lecture {
 	@Column(columnDefinition = "TEXT")
 	private String thumbnailUrl;
 	private String title;
+	private String instuctor;
 	@Column(columnDefinition = "TEXT")
 	private String description;
 	private int reviewCount;
 	private int studentCount;
 	private int likeCount;
 	private int star;
-
-	@ManyToOne
-	@JoinColumn(name = "instructor_id")
-	private Instructor instructor;
-
-	@OneToOne
-	@JoinColumn(name = "metaData_id")
-	private MetaData metaData;
-
-	@OneToOne
-	@JoinColumn(name = "ListPrice_id")
-	private ListPrice listPrice;
+	private String levelCode;
+	private boolean isDiscount;
+	private int payPrice;
+	private int regularPrice;
+	private boolean isFree;
+	private int discountRate;
 
 	@Builder
-	public Lecture(int itemId, String thumbnailUrl, String title, String description, int reviewCount, int studentCount, int likeCount, int star, Instructor instructor, ListPrice listPrice, MetaData metaData) {
+	public Lecture(int itemId, String thumbnailUrl, String title, String instuctor, String description, int reviewCount,
+		int studentCount, int likeCount, int star, String levelCode, boolean isDiscount, int payPrice, int regularPrice, boolean isFree, int discountRate) {
 		this.itemId = itemId;
 		this.thumbnailUrl = thumbnailUrl;
 		this.title = title;
+		this.instuctor = instuctor;
 		this.description = description;
 		this.reviewCount = reviewCount;
 		this.studentCount = studentCount;
 		this.likeCount = likeCount;
 		this.star = star;
-		this.instructor = instructor;
-		this.listPrice = listPrice;
-		this.metaData = metaData;
+		this.levelCode = levelCode;
+		this.isDiscount = isDiscount;
+		this.payPrice = payPrice;
+		this.regularPrice = regularPrice;
+		this.isFree = isFree;
+		this.discountRate =discountRate;
+
 	}
 
 }
