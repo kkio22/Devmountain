@@ -20,7 +20,7 @@ public class LectureCategoryMapping {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long lectureCategoryId;
+	private Long lectureCategoryMappingId;
 
 	@ManyToOne
 	@JoinColumn(name = "lecture_category_id")
