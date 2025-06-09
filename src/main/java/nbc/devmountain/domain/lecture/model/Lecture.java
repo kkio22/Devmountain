@@ -1,5 +1,6 @@
 package nbc.devmountain.domain.lecture.model;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,18 +29,18 @@ public class Lecture {
 	private int reviewCount;
 	private int studentCount;
 	private int likeCount;
-	private int star;
+	private double star;
 	private String levelCode;
 	private boolean isDiscount;
-	private int payPrice;
-	private int regularPrice;
+	private BigDecimal payPrice;
+	private BigDecimal regularPrice;
 	private boolean isFree;
-	private int discountRate;
+	private BigDecimal discountRate;
 
 
 	@Builder
 	public Lecture(int itemId, String thumbnailUrl, String title, String instructor, String description, int reviewCount,
-		int studentCount, int likeCount, int star, String levelCode, boolean isDiscount, int payPrice, int regularPrice, boolean isFree, int discountRate) {
+		int studentCount, int likeCount, double star, String levelCode, boolean isDiscount, BigDecimal payPrice, BigDecimal regularPrice, boolean isFree, BigDecimal discountRate) {
 		this.itemId = itemId;
 		this.thumbnailUrl = thumbnailUrl;
 		this.title = title;
