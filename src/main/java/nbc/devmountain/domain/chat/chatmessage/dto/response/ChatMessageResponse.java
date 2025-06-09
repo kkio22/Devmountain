@@ -1,27 +1,18 @@
-package nbc.devmountain.domain.chat.model.chatmessage.dto.response;
+package nbc.devmountain.domain.chat.chatmessage.dto.response;
 
 import java.time.LocalDateTime;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 
-@Getter
-@AllArgsConstructor
 @Builder
-public class ChatMessageResponse {
-
-	private Long chatroomId;
-	private Long chatId;
-	private Long userId;
-	private String message;
-	private Boolean isAiResponse;
-	private LocalDateTime createdAt;
-	private LocalDateTime updatedAt;
+public record ChatMessageResponse(Long chatroomId,
+								  Long chatId,
+								  Long userId,
+								  String message,
+								  Boolean isAiResponse,
+								  LocalDateTime createdAt,
+								  LocalDateTime updatedAt) {
 
 	public static ChatMessageResponse from(ChatMessage chatMessage) {
 		return ChatMessageResponse.builder()

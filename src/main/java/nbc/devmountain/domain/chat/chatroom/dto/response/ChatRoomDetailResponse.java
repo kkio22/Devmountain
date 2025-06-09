@@ -1,23 +1,19 @@
-package nbc.devmountain.domain.chat.model.chatroom.dto.response;
+package nbc.devmountain.domain.chat.chatroom.dto.response;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import lombok.Builder;
-import lombok.Getter;
 import nbc.devmountain.domain.chat.model.ChatRoom;
-import nbc.devmountain.domain.chat.model.chatmessage.dto.response.ChatMessageResponse;
+import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
 
 @Builder
-@Getter
-public class ChatRoomDetailResponse {
-
-	private Long chatroomId;
-	private String chatroomName;
-	private LocalDateTime createdAt;
-	private String roomType;
-	private List<ChatMessageResponse> messages;
+public record ChatRoomDetailResponse(Long chatroomId,
+									 String chatroomName,
+									 LocalDateTime createdAt,
+									 String roomType,
+									 List<ChatMessageResponse> messages) {
 
 	public static ChatRoomDetailResponse from(ChatRoom chatRoom) {
 		return ChatRoomDetailResponse.builder()
