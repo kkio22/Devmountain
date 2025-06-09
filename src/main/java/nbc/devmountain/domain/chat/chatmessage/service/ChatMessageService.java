@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat.model.chatmessage.service;
+package nbc.devmountain.domain.chat.chatmessage.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,16 +9,18 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.chat.model.ChatRoom;
-import nbc.devmountain.domain.chat.model.chatmessage.dto.response.ChatMessageResponse;
-import nbc.devmountain.domain.chat.model.chatmessage.repository.ChatMessageRepository;
-import nbc.devmountain.domain.chat.model.chatroom.repository.ChatRoomRepository;
+import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
+import nbc.devmountain.domain.chat.chatmessage.repository.ChatMessageRepository;
+import nbc.devmountain.domain.chat.chatroom.repository.ChatRoomRepository;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ChatMessageService {
 
 	private final ChatMessageRepository chatMessageRepository;
@@ -27,6 +29,13 @@ public class ChatMessageService {
 
 	@Transactional
 	public ChatMessageResponse createMessage(Long userId, Long chatRoomId, String message) {
+
+		if (message == null || message.trim().isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "메시지 내용이 비어있습니다.");
+		}
+		if (message.length() > 1000) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "메시지가 너무 깁니다. (최대 1000자)");
+		}
 
 		User user = userRepository.findById(userId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -60,8 +69,8 @@ public class ChatMessageService {
 			.message(message)
 			.isAiResponse(true)
 			.build();
-
 		chatRoom.addMessages(aiChatMessage);
+		log.info("메세지 생성 완료");
 		return ChatMessageResponse.from(chatMessageRepository.save(aiChatMessage));
 	}
 

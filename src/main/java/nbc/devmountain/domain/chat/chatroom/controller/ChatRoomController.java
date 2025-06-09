@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat.model.chatroom.controller;
+package nbc.devmountain.domain.chat.chatroom.controller;
 
 import java.util.List;
 
@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.response.ApiResponse;
-import nbc.devmountain.domain.chat.model.chatroom.dto.request.ChatRoomRequest;
-import nbc.devmountain.domain.chat.model.chatroom.dto.response.ChatRoomDetailResponse;
-import nbc.devmountain.domain.chat.model.chatroom.dto.response.ChatRoomResponse;
-import nbc.devmountain.domain.chat.model.chatroom.service.ChatRoomService;
-import nbc.devmountain.domain.user.model.User;
+import nbc.devmountain.common.util.security.CustomUserPrincipal;
+import nbc.devmountain.domain.chat.chatroom.dto.request.ChatRoomRequest;
+import nbc.devmountain.domain.chat.chatroom.dto.response.ChatRoomDetailResponse;
+import nbc.devmountain.domain.chat.chatroom.dto.response.ChatRoomResponse;
+import nbc.devmountain.domain.chat.chatroom.service.ChatRoomService;
 
 @RestController
 @RequestMapping("/chatrooms")
@@ -31,29 +31,29 @@ public class ChatRoomController {
 
 	@PostMapping
 	public ResponseEntity<ApiResponse<ChatRoomResponse>> createChatRoom(
-		@AuthenticationPrincipal User user,
+		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
 		@RequestBody ChatRoomRequest request) {
 
-		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(user, request.chatroomName());
+		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(customUserPrincipal.getUserId(), request.chatroomName());
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 생성 성공", HttpStatus.CREATED.value(), chatRoom));
 	}
 
 	@GetMapping
 	public ResponseEntity<ApiResponse<List<ChatRoomResponse>>> findAllChatRooms(
-		@AuthenticationPrincipal User user) {
+		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal) {
 
-		List<ChatRoomResponse> chatRooms = chatRoomService.findAllChatRooms(user);
+		List<ChatRoomResponse> chatRooms = chatRoomService.findAllChatRooms(customUserPrincipal.getUserId());
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 목록 조회", HttpStatus.OK.value(), chatRooms));
 	}
 
 	@GetMapping("/{chatroomId}")
 	public ResponseEntity<ApiResponse<ChatRoomDetailResponse>> findChatRoom(
-		@AuthenticationPrincipal User user,
+		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
 		@PathVariable Long chatroomId) {
 
-		ChatRoomDetailResponse chatRoom = chatRoomService.findChatRoom(user, chatroomId);
+		ChatRoomDetailResponse chatRoom = chatRoomService.findChatRoom(customUserPrincipal.getUserId(), chatroomId);
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 상세 조회", HttpStatus.OK.value(), chatRoom));
 	}
@@ -61,10 +61,10 @@ public class ChatRoomController {
 	@PatchMapping("/{chatroomId}")
 	public ResponseEntity<ApiResponse<ChatRoomResponse>> updateChatRoomName(
 		@PathVariable Long chatroomId,
-		@AuthenticationPrincipal User user,
+		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
 		@RequestBody ChatRoomRequest request) {
 
-		ChatRoomResponse response = chatRoomService.updateChatRoomName(user, chatroomId,
+		ChatRoomResponse response = chatRoomService.updateChatRoomName(customUserPrincipal.getUserId(), chatroomId,
 			request.chatroomName());
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 이름 수정 완료", HttpStatus.OK.value(), response));
@@ -73,9 +73,9 @@ public class ChatRoomController {
 	@DeleteMapping("/{chatroomId}")
 	public ResponseEntity<ApiResponse<Void>> deleteChatRoom(
 		@PathVariable Long chatroomId,
-		@AuthenticationPrincipal User user) {
+		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal) {
 
-		chatRoomService.deleteChatRoom(user, chatroomId);
+		chatRoomService.deleteChatRoom(customUserPrincipal.getUserId(), chatroomId);
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방이 삭제되었습니다.", HttpStatus.OK.value(), null)
 		);
