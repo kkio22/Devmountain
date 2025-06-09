@@ -4,7 +4,6 @@ import java.util.List;
 
 public record Metadata(
 	String levelCode,
-	List<CategoryDto> categories
-
+	List<SkillTags> skillTags
 ) {
 }

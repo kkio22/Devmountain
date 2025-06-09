@@ -1,9 +1,9 @@
 package nbc.devmountain.domain.lecture.dto;
 
-public record CategoryDto(
+public record SkillTags(
 	int id,
 	String title,
-	String slug,
-	CategoryDto parent
+	String slug
+
 ) {
 }
