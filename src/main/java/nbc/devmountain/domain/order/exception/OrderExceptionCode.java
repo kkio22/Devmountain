@@ -4,8 +4,8 @@ import nbc.devmountain.common.exception.ExceptionCode;
 import org.springframework.http.HttpStatus;
 
 public enum OrderExceptionCode implements ExceptionCode {
-    ORDER_NOT_FOUND("ORDER_404", "주문 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
-    USER_NOT_FOUND("USER_404", "유저 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value());
+    ORDER_NOT_FOUND("404", "주문 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value()),
+    USER_NOT_FOUND("404", "유저 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND.value());
 
     private final String error;
     private final String message;
