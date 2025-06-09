@@ -29,5 +29,11 @@ public class UserCategory {
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+    @Builder
+    public UserCategory(User user, Category category) {
+        this.user = user;
+        this.category = category;
+    }
 }
 
