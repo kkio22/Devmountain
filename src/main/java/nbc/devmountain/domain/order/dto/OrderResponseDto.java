@@ -6,7 +6,7 @@ import nbc.devmountain.domain.order.model.OrderStatus;
 import java.time.LocalDateTime;
 
 public record OrderResponseDto(
-        Long orderId,
+        String orderId,
         String userEmail,
         Integer price,
         OrderStatus status,
@@ -14,7 +14,7 @@ public record OrderResponseDto(
 ) {
     public static OrderResponseDto from(Order order) {
         return new OrderResponseDto(
-                order.getOrderID(),
+                "ORDER_"+ order.getId(),
                 order.getUser().getEmail(),
                 order.getPrice(),
                 order.getStatus(),

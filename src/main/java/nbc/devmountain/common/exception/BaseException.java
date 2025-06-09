@@ -1,12 +1,23 @@
 package nbc.devmountain.common.exception;
 
-import org.springframework.http.HttpStatus;
+import lombok.Getter;
 
+@Getter
 public abstract class BaseException extends RuntimeException {
 
-    public abstract HttpStatus getStatus();
+    private final ExceptionCode exceptionCode;
 
-    public abstract String getMessage();
+    protected BaseException(ExceptionCode exceptionCode) {
+        super(exceptionCode.getMessage());
+        this.exceptionCode = exceptionCode;
+    }
 
-    public abstract ExceptionCode getExceptionCode();
+    public int getStatus() {
+        return exceptionCode.getStatus();
+    }
+
+    @Override
+    public String getMessage() {
+        return exceptionCode.getMessage();
+    }
 }
