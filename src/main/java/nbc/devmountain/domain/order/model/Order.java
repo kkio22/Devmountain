@@ -1,5 +1,6 @@
 package nbc.devmountain.domain.order.model;
 
+import nbc.devmountain.domain.order.dto.OrderStatusUpdateDto;
 import nbc.devmountain.domain.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -18,7 +19,7 @@ public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long orderID;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userId")
@@ -43,8 +44,8 @@ public class Order {
         this.price = price;
     }
 
-    public enum OrderStatus {
-        SUCCESS, FAIL, REFUND
+    public void updateOrderStatus(OrderStatus status) {
+        this.status = status;
     }
 }
 
