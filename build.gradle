@@ -28,6 +28,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    // WebSocket
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
     // Thymeleaf (관리 UI 또는 테스트용)
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 

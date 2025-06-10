@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat.model.chatmessage.controller;
+package nbc.devmountain.domain.chat.chatmessage.controller;
 
 import java.util.List;
 
@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.response.ApiResponse;
-import nbc.devmountain.domain.chat.model.chatmessage.dto.request.ChatMessageRequest;
-import nbc.devmountain.domain.chat.model.chatmessage.dto.response.ChatMessageResponse;
-import nbc.devmountain.domain.chat.model.chatmessage.service.ChatMessageService;
-import nbc.devmountain.domain.user.model.User;
+import nbc.devmountain.common.util.security.CustomUserPrincipal;
+import nbc.devmountain.domain.chat.chatmessage.dto.request.ChatMessageRequest;
+import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
+import nbc.devmountain.domain.chat.chatmessage.service.ChatMessageService;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,15 +26,13 @@ public class ChatMessageController {
 
 	private final ChatMessageService chatMessageService;
 
-	//1)메세지 생성시 채팅방이 생성
-	//2)채팅방 id를 입력하고 채팅을 붙여나감
 	@PostMapping("/{chatroomId}/messages")
 	public ResponseEntity<ApiResponse<ChatMessageResponse>> createMessage(
 		@PathVariable Long chatroomId,
-		@AuthenticationPrincipal User user,
+		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
 		@RequestBody ChatMessageRequest request){
 
-		ChatMessageResponse message = chatMessageService.createMessage(user.getUserId(), chatroomId, request.getMessage());
+		ChatMessageResponse message = chatMessageService.createMessage(customUserPrincipal.getUserId(), chatroomId, request.message());
 		return ResponseEntity.ok(
 			ApiResponse.of(true,"메세지 생성", HttpStatus.OK.value(), message));
 	}
@@ -42,9 +40,9 @@ public class ChatMessageController {
 	@GetMapping("/{chatroomId}/messages")
 	public ResponseEntity<ApiResponse<List<ChatMessageResponse>>> getMessages(
 		@PathVariable Long chatroomId,
-		@AuthenticationPrincipal User user){
+		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal){
 
-		List<ChatMessageResponse> messages = chatMessageService.getMessages(user.getUserId(), chatroomId);
+		List<ChatMessageResponse> messages = chatMessageService.getMessages(customUserPrincipal.getUserId(), chatroomId);
 		return ResponseEntity.ok(
 			ApiResponse.of(true,"채팅방 메세지조회",HttpStatus.OK.value(), messages));
 
