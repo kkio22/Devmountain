@@ -4,6 +4,10 @@ plugins {
     id 'io.spring.dependency-management' version "${springDependencyManagementVersion}"
 }
 
+ext {
+    springAiVersion = "1.0.0"
+}
+
 group = "${projectGroup}"
 version = "${applicationVersion}"
 
@@ -53,15 +57,24 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // AI API 적용
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter:0.8.0'
-    implementation 'org.springframework.ai:spring-ai-core:0.8.0' // EmbeddingModel 에러 해결하기 위해 사용 -> 근데 지금 적용이 안되고있음...
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+//    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter:0.8.0'
+//    implementation 'org.springframework.ai:spring-ai-core:0.8.0' // EmbeddingModel 에러 해결하기 위해 사용 -> 근데 지금 적용이 안되고있음...
     // implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter:0.8.0'  // pgvector
+
+
 }
 
 bootJar {
     enabled = true
     archiveFileName = 'app.jar' // Dockerfile에서 COPY app.jar 와 일치하게
     mainClass = 'nbc.devmountain.MountainApplication'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
+    }
 }
 
 tasks.named('test') {
