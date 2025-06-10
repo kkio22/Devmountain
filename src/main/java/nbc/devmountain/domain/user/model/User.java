@@ -30,7 +30,7 @@ import nbc.devmountain.domain.category.model.UserCategory;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@Table(name = "User")
+@Table(name = "Users")
 @EntityListeners(AuditingEntityListener.class)
 public class User {
 
