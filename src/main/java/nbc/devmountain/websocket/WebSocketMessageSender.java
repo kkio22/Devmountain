@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nbc.devmountain.domain.chat.model.chatmessage.dto.response.ChatMessageResponse;
+import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
 
 @Component
 @Slf4j

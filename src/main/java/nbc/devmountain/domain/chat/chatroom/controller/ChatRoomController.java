@@ -34,7 +34,8 @@ public class ChatRoomController {
 		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
 		@RequestBody ChatRoomRequest request) {
 
-		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(customUserPrincipal.getUserId(), request.chatroomName());
+		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(customUserPrincipal.getUserId(),
+			request.chatroomName());
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 생성 성공", HttpStatus.CREATED.value(), chatRoom));
 	}

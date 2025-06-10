@@ -26,8 +26,6 @@ public class ChatMessageController {
 
 	private final ChatMessageService chatMessageService;
 
-	//1)메세지 생성시 채팅방이 생성
-	//2)채팅방 id를 입력하고 채팅을 붙여나감
 	@PostMapping("/{chatroomId}/messages")
 	public ResponseEntity<ApiResponse<ChatMessageResponse>> createMessage(
 		@PathVariable Long chatroomId,

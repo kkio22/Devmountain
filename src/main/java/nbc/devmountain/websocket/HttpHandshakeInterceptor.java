@@ -2,40 +2,51 @@ package nbc.devmountain.websocket;
 
 import java.util.Map;
 
+import org.hibernate.annotations.Comment;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nbc.devmountain.common.util.security.SessionUser;
 import nbc.devmountain.domain.user.model.User;
+import nbc.devmountain.domain.user.repository.UserRepository;
 
+@RequiredArgsConstructor
+@Component
+@Slf4j
 public class HttpHandshakeInterceptor implements HandshakeInterceptor {
 
 	@Override
-	public boolean beforeHandshake(ServerHttpRequest request,
-		ServerHttpResponse response,
-		WebSocketHandler wsHandler,
-		Map<String, Object> attributes) throws Exception {
+	public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
+		WebSocketHandler wsHandler, Map<String, Object> attributes) throws Exception {
 
-		HttpSession session = ((ServletServerHttpRequest)request).getServletRequest().getSession(false);
+		HttpServletRequest servletRequest = ((ServletServerHttpRequest)request).getServletRequest();
+		HttpSession httpSession = servletRequest.getSession(false);
 
-		if (session != null) { //로그인 후 세션이 있음
-			User user = (User)session.getAttribute("LOGIN_USER");
-
-			if (user != null) {
-				attributes.put("user", user);
-				attributes.put("userId", user.getUserId());
-				String userType = getUserType(user.getMembershipLevel());
-				attributes.put("userType", userType);
+		if (httpSession != null) {
+			SessionUser sessionUser = (SessionUser)httpSession.getAttribute("user");
+			if (sessionUser != null) {
+				attributes.put("user", sessionUser);
+				attributes.put("isLoggedIn", true);
+				log.info("웹소켓 연결 - 로그인 사용자: {}", sessionUser.getUserId());
 			} else {
-				// 비로그인 유저
-				setGuestAttributes(attributes);
+				// 비로그인 사용자 (세션은 있지만 로그인 정보 없음)
+				attributes.put("user", null);
+				attributes.put("isLoggedIn", false);
+				log.info("웹소켓 연결 - 비로그인 사용자 (세션 있음)");
 			}
 		} else {
-			//세션이 없는 비로그인 유저인경우
-			setGuestAttributes(attributes);
+			// 세션 없는 비회원 사용자
+			attributes.put("user", null);
+			attributes.put("isLoggedIn", false);
+			log.info("웹소켓 연결 - 비회원 사용자 (세션 없음)");
 		}
 
 		return true;
@@ -44,22 +55,5 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
 	@Override
 	public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler wsHandler,
 		Exception exception) {
-	}
-
-	private String getUserType(User.MembershipLevel membershipLevel) {
-		if (membershipLevel == null) {
-			return "GUEST";
-		}
-		return switch (membershipLevel) {
-			case FREE -> "FREE";
-			case PRO -> "PRO";
-		};
-	}
-
-	private void setGuestAttributes(Map<String, Object> attributes) {
-		attributes.put("userType", "GUEST");
-		attributes.put("chatCount", 0);
-		attributes.put("user", null);
-		attributes.put("userId", null);
 	}
 }

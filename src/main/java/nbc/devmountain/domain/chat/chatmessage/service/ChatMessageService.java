@@ -36,6 +36,7 @@ public class ChatMessageService {
 		if (message.length() > 1000) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "메시지가 너무 깁니다. (최대 1000자)");
 		}
+		//삭제된 채팅방은 메세지입력 x
 
 		User user = userRepository.findById(userId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -71,6 +72,7 @@ public class ChatMessageService {
 			.build();
 		chatRoom.addMessages(aiChatMessage);
 		log.info("메세지 생성 완료");
+
 		return ChatMessageResponse.from(chatMessageRepository.save(aiChatMessage));
 	}
 
