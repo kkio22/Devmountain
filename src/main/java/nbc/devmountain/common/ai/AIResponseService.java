@@ -1,4 +1,4 @@
-package nbc.devmountain.websocket.service;
+package nbc.devmountain.common.ai;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.util.security.SessionUser;
 import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
 import nbc.devmountain.domain.chat.chatmessage.service.ChatMessageService;
-import nbc.devmountain.domain.lecture.service.LectureRecommendationService;
+import nbc.devmountain.domain.recommendation.service.RecommendationService;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 
@@ -20,16 +20,14 @@ public class AIResponseService {
 	private final UserRepository userRepository;
 	private final ChatMessageService chatMessageService;
 	private final ChatGPTService chatGPTService;
-	private final LectureRecommendationService lectureRecommendationService;
+	private final RecommendationService recommendationService;
 
 	public ChatMessageResponse processChat(SessionUser sessionUser, Long roomId, String userInput) {
-		// 강의 추천 생성
 		User user = userRepository.findById(sessionUser.getUserId())
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
 		List<ChatMessageResponse> conversationHistory =
 			chatMessageService.getMessages(sessionUser.getUserId(), roomId);
-
 		String aiResponse = chatGPTService.generateResponse(
 			buildSystemPrompt(user),
 			conversationHistory,
@@ -38,29 +36,29 @@ public class AIResponseService {
 		//강의 추천 답변이오면
 		if (aiResponse.startsWith("RECOMMEND_COURSES:")) {
 			String requirements = aiResponse.substring("RECOMMEND_COURSES:".length()).trim();
-			String recResult = lectureRecommendationService.generateRecommendation(user, requirements);
+			String recResult = recommendationService.generateRecommendation(requirements);
 
+			// AI 응답 저장
 			return chatMessageService.createAIMessage(roomId, recResult);
 		}
-
 		// AI 응답 저장
 		return chatMessageService.createAIMessage(roomId, aiResponse);
 
 	}
 
+	//비로그인 유저
 	public ChatMessageResponse processGuestChat(Long roomId, String message) {
-
+		//
 		String aiResponse = chatGPTService.generateGuestResponse(message);
 
 		if (aiResponse.startsWith("RECOMMEND_COURSES:")) {
 			String requirements = aiResponse.substring("RECOMMEND_COURSES:".length()).trim();
 
 			// 비회원용 일반적인 강의 추천
-			String guestRecommendation = lectureRecommendationService
-				.generateGuestRecommendation(requirements);
+			String recResult = recommendationService.generateRecommendation(requirements);
 
 			return ChatMessageResponse.builder()
-				.message(guestRecommendation)
+				.message(recResult)
 				.isAiResponse(true)
 				.build();
 		}
@@ -88,13 +86,5 @@ public class AIResponseService {
 
 		return prompt.toString();
 	}
-	//비로그인 유저
-	private String buildGuestSystemPrompt() {
-		return "당신은 온라인 강의 플랫폼의 AI 상담사입니다. " +
-			"현재 사용자는 비회원입니다. " +
-			"간단한 질문에 답변하고, 강의 추천 요청이 있으면 " +
-			"'RECOMMEND_COURSES: [요구사항]' 형식으로 응답하세요. " +
-			"더 자세한 상담과 개인 맞춤 추천을 받으려면 로그인이 필요하다는 것을 " +
-			"자연스럽게 안내하세요.";
-	}
+
 }

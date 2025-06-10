@@ -1,4 +1,4 @@
-package nbc.devmountain.websocket.service;
+package nbc.devmountain.common.ai;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,9 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
 

@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.lecture.service;
+package nbc.devmountain.domain.recommendation.service;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,23 +12,22 @@ import nbc.devmountain.domain.user.model.User;
 
 @Service
 @RequiredArgsConstructor
-public class LectureRecommendationService {
+public class RecommendationService {
 
 	private final LectureRepository lectureRepository;
 
-
-	public String generateRecommendation(User user,String userInput) {
+	public String generateRecommendation(String userInput) {
 		// 강의 데이터 조회
 		List<Lecture> lectures = lectureRepository.findRelevantLectures(userInput);
 
-		// 강의 추천 텍스트 생성
+		if (lectures.isEmpty()) {
+			return "해당 조건에 맞는 추천 강의가 없습니다.";
+		}
+
 		return "**AI 추천 강의 목록:**\n"
 			+ lectures.stream()
 			.limit(3)
-			.map(l -> "- " + l.getName())
+			.map(l -> "- " + l.getTitle())
 			.collect(Collectors.joining("\n"));
-	}
-
-	public String generateGuestRecommendation(String requirements) {
 	}
 }

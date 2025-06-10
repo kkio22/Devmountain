@@ -1,4 +1,4 @@
-package nbc.devmountain.websocket;
+package nbc.devmountain.domain.chat.websocket;
 
 import java.util.List;
 import java.util.Map;
@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.SessionUser;
 import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
 import nbc.devmountain.domain.chat.chatmessage.service.ChatMessageService;
-import nbc.devmountain.websocket.service.AIResponseService;
+import nbc.devmountain.common.ai.AIResponseService;
 
 @Component
 @RequiredArgsConstructor
@@ -66,7 +66,6 @@ public class ChatHandler extends TextWebSocketHandler {
 		Boolean isLoggedIn = (Boolean)session.getAttributes().get("isLoggedIn");
 		Long roomId = getRoomId(session);
 		String payload = message.getPayload();
-
 
 		if (isLoggedIn) {
 			//사용자 메세지저장
@@ -118,7 +117,6 @@ public class ChatHandler extends TextWebSocketHandler {
 		String[] params = query.split("=");
 		return Long.parseLong(params[1]);
 	}
-
 
 	private boolean exceededGuestLimit(WebSocketSession session) {
 		Map<String, Object> attrs = session.getAttributes();

@@ -1,8 +1,7 @@
-package nbc.devmountain.websocket;
+package nbc.devmountain.domain.chat.websocket;
 
 import java.util.Map;
 
-import org.hibernate.annotations.Comment;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -15,8 +14,6 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.SessionUser;
-import nbc.devmountain.domain.user.model.User;
-import nbc.devmountain.domain.user.repository.UserRepository;
 
 @RequiredArgsConstructor
 @Component

@@ -1,4 +1,4 @@
-package nbc.devmountain.websocket;
+package nbc.devmountain.domain.chat.websocket;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
