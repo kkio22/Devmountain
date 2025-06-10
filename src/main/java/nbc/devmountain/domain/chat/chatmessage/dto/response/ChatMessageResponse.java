@@ -18,7 +18,7 @@ public record ChatMessageResponse(Long chatroomId,
 		return ChatMessageResponse.builder()
 			.chatId(chatMessage.getChatId())
 			.chatroomId(chatMessage.getChatRoom().getChatroomId())
-			.userId(chatMessage.getUser().getUserId())
+			.userId(chatMessage.getUser()== null ? null : chatMessage.getUser().getUserId())
 			.message(chatMessage.getMessage())
 			.isAiResponse(chatMessage.getIsAiResponse())
 			.createdAt(chatMessage.getCreatedAt())
