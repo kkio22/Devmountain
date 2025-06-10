@@ -58,10 +58,6 @@ dependencies {
 
     // AI API 적용
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
-//    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter:0.8.0'
-//    implementation 'org.springframework.ai:spring-ai-core:0.8.0' // EmbeddingModel 에러 해결하기 위해 사용 -> 근데 지금 적용이 안되고있음...
-    // implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter:0.8.0'  // pgvector
-
 
 }
 
