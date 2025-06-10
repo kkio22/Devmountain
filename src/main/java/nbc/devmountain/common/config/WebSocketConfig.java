@@ -1,4 +1,4 @@
-package nbc.devmountain.websocket;
+package nbc.devmountain.common.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -6,6 +6,8 @@ import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 import lombok.RequiredArgsConstructor;
+import nbc.devmountain.domain.chat.websocket.ChatHandler;
+import nbc.devmountain.domain.chat.websocket.HttpHandshakeInterceptor;
 
 @Configuration
 @EnableWebSocket

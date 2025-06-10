@@ -1,4 +1,4 @@
-package nbc.devmountain.websocket;
+package nbc.devmountain.domain.chat.websocket;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
