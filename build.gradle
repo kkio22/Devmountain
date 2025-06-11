@@ -3,6 +3,9 @@ plugins {
     id 'org.springframework.boot' version "${springBootVersion}"
     id 'io.spring.dependency-management' version "${springDependencyManagementVersion}"
 }
+ext {
+    springAiVersion = "1.0.0"
+}
 
 group = "${projectGroup}"
 version = "${applicationVersion}"
@@ -22,6 +25,7 @@ configurations {
 repositories {
     mavenCentral()
 }
+
 
 dependencies {
     // Spring Web + Validation
@@ -50,12 +54,28 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     testImplementation 'org.testcontainers:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    //PostgreSQL + pgvector
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.testcontainers:postgresql'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+
+    //Spring AI
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+
 }
+
+
 
 bootJar {
     enabled = true
     archiveFileName = 'app.jar' // Dockerfile에서 COPY app.jar 와 일치하게
     mainClass = 'nbc.devmountain.MountainApplication'
+}
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
+    }
 }
 
 tasks.named('test') {
