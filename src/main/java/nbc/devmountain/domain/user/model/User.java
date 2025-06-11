@@ -30,7 +30,7 @@ import nbc.devmountain.domain.category.model.UserCategory;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-@Table(name = "User")
+@Table(name = "Users")
 @EntityListeners(AuditingEntityListener.class)
 public class User {
 
@@ -101,6 +101,10 @@ public class User {
     public void updateCategories(List<UserCategory> newCategories) {
         this.userCategory.clear();
         this.userCategory.addAll(newCategories);
+    }
+
+    public void updateMembershipLevel(MembershipLevel membershipLevel) {
+        this.membershipLevel = membershipLevel;
     }
 
 

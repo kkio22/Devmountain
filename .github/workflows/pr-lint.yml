@@ -1,0 +1,33 @@
+name: CI - PR Lint & Test
+
+on:
+  pull_request:
+    branches:
+      - "main"
+      - "dev"
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'corretto'
+
+      - name: Lint (Spotless)
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: spotlessCheck
+
+      - name: Run Tests
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: test
