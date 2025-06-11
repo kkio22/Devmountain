@@ -73,6 +73,9 @@ public class PaymentService {
         if (response.isSuccessful()) {
             user.updateMembershipLevel(User.MembershipLevel.PRO);
             userRepository.save(user);
+
+            order.updateOrderStatus(OrderStatus.SUCCESS);
+            orderRepository.save(order);
         }
 
         paymentRepository.save(Payment.builder()
