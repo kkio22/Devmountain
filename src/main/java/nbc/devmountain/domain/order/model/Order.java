@@ -21,6 +21,9 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "order_id", unique = true, nullable = false)
+    private String orderId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userId")
     private User user;
@@ -38,10 +41,11 @@ public class Order {
     private LocalDateTime updatedAt;
 
     @Builder
-    public Order(User user, OrderStatus status, Integer price) {
+    public Order(User user, String orderId, Integer price, OrderStatus status) {
         this.user = user;
-        this.status = status;
+        this.orderId = orderId;
         this.price = price;
+        this.status = status;
     }
 
     public void updateOrderStatus(OrderStatus status) {
