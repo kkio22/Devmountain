@@ -14,7 +14,9 @@ import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.List;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -26,8 +28,12 @@ public class OrderService {
     public OrderResponseDto createOrder(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        String generatedOrderId = generateUniqueOrderId();
+
         Order order = Order.builder()
                 .user(user)
+                .orderId(generatedOrderId)
                 .price(FIXED_PRICE)
                 .status(OrderStatus.PENDING)
                 .build();
@@ -63,5 +69,25 @@ public class OrderService {
         }
 
         order.updateOrderStatus(dto.status());
+    }
+
+    private String generateOrderId() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder sb = new StringBuilder();
+        Random random = new SecureRandom();
+
+        for (int i = 0; i < 15; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+
+        return "ORDER_" + sb;
+    }
+
+    public String generateUniqueOrderId() {
+        String orderId;
+        do {
+            orderId = generateOrderId();
+        } while (orderRepository.existsByOrderId(orderId));
+        return orderId;
     }
 }

@@ -54,7 +54,7 @@ public class Payment {
     }
 
     public enum Method {
-        CARD, TRANSFER, PHONE
+        CARD, TRANSFER, PHONE, SIMPLE_PAYMENT
     }
 
     public enum Result {
