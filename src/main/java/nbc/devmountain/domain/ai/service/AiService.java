@@ -55,21 +55,48 @@ public class AiService {
 	private final ChatModel chatModel;
 	private final ObjectMapper objectMapper;
 
-	public AiRecommendationResponse getRecommendations(String message) {
+	public AiRecommendationResponse getRecommendations(String interest, String level, String goal) {
 		// 시스템 역할 정의 (AI에게 어떤 역할을 맡겼는지 설명)
 		SystemMessage systemMessage = new SystemMessage(
-			"너는 교육 큐레이터 AI야. 사용자의 요청에 맞춰 적절한 강의 3개를 추천해줘. " +
-				"각 강의는 title, url, level(초급/중급/고급)을 포함해야 해. 응답은 반드시 JSON 형식으로 해줘."
+			"너는 교육 큐레이터 AI야." +
+				"사용자의 관심사, 현재 수준, 학습 목표를 참고해서 적절한 강의 3개를 추천해줘." +
+				"각 강의는 title, url, level(초급/중급/고급)을 포함해야 해." +
+				"응답은 반드시 JSON 형식으로 해줘."
 		);
+		// 사용자 정보 입력 + 출력 형식
+		String userContext = String.format("""
+            사용자 정보:
+            - 관심사: %s
+            - 현재 수준: %s
+            - 학습 목표: %s
 
-		// 사용자 입력 + JSON 응답 템플릿 안내
-		UserMessage userMessage = new UserMessage(
-			message + "\n\n응답 형식 예시:\n" +
-				"{ \"recommendations\": [ { \"title\": \"...\", \"url\": \"...\", \"level\": \"초급\" } ] }"
-		);
+            응답 형식 예시:
+            {
+              "recommendations": [
+                {
+                  "title": "실전 자바 백엔드 개발",
+                  "url": "https://example.com/java-backend",
+                  "level": "중급"
+                },
+                {
+                  "title": "초보자를 위한 Spring Boot",
+                  "url": "https://example.com/spring-boot-basic",
+                  "level": "초급"
+                },
+                {
+                  "title": "고급 API 설계와 보안",
+                  "url": "https://example.com/api-design",
+                  "level": "고급"
+                }
+              ]
+            }
+            """, interest, level, goal);
 
+
+		UserMessage userMessage = new UserMessage(userContext);
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
+		// LLM 호출 (gpt-4o-mini 호출 call)
 		ChatResponse response = chatModel.call(prompt);
 		String aiJson = response.getResults()
 			.stream()
@@ -77,12 +104,11 @@ public class AiService {
 			.map(result -> result.getOutput().getText())
 			.orElseThrow(() -> new RuntimeException("AI 응답이 없습니다."));
 
+		// 결과를 DTO로 파싱
 		try {
 			return objectMapper.readValue(aiJson, AiRecommendationResponse.class);
 		} catch (Exception e) {
 			throw new RuntimeException("AI 응답 파싱 실패: " + aiJson, e);
 		}
 	}
-
-
 }
