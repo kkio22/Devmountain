@@ -71,10 +71,7 @@ public class PaymentService {
         boolean isSuccess = response.isSuccessful();
 
         if (response.isSuccessful()) {
-            user.updateMembershipLevel(User.MembershipLevel.PRO);
-            userRepository.save(user);
-
-            order.updateOrderStatus(OrderStatus.SUCCESS);
+            order.updateOrderStatus(OrderStatus.PAID);
             orderRepository.save(order);
         }
 
@@ -87,6 +84,13 @@ public class PaymentService {
                 .membershipLevelChangedTo(isSuccess ? Payment.MembershipLevel.PRO : null)
                 .build());
 
+        if (response.isSuccessful()) {
+            user.updateMembershipLevel(User.MembershipLevel.PRO);
+            userRepository.save(user);
+
+            order.updateOrderStatus(OrderStatus.SUCCESS);
+            orderRepository.save(order);
+        }
         return response;
     }
 
