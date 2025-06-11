@@ -1,19 +1,19 @@
 package nbc.devmountain.domain.lecture.model;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 import lombok.*;
+import nbc.devmountain.common.config.EmbeddingConverter;
 
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 
 @Entity
 @Table(name = "lecture")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(of = "itemId")
 @EntityListeners(AuditingEntityListener.class)
 public class Lecture {
 	@Id
@@ -36,11 +36,18 @@ public class Lecture {
 	private BigDecimal regularPrice;
 	private boolean isFree;
 	private BigDecimal discountRate;
+	@Column(nullable = false)
+	private LocalDateTime crawledAt;
 
+	@Convert(converter = EmbeddingConverter.class)
+	@Column(columnDefinition = "TEXT")
+	private float[] lectureEmbedding;
 
 	@Builder
-	public Lecture(int itemId, String thumbnailUrl, String title, String instructor, String description, int reviewCount,
-		int studentCount, int likeCount, double star, String levelCode, boolean isDiscount, BigDecimal payPrice, BigDecimal regularPrice, boolean isFree, BigDecimal discountRate) {
+	public Lecture(int itemId, String thumbnailUrl, String title, String instructor, String description,
+		int reviewCount,
+		int studentCount, int likeCount, double star, String levelCode, boolean isDiscount, BigDecimal payPrice,
+		BigDecimal regularPrice, boolean isFree, BigDecimal discountRate, LocalDateTime crawledAt) {
 		this.itemId = itemId;
 		this.thumbnailUrl = thumbnailUrl;
 		this.title = title;
@@ -55,8 +62,13 @@ public class Lecture {
 		this.payPrice = payPrice;
 		this.regularPrice = regularPrice;
 		this.isFree = isFree;
-		this.discountRate =discountRate;
+		this.discountRate = discountRate;
+		this.crawledAt = crawledAt;
 
+	}
+
+	public void setLectureEmbedding(float[] lectureEmbedding) {
+		this.lectureEmbedding = lectureEmbedding;
 	}
 
 }

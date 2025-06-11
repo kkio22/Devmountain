@@ -1,6 +1,8 @@
 package nbc.devmountain.domain.lecture.service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +11,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.lecture.client.LectureClient;
 import nbc.devmountain.domain.lecture.dto.InflearnResponse;
 import nbc.devmountain.domain.lecture.dto.Item;
@@ -19,6 +22,7 @@ import nbc.devmountain.domain.lecture.repository.SkillTagRepository;
 import nbc.devmountain.domain.lecture.repository.LectureSkillTagRepository;
 import nbc.devmountain.domain.lecture.repository.LectureRepository;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LectureService {
@@ -36,13 +40,19 @@ public class LectureService {
 			InflearnResponse page = lectureClient.getLecture(i);
 
 			savePage(page);
+
 		}
+
+		LocalDateTime startDate = LocalDate.now().atStartOfDay();
+
+		lectureRepository.deleteByCrawledAtBefore(startDate);
 
 	}
 
-
 	private void savePage(InflearnResponse page) {
+
 		List<Lecture> lectures = new ArrayList<>();
+
 		Map<Lecture, List<SkillTag>> lectureSkillTagMap = new HashMap<>();
 
 		for (Item item : page.data().items()) {
@@ -63,18 +73,18 @@ public class LectureService {
 				.regularPrice(BigDecimal.valueOf(item.listPrice().regularPrice()))
 				.isFree(item.listPrice().isFree())
 				.discountRate(BigDecimal.valueOf(item.listPrice().discountRate()))
+				.crawledAt(LocalDateTime.now())
 				.build();
 
 			lectures.add(lecture);
-
 
 			List<SkillTag> tags = item.course().metadata().skillTags().stream()
 				.map(tag -> findOrCreateSkillTag(tag.title()))
 				.toList();
 
 			lectureSkillTagMap.put(lecture, tags);
-		}
 
+		}
 
 		List<Lecture> savedLectures = lectureRepository.saveAll(lectures);
 
@@ -89,8 +99,8 @@ public class LectureService {
 		}
 
 		lectureSkillTagRepository.saveAll(lectureSkillTags);
-	}
 
+	}
 
 	private SkillTag findOrCreateSkillTag(String title) {
 		return skillTagRepository.findByTitle(title)
