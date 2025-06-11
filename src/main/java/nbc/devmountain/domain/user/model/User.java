@@ -103,6 +103,10 @@ public class User {
         this.userCategory.addAll(newCategories);
     }
 
+    public void updateMembershipLevel(MembershipLevel membershipLevel) {
+        this.membershipLevel = membershipLevel;
+    }
+
 
     public enum LoginType {
         GOOGLE, KAKAO, NAVER, EMAIL, APPLE
