@@ -1,0 +1,61 @@
+name: CD - Deploy to EC2
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.DOTENV_FILE }}" > .env
+
+      - name: Create application-prod.yml
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION_PROD_YML }}" > src/main/resources/application-prod.yml
+
+      - name: Set up SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/devmountain-key.pem
+          chmod 600 ~/.ssh/devmountain-key.pem
+
+      - name: Git pull on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/devmountain-key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/devmountain
+            git reset --hard HEAD  # 로컬 변경사항 초기화
+            git clean -fd          # 추적되지 않은 파일 제거
+            git pull origin main
+          EOF
+
+      - name: Copy .env to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/devmountain-key.pem .env ubuntu@${{ secrets.EC2_HOST }}:~/devmountain/.env
+
+      - name: Create directories on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/devmountain-key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            mkdir -p ~/devmountain/src/main/resources
+          EOF
+
+      - name: Copy application-prod.yml to EC2
+        run: |
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/devmountain-key.pem src/main/resources/application-prod.yml ubuntu@${{ secrets.EC2_HOST }}:~/devmountain/src/main/resources/application-prod.yml
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/devmountain-key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/devmountain
+            docker-compose down
+            ./gradlew build -x test
+            docker-compose up -d --build
+          EOF

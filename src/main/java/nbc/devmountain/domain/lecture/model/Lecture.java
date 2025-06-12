@@ -5,11 +5,11 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 import lombok.*;
-// import nbc.devmountain.common.config.EmbeddingConverter;
 
 import org.hibernate.annotations.Array;
 import org.hibernate.annotations.ColumnTransformer;
 import org.hibernate.annotations.JdbcTypeCode;
+
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -48,11 +48,11 @@ public class Lecture {
 	@Array(length = 1536)
 	@ColumnTransformer(
 		read = """
-         COALESCE(
-           lecture_embedding,
-           array_fill(0::float4, ARRAY[1536])::vector
-         )
-       """
+			  COALESCE(
+			    lecture_embedding,
+			    array_fill(0::float4, ARRAY[1536])::vector
+			  )
+			"""
 	)
 	private float[] lectureEmbedding;
 
@@ -87,4 +87,5 @@ public class Lecture {
 		this.lectureEmbedding = lectureEmbedding;
 		this.isEmbedded = true;
 	}
+
 }
