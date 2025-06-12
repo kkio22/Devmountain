@@ -1,28 +1,37 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: devmountain-mysql
-    ports:
-      - "${MYSQL_PORT}:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-    volumes:
-      - devmountain-mysql-volume:/var/lib/mysql
-    platform: linux/arm64
-    command:
-      [
-        "mysqld",
-        "--character-set-server=utf8mb4",
-        "--collation-server=utf8mb4_unicode_ci",
-        "--lower_case_table_names=1"
-      ]
-
   redis:
     image: redis:7.2
     container_name: devmountain-redis
     ports:
       - "${REDIS_PORT}:6379"
 
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: devmountain-postgres
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - devmountain-postgres-volume:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devmountain-app
+    ports:
+      - "${APP_PORT}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      REDIS_HOST: redis
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - redis
+      - postgres
+
 volumes:
-  devmountain-mysql-volume:
+  devmountain-postgres-volume:

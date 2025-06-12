@@ -1,37 +1,74 @@
 package nbc.devmountain.domain.lecture.model;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.*;
 import lombok.*;
+import nbc.devmountain.common.config.EmbeddingConverter;
+
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import nbc.devmountain.domain.category.model.*;
 
 @Entity
-@Table(name = "Lecture")
+@Table(name = "lecture")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(of = "itemId")
 @EntityListeners(AuditingEntityListener.class)
 public class Lecture {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long lectureId;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long lectureId; // DB pk
+	private int itemId;
+	@Column(columnDefinition = "TEXT")
+	private String thumbnailUrl;
+	private String title;
+	private String instructor;
+	@Column(columnDefinition = "TEXT")
+	private String description;
+	private int reviewCount;
+	private int studentCount;
+	private int likeCount;
+	private double star;
+	private String levelCode;
+	private boolean isDiscount;
+	private BigDecimal payPrice;
+	private BigDecimal regularPrice;
+	private boolean isFree;
+	private BigDecimal discountRate;
+	@Column(nullable = false)
+	private LocalDateTime crawledAt;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categoryId")
-    private Category category;
+	@Convert(converter = EmbeddingConverter.class)
+	@Column(columnDefinition = "TEXT")
+	private float[] lectureEmbedding;
 
-    private String name;
-    private String summary;
-    private String instructor;
-    private Float price;
-    private String lectureImage;
+	@Builder
+	public Lecture(int itemId, String thumbnailUrl, String title, String instructor, String description,
+		int reviewCount,
+		int studentCount, int likeCount, double star, String levelCode, boolean isDiscount, BigDecimal payPrice,
+		BigDecimal regularPrice, boolean isFree, BigDecimal discountRate, LocalDateTime crawledAt) {
+		this.itemId = itemId;
+		this.thumbnailUrl = thumbnailUrl;
+		this.title = title;
+		this.instructor = instructor;
+		this.description = description;
+		this.reviewCount = reviewCount;
+		this.studentCount = studentCount;
+		this.likeCount = likeCount;
+		this.star = star;
+		this.levelCode = levelCode;
+		this.isDiscount = isDiscount;
+		this.payPrice = payPrice;
+		this.regularPrice = regularPrice;
+		this.isFree = isFree;
+		this.discountRate = discountRate;
+		this.crawledAt = crawledAt;
 
-    @Builder
-    public Lecture(Category category, String name, String summary, String instructor, Float price, String lectureImage) {
-        this.category = category;
-        this.name = name;
-        this.summary = summary;
-        this.instructor = instructor;
-        this.price = price;
-        this.lectureImage = lectureImage;
-    }
+	}
+
+	public void setLectureEmbedding(float[] lectureEmbedding) {
+		this.lectureEmbedding = lectureEmbedding;
+	}
+
 }

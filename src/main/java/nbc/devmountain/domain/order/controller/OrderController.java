@@ -1,10 +1,11 @@
 package nbc.devmountain.domain.order.controller;
 
 import lombok.RequiredArgsConstructor;
+import nbc.devmountain.common.response.ApiResponse;
+import nbc.devmountain.common.util.security.CustomUserPrincipal;
 import nbc.devmountain.domain.order.dto.OrderResponseDto;
 import nbc.devmountain.domain.order.dto.OrderStatusUpdateDto;
 import nbc.devmountain.domain.order.service.OrderService;
-import nbc.devmountain.domain.user.model.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -18,24 +19,29 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderResponseDto> create(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(orderService.createOrder(user.getUserId()));
+    public ResponseEntity<ApiResponse<OrderResponseDto>> create(@AuthenticationPrincipal CustomUserPrincipal user) {
+        OrderResponseDto response = orderService.createOrder(user.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/me")
-    public ResponseEntity<List<OrderResponseDto>> getMyOrders(@AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(orderService.getOrdersByUser(user.getUserId()));
+    public ResponseEntity<ApiResponse<List<OrderResponseDto>>> getMyOrders(@AuthenticationPrincipal CustomUserPrincipal user) {
+        List<OrderResponseDto> response = orderService.getOrdersByUser(user.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<OrderResponseDto> getOrder(@PathVariable Long orderId) {
-        return ResponseEntity.ok(orderService.getOrderById(orderId));
+    public ResponseEntity<ApiResponse<OrderResponseDto>> getOrder(@PathVariable Long orderId,
+                                                                  @AuthenticationPrincipal CustomUserPrincipal user) {
+        OrderResponseDto response = orderService.getOrderById(orderId, user.getUserId());
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PatchMapping("/{orderId}")
-    public ResponseEntity<Void> updateStatus(@PathVariable Long orderId,
-                                             @RequestBody OrderStatusUpdateDto dto) {
-        orderService.updateOrderStatus(orderId, dto);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ApiResponse<Void>> updateStatus(@PathVariable Long orderId,
+                                                          @RequestBody OrderStatusUpdateDto dto,
+                                                          @AuthenticationPrincipal CustomUserPrincipal user) {
+        orderService.updateOrderStatus(orderId, dto, user.getUserId());
+        return ResponseEntity.ok(ApiResponse.success("주문 상태가 성공적으로 수정되었습니다.", 200));
     }
 }
