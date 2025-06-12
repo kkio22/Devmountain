@@ -41,6 +41,12 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no -i ~/.ssh/devmountain-key.pem .env ubuntu@${{ secrets.EC2_HOST }}:~/devmountain/.env
 
+      - name: Create directories on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/devmountain-key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            mkdir -p ~/devmountain/src/main/resources
+          EOF
+
       - name: Copy application-prod.yml to EC2
         run: |
           scp -o StrictHostKeyChecking=no -i ~/.ssh/devmountain-key.pem src/main/resources/application-prod.yml ubuntu@${{ secrets.EC2_HOST }}:~/devmountain/src/main/resources/application-prod.yml
