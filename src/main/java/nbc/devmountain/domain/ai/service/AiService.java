@@ -1,7 +1,5 @@
 package nbc.devmountain.domain.ai.service;
 
-import nbc.devmountain.domain.ai.dto.AiRecommendationResponse;
-
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -13,6 +11,8 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import nbc.devmountain.domain.ai.dto.AiRecommendationResponse;
 
 @Service
 @AllArgsConstructor
@@ -55,7 +55,7 @@ public class AiService {
 	private final ChatModel chatModel;
 	private final ObjectMapper objectMapper;
 
-	public AiRecommendationResponse getRecommendations(String interest, String level, String goal) {
+	public AiRecommendationResponse getRecommendations(String userContext, String lectureInfo, String goal) {
 		// 시스템 역할 정의 (AI에게 어떤 역할을 맡겼는지 설명)
 		SystemMessage systemMessage = new SystemMessage(
 			"너는 교육 큐레이터 AI야." +
@@ -64,37 +64,36 @@ public class AiService {
 				"응답은 반드시 JSON 형식으로 해줘."
 		);
 		// 사용자 정보 입력 + 출력 형식
-		String userContext = String.format("""
-            사용자 정보:
-            - 관심사: %s
-            - 현재 수준: %s
-            - 학습 목표: %s
+		String promptText = """
+			[사용자 정보]
+			%s
+			
+			[유사한 강의 정보]
+			%s
+			
+			응답 형식 예시:
+			{
+			  "recommendations": [
+			    {
+			      "title": "실전 자바 백엔드 개발",
+			      "url": "https://example.com/java-backend",
+			      "level": "중급"
+			    },
+			    {
+			      "title": "초보자를 위한 Spring Boot",
+			      "url": "https://example.com/spring-boot-basic",
+			      "level": "초급"
+			    },
+			    {
+			      "title": "고급 API 설계와 보안",
+			      "url": "https://example.com/api-design",
+			      "level": "고급"
+			    }
+			  ]
+			}
+			""".formatted(userContext, lectureInfo);
 
-            응답 형식 예시:
-            {
-              "recommendations": [
-                {
-                  "title": "실전 자바 백엔드 개발",
-                  "url": "https://example.com/java-backend",
-                  "level": "중급"
-                },
-                {
-                  "title": "초보자를 위한 Spring Boot",
-                  "url": "https://example.com/spring-boot-basic",
-                  "level": "초급"
-                },
-                {
-                  "title": "고급 API 설계와 보안",
-                  "url": "https://example.com/api-design",
-                  "level": "고급"
-                }
-              ]
-            }
-            """, interest, level, goal);
-
-
-		UserMessage userMessage = new UserMessage(userContext);
-		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
+		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 
 		// LLM 호출 (gpt-4o-mini 호출 call)
 		ChatResponse response = chatModel.call(prompt);
