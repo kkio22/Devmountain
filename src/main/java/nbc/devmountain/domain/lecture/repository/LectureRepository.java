@@ -20,4 +20,5 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
 
 	void deleteByCrawledAtBefore(LocalDateTime today);
 
+	@Query("SELECT l FROM Lecture l WHERE l.title LIKE %:keyword% OR l.description LIKE %:keyword%") List<Lecture> findRelevantLectures(@Param("keyword") String keyword);
 }
