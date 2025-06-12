@@ -64,6 +64,7 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.testcontainers:postgresql'
     implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+    implementation("org.hibernate.orm:hibernate-vector:6.4.0.Final")
 
     //Spring AI
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
