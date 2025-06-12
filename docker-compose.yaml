@@ -1,23 +1,4 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: devmountain-mysql
-    ports:
-      - "${MYSQL_PORT}:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-    volumes:
-      - devmountain-mysql-volume:/var/lib/mysql
-    platform: linux/arm64
-    command:
-      [
-        "mysqld",
-        "--character-set-server=utf8mb4",
-        "--collation-server=utf8mb4_unicode_ci",
-        "--lower_case_table_names=1"
-      ]
-
   redis:
     image: redis:7.2
     container_name: devmountain-redis
@@ -25,7 +6,7 @@ services:
       - "${REDIS_PORT}:6379"
 
   postgres:
-    image: postgres:15
+    image: ankane/pgvector:latest
     container_name: devmountain-postgres
     ports:
       - "${POSTGRES_PORT}:5432"
@@ -38,5 +19,4 @@ services:
 
 
 volumes:
-  devmountain-mysql-volume:
   devmountain-postgres-volume:

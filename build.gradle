@@ -3,7 +3,6 @@ plugins {
     id 'org.springframework.boot' version "${springBootVersion}"
     id 'io.spring.dependency-management' version "${springDependencyManagementVersion}"
 }
-
 ext {
     springAiVersion = "1.0.0"
 }
@@ -27,6 +26,7 @@ repositories {
     mavenCentral()
     maven { url 'https://repo.spring.io/milestone' }
 }
+
 
 dependencies {
     // Spring Web + Validation
@@ -62,20 +62,23 @@ dependencies {
     testImplementation 'org.testcontainers:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
-    // AI API 적용
+    //PostgreSQL + pgvector
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.testcontainers:postgresql'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+
+    //Spring AI
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 
-    implementation 'org.springframework.ai:spring-ai-pgvector-store' // PostgerSQL Vetor Store (Pgvector)
-
-
 }
+
+
 
 bootJar {
     enabled = true
     archiveFileName = 'app.jar' // Dockerfile에서 COPY app.jar 와 일치하게
     mainClass = 'nbc.devmountain.MountainApplication'
 }
-
 dependencyManagement {
     imports {
         mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
