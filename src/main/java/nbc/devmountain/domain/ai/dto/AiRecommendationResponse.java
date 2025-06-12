@@ -5,12 +5,6 @@ import java.util.List;
 
 public record AiRecommendationResponse(
 	String message,
-	List<Recommendation> recommendations
+	List<RecommendationDto> recommendations
 ) {}
 
-record Recommendation(
-	String title,
-	String url,
-	String level,
-	String thumbnailUrl
-) {}
