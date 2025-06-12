@@ -71,7 +71,7 @@ public class UserController {
 		if (sessionUser == null) {
 			return "세션에 유저 정보 없음";
 		}
-		System.out.println("OAuth2 로그인 사용자 이메일: " + sessionUser.getEmail());
+		// System.out.println("OAuth2 로그인 사용자 이메일: " + sessionUser.getEmail());
 		return "로그인 성공";
 	}
 
