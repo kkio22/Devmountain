@@ -12,8 +12,7 @@ import nbc.devmountain.domain.lecture.model.Lecture;
 @Repository
 public interface LectureRepository extends JpaRepository<Lecture, Long> {
 
-	List<Lecture> findByLectureEmbeddingIsNull();
-
 	void deleteByCrawledAtBefore(LocalDateTime today);
 
+	List<Lecture> findByIsEmbeddedFalse();
 }

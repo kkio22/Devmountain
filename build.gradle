@@ -24,7 +24,6 @@ configurations {
 
 repositories {
     mavenCentral()
-    maven { url 'https://repo.spring.io/milestone' }
 }
 
 
@@ -48,7 +47,6 @@ dependencies {
     implementation 'org.hibernate.orm:hibernate-core:6.4.4.Final' // Hibernate 6 이상일 경우
 
     // DB Driver
-    implementation 'com.mysql:mysql-connector-j:8.1.0'
     implementation 'org.postgresql:postgresql:42.7.3'
 
     // Spring Security

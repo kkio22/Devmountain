@@ -27,7 +27,7 @@ public class EmbeddingService {
 	public void embedLecture() {
 		log.info("embeddingModel class: {}", embeddingModel.getClass().getName());
 
-		List<Lecture> lectureList = lectureRepository.findByLectureEmbeddingIsNull();
+		List<Lecture> lectureList = lectureRepository.findByIsEmbeddedFalse();;
 		log.info("저장 대상 강의 수: {}", lectureList.size());
 
 		if (lectureList.isEmpty())

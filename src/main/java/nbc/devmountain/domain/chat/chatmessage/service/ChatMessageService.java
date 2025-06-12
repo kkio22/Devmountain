@@ -66,16 +66,15 @@ public class ChatMessageService {
 	}
 	@Transactional
 	public ChatMessageResponse createAIMessage(Long chatRoomId, AiRecommendationResponse aiResponse){
-
 		ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 		//AI응답 직렬화
 		try {
-			String aiResponseJson = objectMapper.writeValueAsString(aiResponse);
+			String recJson = objectMapper.writeValueAsString(aiResponse.recommendations());
 			ChatMessage aiChatMessage = ChatMessage.builder()
 				.chatRoom(chatRoom)
 				.user(null)
-				.message(aiResponseJson)
+				.message(recJson)
 				.isAiResponse(true)
 				.build();
 			chatRoom.addMessages(aiChatMessage);

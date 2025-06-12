@@ -1,6 +1,9 @@
 package nbc.devmountain.domain.ai.service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import lombok.AllArgsConstructor;
 
@@ -10,10 +13,14 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.dto.AiRecommendationResponse;
+import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.model.Recommendation;
 
 @Service
 @AllArgsConstructor
@@ -24,76 +31,65 @@ public class AiService {
 	private final ObjectMapper objectMapper;
 
 	public AiRecommendationResponse getRecommendations(String promptText) {
-		// 시스템 역할 정의 (AI에게 어떤 역할을 맡겼는지 설명)
 		SystemMessage systemMessage = new SystemMessage(
-			"너는 교육 큐레이터 AI야." +
-				"사용자의 관심사, 현재 수준, 학습 목표를 참고해서 적절한 강의 3개를 추천해줘." +
-				"각 강의는 title, url, level(초급/중급/고급)을 포함해야 해." +
-				"응답은 반드시 JSON 형식으로 해줘."+
-				"예시:\n" +
-				"{\n" +
-				"  \"recommendations\": [\n" +
-				"    {\"title\": \"스프링 입문\", \"url\": \"https://inflearn.com/spring\", \"level\": \"초급\", \"thumbnailUrl\": null },\n" +
-				"    ...\n" +
-				"  ]\n" +
-				"}"
+			"""
+			너는 주어진 정보를 바탕으로 강의를 추천하는 교육 큐레이터 AI야.
+			- 사용자의 질문과 제공된 '유사한 강의 정보'를 바탕으로 가장 적절한 강의를 최대 3개 추천해줘.
+			- 각 강의는 title, url, level, thumbnailUrl 을 포함해야 해.
+			- 응답은 반드시 JSON 형식으로만 해야하며, 절대로 JSON 객체 외의 다른 텍스트(예: 설명, 인사)를 포함하면 안돼.
+			- 만약 추천할 강의가 없다면, recommendations 배열을 비워서 보내줘. 예: {"recommendations": []}
+			- 응답 예시: {"recommendations": [{"title": "스프링 입문", "url": "https://inflearn.com/spring", "level": "초급", "thumbnailUrl": "some_url.jpg" }]}
+			"""
 		);
-		// 사용자 정보 입력 + 출력 형식
-		// String promptText = """
-		// 	[사용자 정보]
-		// 	%s
-		//
-		// 	[유사한 강의 정보]
-		// 	%s
-		//
-		// 	응답 형식 예시:
-		// 	{
-		// 	  "recommendations": [
-		// 	    {
-		// 	      "title": "실전 자바 백엔드 개발",
-		// 	      "url": "https://example.com/java-backend",
-		// 	      "level": "중급"
-		// 	    },
-		// 	    {
-		// 	      "title": "초보자를 위한 Spring Boot",
-		// 	      "url": "https://example.com/spring-boot-basic",
-		// 	      "level": "초급"
-		// 	    },
-		// 	    {
-		// 	      "title": "고급 API 설계와 보안",
-		// 	      "url": "https://example.com/api-design",
-		// 	      "level": "고급"
-		// 	    }
-		// 	  ]
-		// 	}
-		// 	""".formatted(userContext, lectureInfo);
 
-		Prompt prompt = new Prompt(List.of(
-			systemMessage,
-			new UserMessage(promptText)
-		));
+		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 		log.info("[AiService] 프롬프트 전송 >>>\n{}", promptText);
 
-		// LLM 호출 (gpt-4o-mini 호출 call)
 		ChatResponse response = chatModel.call(prompt);
-		String aiJson = response.getResults()
+		String rawAiResponse = response.getResults()
 			.stream()
 			.findFirst()
 			.map(result -> result.getOutput().getText())
-			.orElseThrow(() -> new RuntimeException("AI 응답이 없습니다."));
+			.orElse("");
 
-		log.info("[AiService] AI 응답(원본 JSON) >>>\n{}", aiJson);
+		log.info("[AiService] AI 응답(원본) >>>\n{}", rawAiResponse);
 
-		// 결과를 DTO로 파싱
+		String pureJson = extractJsonString(rawAiResponse);
+
+		if (pureJson.isEmpty()) {
+			log.warn("[AiService] AI 응답에서 JSON을 찾을 수 없음.");
+			return createErrorResponse("AI가 응답을 생성하지 못했습니다. 다시 시도해주세요.");
+		}
+
 		try {
-			AiRecommendationResponse rec = objectMapper.readValue(aiJson,
-				AiRecommendationResponse.class);
+			AiRecommendationResponse rec = objectMapper.readValue(pureJson, AiRecommendationResponse.class);
+			if (rec.recommendations() == null || rec.recommendations().isEmpty()) {
+				log.info("[AiService] AI가 추천할 강의를 찾지 못함.");
+				return createErrorResponse("아쉽지만, 현재 조건에 맞는 강의를 찾지 못했어요. 질문을 조금 더 구체적으로 해주시겠어요?");
+			}
 			log.info("[AiService] AI 추천 결과 파싱 성공: {}", rec);
 			return rec;
-
-		} catch (Exception e) {
-			log.error("[AiService] AI 응답 파싱 실패!\n원본: {}\n에러: {}", aiJson, e.toString());
-			throw new RuntimeException("AI 응답 파싱 실패: " + aiJson, e);
+		} catch (JsonProcessingException e) {
+			log.error("[AiService] AI 응답 파싱 실패!\n원본: {}\n추출된 JSON: {}\n에러: {}", rawAiResponse, pureJson, e.toString());
+			return createErrorResponse("AI 응답을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
 		}
+	}
+
+	private String extractJsonString(String rawResponse) {
+		if (rawResponse == null || rawResponse.trim().isEmpty()) {
+			return "";
+		}
+		Pattern pattern = Pattern.compile("\\{.*\\}", Pattern.DOTALL);
+		Matcher matcher = pattern.matcher(rawResponse);
+
+		if (matcher.find()) {
+			return matcher.group();
+		}
+		return "";
+	}
+
+	private AiRecommendationResponse createErrorResponse(String errorMessage) {
+		RecommendationDto errorRecommendation = new RecommendationDto(errorMessage, "", "", "");
+		return new AiRecommendationResponse(null, Collections.singletonList(errorRecommendation));
 	}
 }

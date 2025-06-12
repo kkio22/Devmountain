@@ -1,9 +1,11 @@
 package nbc.devmountain.domain.ai.service;
 
 import nbc.devmountain.domain.ai.dto.AiRecommendationResponse;
+import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.lecture.repository.LectureRepository;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,41 +31,32 @@ public class LectureRecommendationService {
 	 * @return 추천 강의 응답 DTO
 	 */
 
-	public AiRecommendationResponse recommendationResponse(String query, User.MembershipLevel memberType){
-		// 사용자 입력 벡터화
-		List<Double> queryVector = embeddingService.getEmbedding(query);
+	public AiRecommendationResponse recommendationResponse(String query, User.MembershipLevel memberType) {
+		if (!isRecommendationQuery(query)) {
+			return createDefaultResponse("안녕하세요! DevMountain 챗봇입니다. 어떤 강의를 추천해 드릴까요? 예를 들어 '자바 스프링 강의 추천해줘' 와 같이 질문해주세요.");
+		}
 
-		// 유사한 강의를 벡터 DB에서 검색하기
 		List<Lecture> similarLectures = ragService.searchSimilarLectures(query);
-
 		String lectureInfo = similarLectures.stream()
 			.map(l -> "제목: %s, 설명: %s".formatted(l.getTitle(), l.getDescription()))
 			.collect(Collectors.joining("\n"));
-		//todo:멤버십 별 분기 추가해야함
 
-		// 사용자 문맥 문자열 생성 (LLM Prompt)
-		String promptText = """
-            [사용자 질문]
-            %s
-
-            [유사한 강의 정보]
-            %s
-
-            응답 형식 예시:
-            {
-              "recommendations": [
-                {
-                  "title": "실전 자바 백엔드 개발",
-                  "url": "https://example.com/java-backend",
-                  "level": "중급",
-                  "thumbnailUrl": null
-                }
-              ]
-            }
-            """.formatted(query, lectureInfo);
-
-
-		// 유사한 강의와 사용자 정보를 바탕으로 추천하기
+		String promptText = "[사용자 질문]\n%s\n\n[유사한 강의 정보]\n%s".formatted(query, lectureInfo);
 		return aiService.getRecommendations(promptText);
+	}
+
+	private boolean isRecommendationQuery(String query) {
+		if (query == null || query.trim().length() < 5) return false;
+		String[] keywords = {"추천", "알려줘", "강의", "강좌", "배우고", "공부", "어때"};
+		for (String keyword : keywords) {
+			if (query.contains(keyword)) return true;
+		}
+		return false;
+	}
+
+	private AiRecommendationResponse createDefaultResponse(String message) {
+		// [수정] RecommendationDto 생성자를 사용합니다.
+		RecommendationDto recommendation = new RecommendationDto(message, "", "", "");
+		return new AiRecommendationResponse(null, Collections.singletonList(recommendation));
 	}
 }

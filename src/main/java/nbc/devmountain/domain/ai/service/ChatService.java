@@ -1,5 +1,6 @@
 package nbc.devmountain.domain.ai.service;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -56,6 +57,7 @@ public class ChatService {
 		} else {
 			userMsg = ChatMessageResponse.builder()
 				.message(payload)
+				.recommendations(Collections.emptyList())
 				.isAiResponse(false)
 				.build();
 		}
@@ -72,8 +74,10 @@ public class ChatService {
 			log.info("회원 AI 메세지 생성 완료");
 		} else {
 			try {
+				String recJson = objectMapper.writeValueAsString(aiResponse.recommendations());
 				aiMsg = ChatMessageResponse.builder()
-					.message(objectMapper.writeValueAsString(aiResponse))
+					.message(recJson)
+					.recommendations(aiResponse.recommendations())
 					.isAiResponse(true)
 					.build();
 				log.info("비회원 AI 메세지 생성 완료");

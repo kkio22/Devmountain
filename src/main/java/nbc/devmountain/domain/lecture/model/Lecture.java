@@ -5,8 +5,12 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 import lombok.*;
-import nbc.devmountain.common.config.EmbeddingConverter;
+// import nbc.devmountain.common.config.EmbeddingConverter;
 
+import org.hibernate.annotations.Array;
+import org.hibernate.annotations.ColumnTransformer;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
@@ -39,9 +43,21 @@ public class Lecture {
 	@Column(nullable = false)
 	private LocalDateTime crawledAt;
 
-	@Convert(converter = EmbeddingConverter.class)
-	@Column(columnDefinition = "TEXT")
+	@Column(name = "lecture_embedding", columnDefinition = "vector(1536)")
+	@JdbcTypeCode(SqlTypes.VECTOR)
+	@Array(length = 1536)
+	@ColumnTransformer(
+		read = """
+         COALESCE(
+           lecture_embedding,
+           array_fill(0::float4, ARRAY[1536])::vector
+         )
+       """
+	)
 	private float[] lectureEmbedding;
+
+	@Column(nullable = false)
+	private boolean isEmbedded = false;
 
 	@Builder
 	public Lecture(int itemId, String thumbnailUrl, String title, String instructor, String description,
@@ -69,6 +85,6 @@ public class Lecture {
 
 	public void setLectureEmbedding(float[] lectureEmbedding) {
 		this.lectureEmbedding = lectureEmbedding;
+		this.isEmbedded = true;
 	}
-
 }
