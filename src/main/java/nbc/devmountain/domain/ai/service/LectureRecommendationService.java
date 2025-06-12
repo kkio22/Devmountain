@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
+import nbc.devmountain.domain.user.model.User;
 
 import org.springframework.stereotype.Service;
 
@@ -28,24 +29,41 @@ public class LectureRecommendationService {
 	 * @return 추천 강의 응답 DTO
 	 */
 
-	public AiRecommendationResponse recommendationResponse(String interest,String level,String goal){
-		// 사용자 입력을 하나의 문자열로 묶기 (벡터화에 사용한다.)
-		String query = interest + " " + level+ " " + goal;
-
+	public AiRecommendationResponse recommendationResponse(String query, User.MembershipLevel memberType){
 		// 사용자 입력 벡터화
-		List<Double> userVector = embeddingService.getEmbedding(query);
+		List<Double> queryVector = embeddingService.getEmbedding(query);
 
 		// 유사한 강의를 벡터 DB에서 검색하기
-		List<Lecture> similarLectures = ragService.searchSimilarLectures(query, userVector);
-
-		// 사용자 문맥 문자열 생성 (LLM Prompt)
-		String userContext = "관심사: %s / 수준: %s / 목표: %s".formatted(interest, level, goal);
+		List<Lecture> similarLectures = ragService.searchSimilarLectures(query);
 
 		String lectureInfo = similarLectures.stream()
 			.map(l -> "제목: %s, 설명: %s".formatted(l.getTitle(), l.getDescription()))
 			.collect(Collectors.joining("\n"));
+		//todo:멤버십 별 분기 추가해야함
+
+		// 사용자 문맥 문자열 생성 (LLM Prompt)
+		String promptText = """
+            [사용자 질문]
+            %s
+
+            [유사한 강의 정보]
+            %s
+
+            응답 형식 예시:
+            {
+              "recommendations": [
+                {
+                  "title": "실전 자바 백엔드 개발",
+                  "url": "https://example.com/java-backend",
+                  "level": "중급",
+                  "thumbnailUrl": null
+                }
+              ]
+            }
+            """.formatted(query, lectureInfo);
+
 
 		// 유사한 강의와 사용자 정보를 바탕으로 추천하기
-		return aiService.getRecommendations(userContext,lectureInfo,goal);
+		return aiService.getRecommendations(promptText);
 	}
 }

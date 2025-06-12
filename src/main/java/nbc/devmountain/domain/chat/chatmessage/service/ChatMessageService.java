@@ -8,8 +8,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nbc.devmountain.domain.ai.dto.AiRecommendationResponse;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
@@ -26,6 +30,7 @@ public class ChatMessageService {
 	private final ChatMessageRepository chatMessageRepository;
 	private final ChatRoomRepository chatRoomRepository;
 	private final UserRepository userRepository;
+	private final ObjectMapper objectMapper;
 
 	@Transactional
 	public ChatMessageResponse createMessage(Long userId, Long chatRoomId, String message) {
@@ -60,20 +65,28 @@ public class ChatMessageService {
 		return ChatMessageResponse.from(chatMessageRepository.save(chatMessage));
 	}
 	@Transactional
-	public ChatMessageResponse createAIMessage(Long chatRoomId,String message){
+	public ChatMessageResponse createAIMessage(Long chatRoomId, AiRecommendationResponse aiResponse){
+
 		ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		//AI응답 직렬화
+		try {
+			String aiResponseJson = objectMapper.writeValueAsString(aiResponse);
+			ChatMessage aiChatMessage = ChatMessage.builder()
+				.chatRoom(chatRoom)
+				.user(null)
+				.message(aiResponseJson)
+				.isAiResponse(true)
+				.build();
+			chatRoom.addMessages(aiChatMessage);
 
-		ChatMessage aiChatMessage = ChatMessage.builder()
-			.chatRoom(chatRoom)
-			.user(null)
-			.message(message)
-			.isAiResponse(true)
-			.build();
-		chatRoom.addMessages(aiChatMessage);
-		log.info("메세지 생성 완료");
+			log.info("메세지 생성 완료");
+			return ChatMessageResponse.from(chatMessageRepository.save(aiChatMessage));
 
-		return ChatMessageResponse.from(chatMessageRepository.save(aiChatMessage));
+		} catch (JsonProcessingException e) {
+			log.error("AI 응답 직렬화 실패");
+			throw new RuntimeException(e);
+		}
 	}
 
 
