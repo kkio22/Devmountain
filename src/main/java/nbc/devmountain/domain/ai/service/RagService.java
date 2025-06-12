@@ -46,7 +46,7 @@ public class RagService {
 	 * @param userVector 사용자 벡터 (실제로는 query만 사용)
 	 * @return 유사한 강의 리스트
 	 */
-	public List<Lecture> searchSimilarLectures(String query, List<Double> userVector) {
+	public List<Lecture> searchSimilarLectures(String query) {
 		// VectorStore에서 유사한 문서 검색
 		SearchRequest searchRequest = SearchRequest.builder()
 			.query(query)

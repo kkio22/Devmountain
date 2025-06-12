@@ -25,8 +25,8 @@ public class ChatController {
 	// }
 
 	@PostMapping("/recommend")
-	public ResponseEntity<AiRecommendationResponse> recommendLectures(@RequestBody String interest, String level,String goal) {
-		AiRecommendationResponse response = aiService.getRecommendations(interest,level,goal);
+	public ResponseEntity<AiRecommendationResponse> recommendLectures(@RequestBody String interest/*, String level,String goal*/) {
+		AiRecommendationResponse response = aiService.getRecommendations(interest/*,level,goal*/);
 		return ResponseEntity.ok(response);
 	}
 
