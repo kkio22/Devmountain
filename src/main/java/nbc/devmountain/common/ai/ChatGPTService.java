@@ -23,7 +23,7 @@ import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
 @Slf4j
 public class ChatGPTService {
 
-	@Value("${OPENAI_API_KEY}")
+	@Value("${spring.ai.openai.api-key}")
 	private String apiKey;
 
 	@Value("${openai.api.url:https://api.openai.com/v1/chat/completions}")
