@@ -18,10 +18,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class LectureRecommendationService {
 
-	private final EmbeddingService embeddingService;
 	private final RagService ragService;
 	private final AiService aiService;
-	private final LectureRepository lectureRepository;
 
 	/**
 	 * 사용자 입력을 기반으로 강의를 추천하는 메서드
@@ -33,7 +31,7 @@ public class LectureRecommendationService {
 
 	public AiRecommendationResponse recommendationResponse(String query, User.MembershipLevel memberType) {
 		if (!isRecommendationQuery(query)) {
-			return createDefaultResponse("안녕하세요! DevMountain 챗봇입니다. 어떤 강의를 추천해 드릴까요? 예를 들어 '자바 스프링 강의 추천해줘' 와 같이 질문해주세요.");
+			return createSimpleMessage("안녕하세요! DevMountain 챗봇입니다. '자바 스프링 강의 추천해줘'와 같이 질문해 주세요.");
 		}
 
 		List<Lecture> similarLectures = ragService.searchSimilarLectures(query);
@@ -46,17 +44,24 @@ public class LectureRecommendationService {
 	}
 
 	private boolean isRecommendationQuery(String query) {
-		if (query == null || query.trim().length() < 5) return false;
+		if (query == null || query.trim().length() < 5)
+			return false;
 		String[] keywords = {"추천", "알려줘", "강의", "강좌", "배우고", "공부", "어때"};
 		for (String keyword : keywords) {
-			if (query.contains(keyword)) return true;
+			if (query.contains(keyword))
+				return true;
 		}
 		return false;
 	}
 
-	private AiRecommendationResponse createDefaultResponse(String message) {
-		// [수정] RecommendationDto 생성자를 사용합니다.
-		RecommendationDto recommendation = new RecommendationDto(message, "", "", "");
-		return new AiRecommendationResponse(null, Collections.singletonList(recommendation));
+	private AiRecommendationResponse createSimpleMessage(String message) {
+		return new AiRecommendationResponse(message, List.of());
+	}
+
+	private boolean isAllBlank(String... arr) {
+		for (String str : arr) {
+			if (str != null && !str.isBlank()) return false;
+		}
+		return true;
 	}
 }
