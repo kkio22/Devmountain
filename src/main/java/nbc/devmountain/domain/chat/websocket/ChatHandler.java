@@ -14,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.SessionUser;
 import nbc.devmountain.domain.ai.service.ChatService;
 import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
-import nbc.devmountain.domain.chat.chatmessage.service.ChatMessageService;
-import nbc.devmountain.common.ai.AIResponseService;
 import nbc.devmountain.domain.chat.chatroom.service.GuestChatRoomService;
 
 @Component
@@ -26,9 +24,8 @@ public class ChatHandler extends TextWebSocketHandler {
 	private final ChatService chatService;
 	private final WebSocketSessionManager sessionManager;
 	private final WebSocketMessageSender messageSender;
-	private final ObjectMapper objectMapper;
 	// todo: 채팅 확인용 임시코드
-	private final GuestChatRoomService guestChatRoomService;
+	// private final GuestChatRoomService guestChatRoomService;
 
 	@Override  //웹소켓 연결시 호출되는 메서드(사용자검증)
 	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
