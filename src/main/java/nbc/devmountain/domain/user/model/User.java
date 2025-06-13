@@ -117,7 +117,7 @@ public class User {
     }
 
     public enum MembershipLevel {
-        FREE, PRO
+        FREE, PRO ,GUEST
     }
 }
 
