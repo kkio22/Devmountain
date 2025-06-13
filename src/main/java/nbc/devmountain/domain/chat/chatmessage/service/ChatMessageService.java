@@ -91,5 +91,33 @@ public class ChatMessageService {
 		return chatMessages.stream()
 			.map(ChatMessageResponse::from)
 			.collect(Collectors.toList());
+
+
 	}
+
+	// // todo : 채팅 기능 용 임시
+	// public List<ChatMessageResponse> getMessages(Long userId, Long roomId) {
+	// 	// 1) 채팅방 존재 여부 확인
+	// 	var chatRoomOpt = chatRoomRepository.findById(roomId);
+	//
+	// 	if (chatRoomOpt.isEmpty()) {
+	// 		// DB에 없는 방 (비회원 방) → 권한 체크 불필요, 빈 리스트 반환 or 메모리 저장 메시지 반환
+	// 		return Collections.emptyList();
+	// 	}
+	//
+	// 	ChatRoom chatRoom = chatRoomOpt.get();
+	//
+	// 	// 2) 회원 전용 권한 체크 (userId가 null이거나 0이라면 건너뛸 수도 있음)
+	// 	if (userId == null || !chatRoom.getUser().getUserId().equals(userId)) {
+	// 		throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+	// 	}
+	//
+	// 	// 3) 메시지 조회 및 반환
+	// 	List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomId(roomId);
+	//
+	// 	return chatMessages.stream()
+	// 		.map(ChatMessageResponse::from)
+	// 		.collect(Collectors.toList());
+	// }
+
 }
