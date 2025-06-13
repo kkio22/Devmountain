@@ -53,16 +53,14 @@ public class RagService {
 	/**
 	 * 유사한 강의를 검색하는 메서드
 	 * @param query 검색 쿼리
-	 * @param userVector 사용자 벡터 (실제로는 query만 사용)
 	 * @return 유사한 강의 리스트
 	 */
 	public List<Lecture> searchSimilarLectures(String query) {
-		try {// VectorStore에서 유사한 문서 검색
-			SearchRequest searchRequest = SearchRequest.builder()
-				.query(query)
-				.topK(3) // 상위부터 3개 찾아온다
-				.similarityThreshold(0.7)
-				.build();// 유사도 임계값
+		try {
+			// VectorStore에서 유사한 문서 검색 - M4 버전의 새로운 API 사용
+			SearchRequest searchRequest = SearchRequest.query(query)
+				.withTopK(3) // 상위부터 3개 찾아온다
+				.withSimilarityThreshold(0.7); // 유사도 임계값
 
 			List<Document> similarDocuments = vectorStore.similaritySearch(searchRequest);
 			log.info("검색 쿼리: {}", query);
@@ -104,33 +102,21 @@ public class RagService {
 			log.debug("스킬 태그 로드 실패");
 		}
 
-			// 강의 정보를 텍스트로 변환
-			String content = String.format(
-				"제목: %s\n강사: %s\n설명: %s\n기술 태그: %s",
-				lecture.getTitle(),
-				lecture.getInstructor(),
-				lecture.getDescription() != null ? lecture.getDescription() : "",
-				tags
-			);
+		// 강의 정보를 텍스트로 변환
+		String content = String.format(
+			"제목: %s\n강사: %s\n설명: %s\n기술 태그: %s",
+			lecture.getTitle(),
+			lecture.getInstructor(),
+			lecture.getDescription() != null ? lecture.getDescription() : "",
+			tags
+		);
 
-			Map<String, Object> metadata = Map.of(
-				"lectureId", lecture.getLectureId(),
-				"title", lecture.getTitle() != null ? lecture.getTitle() : "",
-				"levelCode", lecture.getLevelCode() != null ? lecture.getLevelCode() : "미정"
-			);
-			// String content = String.format(
-			// 	"제목: %s, 설명: %s, 강사: %s, 레벨: %s",
-			// 	lecture.getTitle(),
-			// 	lecture.getDescription(),
-			// 	lecture.getInstructor(),
-			// 	lecture.getLevelCode()
+		Map<String, Object> metadata = Map.of(
+			"lectureId", lecture.getLectureId(),
+			"title", lecture.getTitle() != null ? lecture.getTitle() : "",
+			"levelCode", lecture.getLevelCode() != null ? lecture.getLevelCode() : "미정"
+		);
 
-			// Map<String, Object> metadata = Map.of(
-			// 	"lectureId", lecture.getLectureId(),
-			// 	"title", lecture.getTitle(),
-			// 	"levelCode", lecture.getLevelCode()
-			// );
-
-			return new Document(content, metadata);
-		}
+		return new Document(content, metadata);
 	}
+}

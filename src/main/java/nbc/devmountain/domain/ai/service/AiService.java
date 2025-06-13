@@ -49,7 +49,7 @@ public class AiService {
 		String rawAiResponse = response.getResults()
 			.stream()
 			.findFirst()
-			.map(result -> result.getOutput().getText())
+			.map(result -> result.getOutput().getContent())
 			.orElse("");
 
 		log.info("[AiService] AI 응답(원본) >>>\n{}", rawAiResponse);
