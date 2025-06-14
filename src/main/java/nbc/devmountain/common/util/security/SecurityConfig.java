@@ -28,7 +28,7 @@ public class SecurityConfig {
 			.sessionManagement(session ->
 				session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // 세션 기반 인증 사용
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/users/signup","/users/login", "/login","/ws/**").permitAll() // 인증이 필요없는 부분 추가 예정
+				.requestMatchers("/users/signup","/users/login", "/login","/ws/**","/actuator","/actuator/**").permitAll() // 인증이 필요없는 부분 추가 예정
 				.anyRequest().authenticated()
 			)
 			// OAuth2 설정
