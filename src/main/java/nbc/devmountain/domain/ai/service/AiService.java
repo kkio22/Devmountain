@@ -6,6 +6,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -15,31 +16,38 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.extern.slf4j.Slf4j;
-import nbc.devmountain.domain.ai.dto.AiRecommendationResponse;
 import nbc.devmountain.domain.ai.dto.RecommendationDto;
-import nbc.devmountain.domain.recommendation.model.Recommendation;
+import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
+import nbc.devmountain.domain.chat.model.MessageType;
 
 @Service
 @AllArgsConstructor
 @Slf4j
 public class AiService {
-
 	private final ChatModel chatModel;
 	private final ObjectMapper objectMapper;
 
-	public AiRecommendationResponse getRecommendations(String promptText) {
+	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalStep) {
 		SystemMessage systemMessage = new SystemMessage(
-			"""
-			너는 주어진 정보를 바탕으로 강의를 추천하는 교육 큐레이터 AI야.
-			- 사용자의 질문과 제공된 '유사한 강의 정보'를 바탕으로 가장 적절한 강의를 최대 3개 추천해줘.
-			- 각 강의는 title, url, level, thumbnailUrl 을 포함해야 해.
-			- 응답은 반드시 JSON 형식으로만 해야하며, 절대로 JSON 객체 외의 다른 텍스트(예: 설명, 인사)를 포함하면 안돼.
-			- 만약 추천할 강의가 없다면, recommendations 배열을 비워서 보내줘. 예: {"recommendations": []}
-			- 응답 예시: {"recommendations": [{"title": "스프링 입문", "url": "https://inflearn.com/spring", "level": "초급", "thumbnailUrl": "some_url.jpg" }]}
-			"""
+			isFinalStep ?
+				"""
+				너는 주어진 정보를 바탕으로 강의를 추천하는 교육 큐레이터 AI야.
+				- 사용자의 질문과 제공된 '유사한 강의 정보'를 바탕으로 가장 적절한 강의를 최대 3개 추천해줘.
+				- 각 강의는 title, description, instructor, level, thumbnailUrl 을 포함해야 해.
+				- 응답은 반드시 JSON 형식으로만 해야하며, 절대로 JSON 객체 외의 다른 텍스트(예: 설명, 인사)를 포함하면 안돼.
+				- 만약 추천할 강의가 없다면, recommendations 배열을 비워서 보내줘. 예: {"recommendations": []}
+				- 응답 예시: {"recommendations": [{"title": "스프링 입문", "description": "...", "instructor": "...", "level": "초급", "thumbnailUrl": "some_url.jpg" }]}
+				"""
+				:
+				"""
+				너는 교육 큐레이터 AI야. 사용자와의 대화를 통해 강의를 추천하기 위한 정보를 수집하고 있어.
+				- 사용자의 응답에 대해 자연스럽게 대화하듯이 답변해줘.
+				- JSON 형식으로 응답할 필요 없이, 자연스러운 대화형 메시지를 반환해줘.
+				- 다음 단계로 넘어가기 위한 안내 메시지를 포함해줘.
+				"""
 		);
 
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
@@ -54,6 +62,14 @@ public class AiService {
 
 		log.info("[AiService] AI 응답(원본) >>>\n{}", rawAiResponse);
 
+		if (!isFinalStep) {
+			return ChatMessageResponse.builder()
+				.message(rawAiResponse)
+				.isAiResponse(true)
+				.messageType(MessageType.CHAT)
+				.build();
+		}
+
 		String pureJson = extractJsonString(rawAiResponse);
 
 		if (pureJson.isEmpty()) {
@@ -62,15 +78,32 @@ public class AiService {
 		}
 
 		try {
-			AiRecommendationResponse rec = objectMapper.readValue(pureJson, AiRecommendationResponse.class);
-			if (rec.recommendations() == null || rec.recommendations().isEmpty()) {
+			JsonNode root = objectMapper.readTree(pureJson);
+			JsonNode recNode = root.get("recommendations");
+
+			if (recNode == null || !recNode.isArray()) {
+				log.warn("[AiService] AI 응답에 'recommendations' 배열이 없거나 형식이 올바르지 않음.");
+				return createErrorResponse("AI가 올바른 형식의 응답을 생성하지 못했습니다. 다시 시도해주세요.");
+			}
+			List<RecommendationDto> recommendations = objectMapper.convertValue(recNode, // 수정된 부분
+				objectMapper.getTypeFactory().constructCollectionType(List.class, RecommendationDto.class));
+
+			if (recommendations == null || recommendations.isEmpty()) {
 				log.info("[AiService] AI가 추천할 강의를 찾지 못함.");
 				return createErrorResponse("아쉽지만, 현재 조건에 맞는 강의를 찾지 못했어요. 질문을 조금 더 구체적으로 해주시겠어요?");
 			}
-			log.info("[AiService] AI 추천 결과 파싱 성공: {}", rec);
-			return rec;
+
+			log.info("[AiService] AI 추천 결과 파싱 성공: {}", recommendations);
+			return ChatMessageResponse.builder()
+				.message(null)
+				.recommendations(recommendations)
+				.isAiResponse(true)
+				.messageType(MessageType.RECOMMENDATION)
+				.build();
+
 		} catch (JsonProcessingException e) {
-			log.error("[AiService] AI 응답 파싱 실패!\n원본: {}\n추출된 JSON: {}\n에러: {}", rawAiResponse, pureJson, e.toString());
+			log.error("[AiService] AI 응답 파싱 실패!\n원본: {}\n추출된 JSON: {}\n에러: {}\n{}",
+				rawAiResponse, pureJson, e.toString(), e.getMessage());
 			return createErrorResponse("AI 응답을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
 		}
 	}
@@ -88,8 +121,12 @@ public class AiService {
 		return "";
 	}
 
-	private AiRecommendationResponse createErrorResponse(String errorMessage) {
-		RecommendationDto errorRecommendation = new RecommendationDto(errorMessage, "", "", "");
-		return new AiRecommendationResponse(null, Collections.singletonList(errorRecommendation));
+	private ChatMessageResponse createErrorResponse(String errorMessage) {
+		return ChatMessageResponse.builder()
+			.message(errorMessage)
+			.recommendations(Collections.emptyList())
+			.isAiResponse(true)
+			.messageType(MessageType.ERROR)
+			.build();
 	}
 }

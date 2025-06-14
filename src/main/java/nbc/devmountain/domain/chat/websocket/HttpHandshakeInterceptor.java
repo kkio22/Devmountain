@@ -40,14 +40,14 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
 				// 비로그인 사용자 (세션은 있지만 로그인 정보 없음)
 				attributes.put("user", null);
 				attributes.put("isLoggedIn", false);
-				attributes.put("membershipType", User.MembershipLevel.GUEST); // 명시적으로 GUEST!
+				attributes.put("membershipType", User.MembershipLevel.GUEST);
 				log.info("웹소켓 연결 - 비회원 사용자 (세션 없음)");
 			}
 		} else {
 			// 세션 없는 비회원 사용자
 			attributes.put("user", null);
 			attributes.put("isLoggedIn", false);
-			attributes.put("membershipType", User.MembershipLevel.GUEST); // 명시적으로 GUEST!
+			attributes.put("membershipType", User.MembershipLevel.GUEST);
 			log.info("웹소켓 연결 - 비회원 사용자 (세션 없음)");
 		}
 

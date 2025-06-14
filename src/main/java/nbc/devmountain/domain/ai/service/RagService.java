@@ -2,6 +2,7 @@ package nbc.devmountain.domain.ai.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.EmptyResultDataAccessException;
 
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.lecture.model.LectureSkillTag;
@@ -25,29 +28,60 @@ public class RagService {
 
 	private final VectorStore vectorStore;
 	private final LectureRepository lectureRepository;
+	private final JdbcTemplate jdbcTemplate;
 	private final LectureSkillTagRepository lectureSkillTagRepository;
 
 	/**
 	 * Lecture DB의 강의들을 벡터 DB에 저장하는 메서드
 	 * DB에서 모든 강의를 꺼냄
-	 * 각 강의를 벡터로 바꾼 후 Doucument 처럼 만듬
+	 * 각 강의를 벡터로 바꾼 후 Document 처럼 만듬
 	 * vectorStore에 저장
 	 */
 	public void saveEmbeddedLecturesToVectorStore() {
-		// 임베딩이 완료된 강의들만 조회
-		List<Lecture> embeddedLectures = lectureRepository.findByIsEmbeddedTrue();
+		List<Lecture> embeddedLectures = lectureRepository.findAll();
 
 		if (embeddedLectures.isEmpty()) {
-			log.warn("임베딩된 강의가 없습니다. EmbeddingService를 먼저 실행하세요.");
+			log.warn("저장할 강의가 없습니다.");
 			return;
 		}
 
-		List<Document> documents = embeddedLectures.stream()
-			.map(this::convertLectureToDocument)
-			.collect(Collectors.toList());
+		int addedOrUpdatedCount = 0;
+		for (Lecture lecture : embeddedLectures) {
+			try {
+				UUID existingDocId = findVectorStoreIdByLectureId(lecture.getLectureId());
+				Document docToSave;
+				Document originalDoc = convertLectureToDocument(lecture);
+				if (existingDocId != null) {
+					docToSave = new Document(existingDocId.toString(), originalDoc.getContent(),
+						originalDoc.getMetadata());
+					log.info("기존 벡터 업데이트: lectureId={}, docId={}", lecture.getLectureId(), existingDocId);
+				} else {
+					docToSave = originalDoc;
+					log.info("새 벡터 추가: lectureId={}", lecture.getLectureId());
+				}
 
-		vectorStore.add(documents);
-		log.info("벡터 스토어에 저장된 강의 수: {}", documents.size());
+				vectorStore.add(List.of(docToSave));
+				addedOrUpdatedCount++;
+
+			} catch (Exception e) {
+				log.error("벡터 저장/업데이트 중 오류: lectureId={}, error={}", lecture.getLectureId(), e.getMessage(), e);
+			}
+		}
+
+		log.info("벡터 스토어에 새로 추가되거나 업데이트된 강의 수: {}", addedOrUpdatedCount);
+	}
+
+
+	private UUID findVectorStoreIdByLectureId(Long lectureId) {
+		String sql = "SELECT id FROM vector_store WHERE (metadata->>'lectureId')::bigint = ? LIMIT 1";
+		try {
+			return jdbcTemplate.queryForObject(sql, UUID.class, lectureId);
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		} catch (Exception e) {
+			log.error("lectureId={}에 해당하는 벡터 스토어 ID를 찾는 중 오류 발생: {}", lectureId, e.getMessage());
+			return null;
+		}
 	}
 
 	/**
@@ -57,16 +91,14 @@ public class RagService {
 	 */
 	public List<Lecture> searchSimilarLectures(String query) {
 		try {
-			// VectorStore에서 유사한 문서 검색 - M4 버전의 새로운 API 사용
 			SearchRequest searchRequest = SearchRequest.query(query)
-				.withTopK(3) // 상위부터 3개 찾아온다
-				.withSimilarityThreshold(0.7); // 유사도 임계값
+				.withTopK(3)
+				.withSimilarityThreshold(0.7);
 
 			List<Document> similarDocuments = vectorStore.similaritySearch(searchRequest);
 			log.info("검색 쿼리: {}", query);
 			log.info("검색된 문서 수: {}", similarDocuments.size());
 
-			// Document에서 Lecture ID 추출하여 실제 Lecture 객체 반환
 			return similarDocuments.stream()
 				.map(doc -> {
 					Long lectureId = Long.valueOf(doc.getMetadata().get("lectureId").toString());
@@ -76,7 +108,6 @@ public class RagService {
 				.collect(Collectors.toList());
 		} catch (Exception e) {
 			log.error("벡터 검색 실패: {}", e.getMessage(), e);
-			// 검색 실패시 : 키워드 검색
 			return fallbackSearch(query);
 		}
 	}
@@ -86,10 +117,6 @@ public class RagService {
 		return lectureRepository.findTop5ByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(query, query);
 	}
 
-	/**
-	 * Lecture를 Document로 변환
-	 * 강의 -> 벡터 문서로 바꾸는 메서드
-	 */
 	private Document convertLectureToDocument(Lecture lecture) {
 
 		String tags = "";
@@ -114,9 +141,11 @@ public class RagService {
 		Map<String, Object> metadata = Map.of(
 			"lectureId", lecture.getLectureId(),
 			"title", lecture.getTitle() != null ? lecture.getTitle() : "",
-			"levelCode", lecture.getLevelCode() != null ? lecture.getLevelCode() : "미정"
+			"instructor", lecture.getInstructor() != null ? lecture.getInstructor() : "",
+			"description", lecture.getDescription() != null ? lecture.getDescription() : "",
+			"levelCode", lecture.getLevelCode() != null ? lecture.getLevelCode() : "미정",
+			"thumbnailUrl", lecture.getThumbnailUrl() != null ? lecture.getThumbnailUrl() : ""
 		);
-
 		return new Document(content, metadata);
 	}
 }

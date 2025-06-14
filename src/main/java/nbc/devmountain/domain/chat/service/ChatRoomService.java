@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat.chatroom.service;
+package nbc.devmountain.domain.chat.service;
 
 import java.util.List;
 
@@ -11,9 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.RoomType;
-import nbc.devmountain.domain.chat.chatroom.dto.response.ChatRoomDetailResponse;
-import nbc.devmountain.domain.chat.chatroom.dto.response.ChatRoomResponse;
-import nbc.devmountain.domain.chat.chatroom.repository.ChatRoomRepository;
+import nbc.devmountain.domain.chat.dto.ChatRoomDetailResponse;
+import nbc.devmountain.domain.chat.dto.ChatRoomResponse;
+import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 

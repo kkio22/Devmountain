@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat.chatmessage.controller;
+package nbc.devmountain.domain.chat.controller;
 
 import java.util.List;
 
@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.response.ApiResponse;
 import nbc.devmountain.common.util.security.CustomUserPrincipal;
-import nbc.devmountain.domain.chat.chatmessage.dto.request.ChatMessageRequest;
-import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
-import nbc.devmountain.domain.chat.chatmessage.service.ChatMessageService;
+import nbc.devmountain.domain.chat.dto.ChatMessageRequest;
+import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
+import nbc.devmountain.domain.chat.service.ChatMessageService;
 
 @RestController
 @RequiredArgsConstructor

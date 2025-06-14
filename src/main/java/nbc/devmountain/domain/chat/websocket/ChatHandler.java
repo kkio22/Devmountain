@@ -1,7 +1,6 @@
 package nbc.devmountain.domain.chat.websocket;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -13,8 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.SessionUser;
 import nbc.devmountain.domain.ai.service.ChatService;
-import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
-import nbc.devmountain.domain.chat.chatroom.service.GuestChatRoomService;
+import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 
 @Component
 @RequiredArgsConstructor
@@ -24,8 +22,6 @@ public class ChatHandler extends TextWebSocketHandler {
 	private final ChatService chatService;
 	private final WebSocketSessionManager sessionManager;
 	private final WebSocketMessageSender messageSender;
-	// todo: 채팅 확인용 임시코드
-	// private final GuestChatRoomService guestChatRoomService;
 
 	@Override  //웹소켓 연결시 호출되는 메서드(사용자검증)
 	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -65,30 +61,6 @@ public class ChatHandler extends TextWebSocketHandler {
 		log.info("웹소켓 연결 해제 - sessionId: {}", session.getId());
 		sessionManager.removeSession(session);
 	}
-
-	// todo : 채팅기능 확인 용 임시
-	// @Override
-	// public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-	// 	// 예: URI에서 roomId 추출 (ws://localhost:8080/ws/chat?roomId=guest-xxxx)
-	// 	String uri = session.getUri().toString();
-	// 	String roomId = extractRoomIdFromUri(uri);
-	//
-	// 	// 비회원 방이라면 메모리에서 삭제
-	// 	if (roomId != null && roomId.startsWith("guest-")) {
-	// 		guestChatRoomService.removeRoom(roomId);
-	// 		System.out.println("비회원 채팅방 삭제: " + roomId);
-	// 	}
-	//
-	// 	super.afterConnectionClosed(session, status);
-	// }
-	//
-	// private String extractRoomIdFromUri(String uri) {
-	// 	// 간단 예시, 실제론 더 견고한 파싱 필요
-	// 	if (uri.contains("roomId=")) {
-	// 		return uri.substring(uri.indexOf("roomId=") + 7);
-	// 	}
-	// 	return null;
-	// }
 
 	private Long getRoomId(WebSocketSession session) {
 		String query = session.getUri().getQuery();

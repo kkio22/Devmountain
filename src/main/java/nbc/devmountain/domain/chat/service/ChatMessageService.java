@@ -1,6 +1,7 @@
-package nbc.devmountain.domain.chat.chatmessage.service;
+package nbc.devmountain.domain.chat.service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -13,12 +14,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nbc.devmountain.domain.ai.dto.AiRecommendationResponse;
+import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.chat.model.ChatRoom;
-import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
-import nbc.devmountain.domain.chat.chatmessage.repository.ChatMessageRepository;
-import nbc.devmountain.domain.chat.chatroom.repository.ChatRoomRepository;
+import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
+import nbc.devmountain.domain.chat.model.MessageType;
+import nbc.devmountain.domain.chat.repository.ChatMessageRepository;
+import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
+import nbc.devmountain.domain.lecture.model.Lecture;
+import nbc.devmountain.domain.lecture.repository.LectureRepository;
+import nbc.devmountain.domain.recommendation.model.Recommendation;
+import nbc.devmountain.domain.recommendation.repository.RecommendationRepository;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 
@@ -31,6 +37,8 @@ public class ChatMessageService {
 	private final ChatRoomRepository chatRoomRepository;
 	private final UserRepository userRepository;
 	private final ObjectMapper objectMapper;
+	private final RecommendationRepository recommendationRepository;
+	private final LectureRepository lectureRepository;
 
 	@Transactional
 	public ChatMessageResponse createMessage(Long userId, Long chatRoomId, String message) {
@@ -41,7 +49,6 @@ public class ChatMessageService {
 		if (message.length() > 1000) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "메시지가 너무 깁니다. (최대 1000자)");
 		}
-		//삭제된 채팅방은 메세지입력 x
 
 		User user = userRepository.findById(userId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -65,29 +72,63 @@ public class ChatMessageService {
 		return ChatMessageResponse.from(chatMessageRepository.save(chatMessage));
 	}
 	@Transactional
-	public ChatMessageResponse createAIMessage(Long chatRoomId, AiRecommendationResponse aiResponse){
+	public ChatMessageResponse createAIMessage(Long chatRoomId, ChatMessageResponse aiResponse){
 		ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-		//AI응답 직렬화
+
+		User user = chatRoom.getUser();
+
 		try {
-			String recJson = objectMapper.writeValueAsString(aiResponse.recommendations());
+			String messageContent;
+			MessageType messageType;
+			if (aiResponse.getRecommendations() != null && !aiResponse.getRecommendations().isEmpty()) {
+				messageContent = objectMapper.writeValueAsString(aiResponse.getRecommendations());
+				messageType = MessageType.RECOMMENDATION;
+
+				// 추천 기록 저장
+				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
+					Lecture lecture = lectureRepository.findByTitle(recDto.title()).orElse(null);
+
+					if (lecture == null) {
+						log.warn("추천 강의 '{}'에 해당하는 실제 강의를 찾을 수 없습니다. Recommendation으로 저장하지 않습니다.", recDto.title());
+						continue;
+					}
+					Recommendation recommendation = Recommendation.builder()
+						.chatMessage(null)
+						.user(user)
+						.lecture(lecture)
+						.score(null)
+						.build();
+					// Recommendation 엔티티 저장
+					recommendationRepository.save(recommendation);
+					log.info("강의 추천 기록 저장 성공: lectureId={}, userId={}", lecture.getLectureId(), user.getUserId());
+				}
+			} else {
+				// 일반 AI 메시지인 경우, message 필드 사용
+				messageContent = aiResponse.getMessage();
+				messageType = aiResponse.getMessageType();
+			}
+
 			ChatMessage aiChatMessage = ChatMessage.builder()
 				.chatRoom(chatRoom)
 				.user(null)
-				.message(recJson)
+				.message(messageContent)
 				.isAiResponse(true)
+				.messageType(messageType)
 				.build();
+
 			chatRoom.addMessages(aiChatMessage);
 
-			log.info("메세지 생성 완료");
-			return ChatMessageResponse.from(chatMessageRepository.save(aiChatMessage));
+			ChatMessage savedChatMessage = chatMessageRepository.save(aiChatMessage);
+			log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
+
+			return ChatMessageResponse.from(savedChatMessage);
 
 		} catch (JsonProcessingException e) {
-			log.error("AI 응답 직렬화 실패");
-			throw new RuntimeException(e);
+			log.error("AI 응답 직렬화 실패: {}", e.getMessage());
+			throw new RuntimeException("AI 응답을 저장하는 중 오류가 발생했습니다.", e);
 		}
 	}
-
 
 
 	public List<ChatMessageResponse> getMessages(Long userId, Long roomId) {
@@ -103,33 +144,5 @@ public class ChatMessageService {
 		return chatMessages.stream()
 			.map(ChatMessageResponse::from)
 			.collect(Collectors.toList());
-
-
 	}
-
-	// // todo : 채팅 기능 용 임시
-	// public List<ChatMessageResponse> getMessages(Long userId, Long roomId) {
-	// 	// 1) 채팅방 존재 여부 확인
-	// 	var chatRoomOpt = chatRoomRepository.findById(roomId);
-	//
-	// 	if (chatRoomOpt.isEmpty()) {
-	// 		// DB에 없는 방 (비회원 방) → 권한 체크 불필요, 빈 리스트 반환 or 메모리 저장 메시지 반환
-	// 		return Collections.emptyList();
-	// 	}
-	//
-	// 	ChatRoom chatRoom = chatRoomOpt.get();
-	//
-	// 	// 2) 회원 전용 권한 체크 (userId가 null이거나 0이라면 건너뛸 수도 있음)
-	// 	if (userId == null || !chatRoom.getUser().getUserId().equals(userId)) {
-	// 		throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-	// 	}
-	//
-	// 	// 3) 메시지 조회 및 반환
-	// 	List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomId(roomId);
-	//
-	// 	return chatMessages.stream()
-	// 		.map(ChatMessageResponse::from)
-	// 		.collect(Collectors.toList());
-	// }
-
 }

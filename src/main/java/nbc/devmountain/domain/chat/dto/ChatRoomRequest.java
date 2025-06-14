@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat.chatroom.dto.request;
+package nbc.devmountain.domain.chat.dto;
 
 
 public record ChatRoomRequest(
