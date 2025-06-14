@@ -123,7 +123,7 @@ public class LectureRecommendationService {
 			}
 
 			String lectureInfo = similarLectures.stream()
-				.map(l -> "제목: %s, 설명: %s".formatted(l.getTitle(), l.getDescription()))
+				.map(l -> "제목: %s, 설명: %s,강사: %s,난이도: %s,썸네일: %s".formatted(l.getTitle(), l.getDescription(),l.getInstructor(),l.getLevelCode(),l.getThumbnailUrl()))
 				.collect(Collectors.joining("\n"));
 
 			String promptText = String.format(
