@@ -31,7 +31,7 @@ public class SecurityConfig {
 				session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // 세션 기반 인증 사용
 			.authorizeHttpRequests(auth -> auth
 				.requestMatchers("/users/signup", "/users/login", "/login",
-					"/ws/**", "/chatrooms/**", "/chatrooms", "/info", "/error", "/topic/**", "/app/**")
+					"/ws/**", "/chatrooms/**", "/chatrooms", "/info", "/error", "/topic/**", "/app/**","/actuator","/actuator/**")
 				.permitAll() // 인증이 필요없는 부분 추가 예정
 				.anyRequest()
 				.authenticated()
