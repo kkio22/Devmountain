@@ -40,7 +40,7 @@ services:
       - devmonntain-net
 
 volumes:
-  devmountain-postgres-volume
+  devmountain-postgres-volume:
 
 networks:
   devmonntain-net:
