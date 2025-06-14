@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nbc.devmountain.domain.ai.dto.AiRecommendationResponse;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
@@ -34,14 +33,12 @@ public class ChatMessageService {
 
 	@Transactional
 	public ChatMessageResponse createMessage(Long userId, Long chatRoomId, String message) {
-
 		if (message == null || message.trim().isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "메시지 내용이 비어있습니다.");
 		}
 		if (message.length() > 1000) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "메시지가 너무 깁니다. (최대 1000자)");
 		}
-		//삭제된 채팅방은 메세지입력 x
 
 		User user = userRepository.findById(userId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -64,31 +61,39 @@ public class ChatMessageService {
 
 		return ChatMessageResponse.from(chatMessageRepository.save(chatMessage));
 	}
+
 	@Transactional
-	public ChatMessageResponse createAIMessage(Long chatRoomId, AiRecommendationResponse aiResponse){
+	public ChatMessageResponse createAIMessage(Long chatRoomId, ChatMessageResponse aiResponse) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-		//AI응답 직렬화
+
 		try {
-			String recJson = objectMapper.writeValueAsString(aiResponse.recommendations());
+			String messageContent;
+			if (aiResponse.getRecommendations() != null && !aiResponse.getRecommendations().isEmpty()) {
+				// 추천 목록이 있는 경우 JSON으로 직렬화
+				messageContent = objectMapper.writeValueAsString(aiResponse.getRecommendations());
+			} else {
+				// 일반 메시지인 경우 그대로 사용
+				messageContent = aiResponse.getMessage();
+			}
+
 			ChatMessage aiChatMessage = ChatMessage.builder()
 				.chatRoom(chatRoom)
 				.user(null)
-				.message(recJson)
+				.message(messageContent)
 				.isAiResponse(true)
 				.build();
+
 			chatRoom.addMessages(aiChatMessage);
 
-			log.info("메세지 생성 완료");
+			log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
 			return ChatMessageResponse.from(chatMessageRepository.save(aiChatMessage));
 
 		} catch (JsonProcessingException e) {
-			log.error("AI 응답 직렬화 실패");
-			throw new RuntimeException(e);
+			log.error("AI 응답 직렬화 실패: {}", e.getMessage());
+			throw new RuntimeException("AI 응답을 저장하는 중 오류가 발생했습니다.", e);
 		}
 	}
-
-
 
 	public List<ChatMessageResponse> getMessages(Long userId, Long roomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)

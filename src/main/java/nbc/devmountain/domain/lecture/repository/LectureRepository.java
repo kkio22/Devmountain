@@ -21,6 +21,4 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
 	List<Lecture> findByIsEmbeddedFalse();
 
 	List<Lecture> findTop5ByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String title, String description);
-
-	List<Lecture> findByIsEmbeddedTrue();
 }
