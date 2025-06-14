@@ -38,7 +38,7 @@ public class LectureService {
 
 		InflearnResponse firstPage = lectureClient.getLecture(1);
 
-		for (int i = 1; i <= 10/*firstPage.data().totalPage()*/; i++) {
+		for (int i = 1; i <= firstPage.data().totalPage(); i++) {
 			InflearnResponse page = lectureClient.getLecture(i);
 
 			savePage(page);
@@ -100,7 +100,6 @@ public class LectureService {
 			}
 		}
 		lectureSkillTagRepository.saveAll(lectureSkillTags);
-		ragService.saveEmbeddedLecturesToVectorStore();
 	}
 
 

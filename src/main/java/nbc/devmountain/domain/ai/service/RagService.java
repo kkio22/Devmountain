@@ -6,6 +6,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.dao.EmptyResultDataAccessException;
 
-import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.lecture.model.LectureSkillTag;
 import nbc.devmountain.domain.lecture.model.SkillTag;
@@ -28,8 +28,8 @@ public class RagService {
 
 	private final VectorStore vectorStore;
 	private final LectureRepository lectureRepository;
-	private final LectureSkillTagRepository lectureSkillTagRepository;
 	private final JdbcTemplate jdbcTemplate;
+	private final LectureSkillTagRepository lectureSkillTagRepository;
 
 	/**
 	 * Lecture DB의 강의들을 벡터 DB에 저장하는 메서드
@@ -48,23 +48,18 @@ public class RagService {
 		int addedOrUpdatedCount = 0;
 		for (Lecture lecture : embeddedLectures) {
 			try {
-				// 1. lectureId로 기존 Document ID(UUID)를 찾습니다.
 				UUID existingDocId = findVectorStoreIdByLectureId(lecture.getLectureId());
-
-				// 2. 새로운 Document 객체를 생성하거나, 기존 Document의 ID를 포함하여 재생성합니다.
 				Document docToSave;
+				Document originalDoc = convertLectureToDocument(lecture);
 				if (existingDocId != null) {
-					// 기존 Document가 있다면, 해당 UUID를 사용하여 Document를 재생성하여 업데이트를 유도합니다.
-					Document originalDoc = convertLectureToDocument(lecture); // ID 없는 Document 생성
-					docToSave = new Document(existingDocId.toString(), originalDoc.getContent(), originalDoc.getMetadata());
+					docToSave = new Document(existingDocId.toString(), originalDoc.getContent(),
+						originalDoc.getMetadata());
 					log.info("기존 벡터 업데이트: lectureId={}, docId={}", lecture.getLectureId(), existingDocId);
 				} else {
-					// 새 Document라면, vectorStore.add() 내부에서 UUID가 자동으로 생성됩니다.
-					docToSave = convertLectureToDocument(lecture); // ID 없는 Document 생성
+					docToSave = originalDoc;
 					log.info("새 벡터 추가: lectureId={}", lecture.getLectureId());
 				}
 
-				// Spring AI의 VectorStore.add()는 Document.id가 존재하는 경우 업데이트, 없는 경우 삽입을 시도합니다.
 				vectorStore.add(List.of(docToSave));
 				addedOrUpdatedCount++;
 
@@ -76,9 +71,7 @@ public class RagService {
 		log.info("벡터 스토어에 새로 추가되거나 업데이트된 강의 수: {}", addedOrUpdatedCount);
 	}
 
-	/**
-	 * vector_store 테이블에서 lectureId를 이용해 기존 Document의 UUID를 찾습니다.
-	 */
+
 	private UUID findVectorStoreIdByLectureId(Long lectureId) {
 		String sql = "SELECT id FROM vector_store WHERE (metadata->>'lectureId')::bigint = ? LIMIT 1";
 		try {
@@ -124,10 +117,6 @@ public class RagService {
 		return lectureRepository.findTop5ByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(query, query);
 	}
 
-	/**
-	 * Lecture를 Document로 변환
-	 * 강의 -> 벡터 문서로 바꾸는 메서드
-	 */
 	private Document convertLectureToDocument(Lecture lecture) {
 
 		String tags = "";
@@ -140,6 +129,7 @@ public class RagService {
 			log.debug("스킬 태그 로드 실패");
 		}
 
+		// 강의 정보를 텍스트로 변환
 		String content = String.format(
 			"제목: %s\n강사: %s\n설명: %s\n기술 태그: %s",
 			lecture.getTitle(),
@@ -152,13 +142,10 @@ public class RagService {
 			"lectureId", lecture.getLectureId(),
 			"title", lecture.getTitle() != null ? lecture.getTitle() : "",
 			"instructor", lecture.getInstructor() != null ? lecture.getInstructor() : "",
-			"description",lecture.getDescription() != null ? lecture.getDescription() : "",
+			"description", lecture.getDescription() != null ? lecture.getDescription() : "",
 			"levelCode", lecture.getLevelCode() != null ? lecture.getLevelCode() : "미정",
-			"tags",tags != null ? tags : ""
+			"thumbnailUrl", lecture.getThumbnailUrl() != null ? lecture.getThumbnailUrl() : ""
 		);
-
-		// Document 생성 시 ID는 비워둡니다. (vectorStore.add가 처리)
-		// 업데이트 시에는 위에 있는 로직에서 existingDocId로 새 Document를 생성합니다.
 		return new Document(content, metadata);
 	}
 }
