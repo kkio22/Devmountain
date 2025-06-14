@@ -53,10 +53,6 @@ public class Payment {
         this.membershipLevelChangedTo = membershipLevelChangedTo;
     }
 
-    public enum Method {
-        CARD, TRANSFER, PHONE, SIMPLE_PAYMENT
-    }
-
     public enum Result {
         SUCCESS, FAIL
     }

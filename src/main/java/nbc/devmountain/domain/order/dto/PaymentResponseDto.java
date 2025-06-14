@@ -1,5 +1,6 @@
 package nbc.devmountain.domain.order.dto;
 
+import nbc.devmountain.domain.order.model.Method;
 import nbc.devmountain.domain.order.model.Payment;
 
 import java.time.LocalDateTime;
@@ -8,7 +9,7 @@ public record PaymentResponseDto(
         Long paymentId,
         String userEmail,
         String paymentKey,
-        Payment.Method method,
+        Method method,
         Payment.Result result,
         Payment.MembershipLevel membershipLevelChangedTo,
         LocalDateTime createdAt
