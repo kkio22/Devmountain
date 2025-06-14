@@ -1,5 +1,4 @@
-// src/main/java/nbc/devmountain/domain/chat/chatmessage/dto/response/ChatMessageResponse.java
-package nbc.devmountain.domain.chat.chatmessage.dto.response;
+package nbc.devmountain.domain.chat.dto;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -14,6 +13,7 @@ import lombok.Builder;
 import lombok.Getter;
 import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.model.ChatMessage;
+import nbc.devmountain.domain.chat.model.MessageType;
 
 @Getter
 @Builder
@@ -25,7 +25,7 @@ public class ChatMessageResponse {
 	private final String message;
 	private final List<RecommendationDto> recommendations;
 	private final boolean isAiResponse;
-	private final MessageType messageType;
+	private final nbc.devmountain.domain.chat.model.MessageType messageType;
 	private final LocalDateTime createdAt;
 	private final LocalDateTime updatedAt;
 
@@ -63,12 +63,5 @@ public class ChatMessageResponse {
 		}
 
 		return builder.build();
-	}
-
-	public enum MessageType {
-		CHAT,           // 일반 채팅
-		RECOMMENDATION, // 강의 추천
-		ERROR,          // 에러 메시지
-		WELCOME         // 환영 메시지
 	}
 }
