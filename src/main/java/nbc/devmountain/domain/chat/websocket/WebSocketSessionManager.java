@@ -45,17 +45,4 @@ public class WebSocketSessionManager {
 		return activeSessions.get(roomId);
 	}
 
-	public boolean isSessionActive(Long roomId) {
-		WebSocketSession session = activeSessions.get(roomId);
-		return session != null && session.isOpen();
-	}
-
-	public int getActiveSessionCount() {
-		return activeSessions.size();
-	}
-
-	/**채팅방 ID 조회*/
-	public Long getRoomId(WebSocketSession session) {
-		return sessionToRoom.get(session.getId());
-	}
 }

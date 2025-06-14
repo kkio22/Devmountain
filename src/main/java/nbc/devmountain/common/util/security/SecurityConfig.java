@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+import jakarta.servlet.http.HttpServletResponse;
 import nbc.devmountain.common.util.oauth2.CustomOAuth2UserService;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
@@ -24,22 +25,40 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http, CustomOAuth2UserService customOAuth2UserService) throws
 		Exception {
 		http
+			.cors().and()
 			.csrf().disable() //csrf 비활성화
 			.sessionManagement(session ->
 				session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // 세션 기반 인증 사용
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/users/signup","/users/login", "/login","/ws/**","/actuator","/actuator/**").permitAll() // 인증이 필요없는 부분 추가 예정
-				.anyRequest().authenticated()
+				.requestMatchers("/users/signup", "/users/login", "/login",
+					"/ws/**", "/chatrooms/**", "/chatrooms", "/info", "/error", "/topic/**", "/app/**","/actuator","/actuator/**")
+				.permitAll() // 인증이 필요없는 부분 추가 예정
+				.anyRequest()
+				.authenticated()
 			)
 			// OAuth2 설정
 			.oauth2Login(oauth -> oauth
 				// .loginPage("/login")
 				.userInfoEndpoint(userInfo -> userInfo
 					.userService(customOAuth2UserService)) // 사용자 정보 처리
-				.defaultSuccessUrl("/users/test") // 로그인 성공 후 이동할 페이지
+				// .defaultSuccessUrl("/") // 로그인 성공 후 이동할 페이지
 				// 추후 프론트 개발 후 url 수정
+				// localhost:5173/chatrooms -> ? 이게 맞나? -> 아니다 홈으로 가야하는데 "/" ?
+				.successHandler((request, response, authentication) -> {
+					response.sendRedirect("http://localhost:5173/chatrooms");
+				})
 			)
-			.formLogin(form -> form.disable());
+			// 로그아웃
+			.logout(logout -> logout
+				.logoutUrl("/logout")
+				.logoutSuccessHandler((request, response, authentication) -> {
+					response.setStatus(HttpServletResponse.SC_OK);
+				})
+				.invalidateHttpSession(true)
+				.deleteCookies("JSESSIONID")
+			)
+			.formLogin(form -> form.disable()
+			);
 
 		return http.build();
 	}

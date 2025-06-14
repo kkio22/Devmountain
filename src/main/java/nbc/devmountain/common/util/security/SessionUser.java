@@ -13,10 +13,12 @@ public class SessionUser implements Serializable {
 	// private String name;
 	private Long userId;
 	private String email;
+	private User.MembershipLevel membershipLevel;
 
 	public SessionUser(User user) {
 		// this.name = user.getName();
 		this.userId = user.getUserId();
 		this.email = user.getEmail();
+		this.membershipLevel=user.getMembershipLevel();
 	}
 }
