@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat.chatroom.dto.response;
+package nbc.devmountain.domain.chat.dto;
 
 import java.time.LocalDateTime;
 

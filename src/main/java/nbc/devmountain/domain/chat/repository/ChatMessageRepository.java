@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat.chatmessage.repository;
+package nbc.devmountain.domain.chat.repository;
 
 import java.util.List;
 

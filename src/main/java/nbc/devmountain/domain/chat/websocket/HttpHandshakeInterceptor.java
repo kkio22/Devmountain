@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.SessionUser;
+import nbc.devmountain.domain.user.model.User;
 
 @RequiredArgsConstructor
 @Component
@@ -32,17 +33,21 @@ public class HttpHandshakeInterceptor implements HandshakeInterceptor {
 			if (sessionUser != null) {
 				attributes.put("user", sessionUser);
 				attributes.put("isLoggedIn", true);
-				log.info("웹소켓 연결 - 로그인 사용자: {}", sessionUser.getUserId());
+				attributes.put("membershipType",sessionUser.getMembershipLevel());
+				log.info("웹소켓 연결 - 로그인 사용자: {} / 멤버십: {}", sessionUser.getUserId(), sessionUser.getMembershipLevel());
+
 			} else {
 				// 비로그인 사용자 (세션은 있지만 로그인 정보 없음)
 				attributes.put("user", null);
 				attributes.put("isLoggedIn", false);
-				log.info("웹소켓 연결 - 비로그인 사용자 (세션 있음)");
+				attributes.put("membershipType", User.MembershipLevel.GUEST);
+				log.info("웹소켓 연결 - 비회원 사용자 (세션 없음)");
 			}
 		} else {
 			// 세션 없는 비회원 사용자
 			attributes.put("user", null);
 			attributes.put("isLoggedIn", false);
+			attributes.put("membershipType", User.MembershipLevel.GUEST);
 			log.info("웹소켓 연결 - 비회원 사용자 (세션 없음)");
 		}
 
