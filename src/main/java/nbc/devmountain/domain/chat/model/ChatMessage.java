@@ -34,6 +34,9 @@ public class ChatMessage {
 	@Column(columnDefinition = "TEXT")
 	private String message;
 
+	@Enumerated(EnumType.STRING)
+	private MessageType messageType;
+
 	private Boolean isAiResponse;
 
 	@CreatedDate
