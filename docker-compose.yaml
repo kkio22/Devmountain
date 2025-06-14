@@ -4,6 +4,8 @@ services:
     container_name: devmountain-redis
     ports:
       - "${REDIS_PORT}:6379"
+    networks:
+      - devmonntain-net
 
   postgres:
     image: ankane/pgvector:latest
@@ -15,6 +17,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - devmountain-postgres-volume:/var/lib/postgresql/data
+    networks:
+      - devmonntain-net
 
   app:
     build:
@@ -32,6 +36,13 @@ services:
     depends_on:
       - redis
       - postgres
+    networks:
+      - devmonntain-net
 
 volumes:
   devmountain-postgres-volume:
+
+networks:
+  devmonntain-net:
+    name: devmonntain-net # 네트워크 명시를 해놔서 각 컨테이너에서 networks를 선언할 필요는 없지만 compose는 명시적으로 적어두는게 좋다고 권장함.
+    driver: bridge
