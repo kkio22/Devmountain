@@ -1,7 +1,5 @@
-// src/main/java/nbc/devmountain/domain/ai/service/LectureRecommendationService.java
 package nbc.devmountain.domain.ai.service;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Service;
 
-import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
+import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
+import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.user.model.User;
 
@@ -159,7 +158,7 @@ public class LectureRecommendationService {
 		return ChatMessageResponse.builder()
 			.message(message)
 			.isAiResponse(true)
-			.messageType(ChatMessageResponse.MessageType.CHAT)
+			.messageType(MessageType.CHAT)
 			.build();
 	}
 
@@ -167,7 +166,7 @@ public class LectureRecommendationService {
 		return ChatMessageResponse.builder()
 			.message(errorMessage)
 			.isAiResponse(true)
-			.messageType(ChatMessageResponse.MessageType.ERROR)
+			.messageType(MessageType.ERROR)
 			.build();
 	}
 }

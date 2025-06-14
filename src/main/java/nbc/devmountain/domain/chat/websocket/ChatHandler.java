@@ -1,7 +1,6 @@
 package nbc.devmountain.domain.chat.websocket;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -13,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.SessionUser;
 import nbc.devmountain.domain.ai.service.ChatService;
-import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
+import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 
 @Component
 @RequiredArgsConstructor

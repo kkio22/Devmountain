@@ -94,7 +94,6 @@ public class ChatMessageService {
 						continue;
 					}
 					Recommendation recommendation = Recommendation.builder()
-						.recommendId(UUID.randomUUID().toString()) // 고유 ID 생성
 						.chatMessage(null)
 						.user(user)
 						.lecture(lecture)
