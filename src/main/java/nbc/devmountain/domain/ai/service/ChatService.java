@@ -1,4 +1,3 @@
-// src/main/java/nbc/devmountain/domain/ai/service/ChatService.java
 package nbc.devmountain.domain.ai.service;
 
 import java.util.Collections;
@@ -7,15 +6,16 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
+import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.SessionUser;
-import nbc.devmountain.domain.chat.chatmessage.dto.response.ChatMessageResponse;
-import nbc.devmountain.domain.chat.chatmessage.service.ChatMessageService;
+import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
+
+import nbc.devmountain.domain.chat.model.MessageType;
+import nbc.devmountain.domain.chat.service.ChatMessageService;
 import nbc.devmountain.domain.chat.websocket.WebSocketMessageSender;
 import nbc.devmountain.domain.user.model.User;
 
@@ -38,7 +38,7 @@ public class ChatService {
 				ChatMessageResponse limitMsg = ChatMessageResponse.builder()
 					.message("비회원은 최대 5개의 메세지만 보낼 수 있습니다. 더 이용하려면 로그인을 해주세요.")
 					.isAiResponse(true)
-					.messageType(ChatMessageResponse.MessageType.ERROR)
+					.messageType(MessageType.ERROR)
 					.build();
 				messageSender.sendMessageToRoom(roomId, limitMsg);
 				return limitMsg;
@@ -55,7 +55,7 @@ public class ChatService {
 				.message(payload)
 				.recommendations(Collections.emptyList())
 				.isAiResponse(false)
-				.messageType(ChatMessageResponse.MessageType.CHAT)
+				.messageType(MessageType.CHAT)
 				.build();
 		}
 		messageSender.sendMessageToRoom(roomId, userMsg);
@@ -81,7 +81,7 @@ public class ChatService {
 		return ChatMessageResponse.builder()
 			.message("안녕하세요. 비회원으로 접속하셨습니다.")
 			.isAiResponse(true)
-			.messageType(ChatMessageResponse.MessageType.WELCOME)
+			.messageType(MessageType.WELCOME)
 			.build();
 	}
 }

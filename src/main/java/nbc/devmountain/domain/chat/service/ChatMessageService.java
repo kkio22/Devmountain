@@ -1,8 +1,7 @@
-// src/main/java/nbc/devmountain/domain/chat/chatmessage/service/ChatMessageService.java
 package nbc.devmountain.domain.chat.service;
 
 import java.util.List;
-import java.util.UUID; // UUID import 추가
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -19,6 +18,7 @@ import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
+import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.chat.repository.ChatMessageRepository;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
 import nbc.devmountain.domain.lecture.model.Lecture;
@@ -80,9 +80,10 @@ public class ChatMessageService {
 
 		try {
 			String messageContent;
+			MessageType messageType;
 			if (aiResponse.getRecommendations() != null && !aiResponse.getRecommendations().isEmpty()) {
-
 				messageContent = objectMapper.writeValueAsString(aiResponse.getRecommendations());
+				messageType = MessageType.RECOMMENDATION;
 
 				// 추천 기록 저장
 				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
@@ -92,8 +93,6 @@ public class ChatMessageService {
 						log.warn("추천 강의 '{}'에 해당하는 실제 강의를 찾을 수 없습니다. Recommendation으로 저장하지 않습니다.", recDto.title());
 						continue;
 					}
-
-
 					Recommendation recommendation = Recommendation.builder()
 						.recommendId(UUID.randomUUID().toString()) // 고유 ID 생성
 						.chatMessage(null)
@@ -101,15 +100,14 @@ public class ChatMessageService {
 						.lecture(lecture)
 						.score(null)
 						.build();
-
 					// Recommendation 엔티티 저장
 					recommendationRepository.save(recommendation);
 					log.info("강의 추천 기록 저장 성공: lectureId={}, userId={}", lecture.getLectureId(), user.getUserId());
 				}
-
 			} else {
 				// 일반 AI 메시지인 경우, message 필드 사용
 				messageContent = aiResponse.getMessage();
+				messageType = aiResponse.getMessageType();
 			}
 
 			ChatMessage aiChatMessage = ChatMessage.builder()
@@ -117,6 +115,7 @@ public class ChatMessageService {
 				.user(null)
 				.message(messageContent)
 				.isAiResponse(true)
+				.messageType(messageType)
 				.build();
 
 			chatRoom.addMessages(aiChatMessage);
