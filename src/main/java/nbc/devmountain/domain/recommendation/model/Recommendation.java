@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 public class Recommendation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String recommendId;
+    private Long recommendId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_id")
