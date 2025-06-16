@@ -18,6 +18,7 @@ public record BraveSearchResponseDto(
     public record Result(
             String title,
             String description,
+            String url,
             @JsonProperty("thumbnail") ThumbnailWrapper thumbnailWrapper
     ) {
         public String thumbnail() {
