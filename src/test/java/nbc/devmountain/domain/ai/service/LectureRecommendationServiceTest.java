@@ -378,6 +378,7 @@ class LectureRecommendationServiceTest {
 		BraveSearchResponseDto.Result result = new BraveSearchResponseDto.Result(
 				"AI 기초 강의",
 				"AI 입문자를 위한 강의입니다.",
+				"http:fewfewfewfewfew",
 				new BraveSearchResponseDto.Result.ThumbnailWrapper("https://imgs.search.brave.com/thumb.jpg", "https://example.com/original.jpg")
 		);
 		BraveSearchResponseDto.Web web = new BraveSearchResponseDto.Web(List.of(result));
