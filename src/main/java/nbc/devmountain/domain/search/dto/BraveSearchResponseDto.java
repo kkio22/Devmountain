@@ -1,6 +1,7 @@
 package nbc.devmountain.domain.search.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -16,7 +17,15 @@ public record BraveSearchResponseDto(
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Result(
             String title,
-            String url,
-            String description
-    ) {}
+            String description,
+            @JsonProperty("thumbnail") ThumbnailWrapper thumbnailWrapper
+    ) {
+        public String thumbnail() {
+            if (thumbnailWrapper == null) return null;
+            return thumbnailWrapper.src != null ? thumbnailWrapper.src : thumbnailWrapper.original;
+        }
+
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record ThumbnailWrapper(String src, String original) {}
+    }
 }

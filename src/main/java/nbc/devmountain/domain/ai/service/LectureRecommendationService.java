@@ -16,6 +16,8 @@ import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.user.model.User;
+import nbc.devmountain.domain.search.sevice.BraveSearchService;
+import nbc.devmountain.domain.search.dto.BraveSearchResponseDto;
 
 @Slf4j
 @Service
@@ -23,13 +25,14 @@ import nbc.devmountain.domain.user.model.User;
 public class LectureRecommendationService {
 	private final RagService ragService;
 	private final AiService aiService;
+	private final BraveSearchService braveSearchService;
 
 	// 대화 히스토리를 저장 (chatRoomId -> 대화 내용들)
 	private final Map<Long, StringBuilder> conversationHistory = new ConcurrentHashMap<>();
 	// 수집된 정보 저장 (chatRoomId -> 수집된 정보)
 	private final Map<Long, Map<String, String>> collectedInfo = new ConcurrentHashMap<>();
 
-	public ChatMessageResponse recommendationResponse(String query, User.MembershipLevel memberType, Long chatRoomId) {
+	public ChatMessageResponse recommendationResponse(String query, User.MembershipLevel membershipLevel, Long chatRoomId) {
 		if (query == null || query.trim().isEmpty()) {
 			log.warn("빈 쿼리 수신: chatRoomId={}", chatRoomId);
 			return createErrorResponse(AiConstants.ERROR_EMPTY_QUERY);
@@ -41,7 +44,7 @@ public class LectureRecommendationService {
 		}
 
 		try {
-			return processConversation(query, chatRoomId);
+			return processConversation(query, chatRoomId, membershipLevel);
 		} catch (Exception e) {
 			log.error("강의 추천 처리 중 오류 발생: chatRoomId={}, error={}", chatRoomId, e.getMessage(), e);
 			resetChatState(chatRoomId);
@@ -49,7 +52,7 @@ public class LectureRecommendationService {
 		}
 	}
 
-	private ChatMessageResponse processConversation(String userMessage, Long chatRoomId) {
+	private ChatMessageResponse processConversation(String userMessage, Long chatRoomId, User.MembershipLevel membershipLevel) {
 		// 대화 히스토리 업데이트
 		StringBuilder history = conversationHistory.computeIfAbsent(chatRoomId, k -> new StringBuilder());
 		history.append("사용자: ").append(userMessage).append("\n");
@@ -77,7 +80,7 @@ public class LectureRecommendationService {
 		// 충분한 정보가 수집되었는지 확인
 		if (analysisResponse.getMessageType() == MessageType.RECOMMENDATION) {
 			// 최종 추천 단계 - RAG 검색 및 추천 생성
-			return generateFinalRecommendation(info, chatRoomId);
+			return generateFinalRecommendation(info, chatRoomId, membershipLevel);
 		}
 
 		return analysisResponse;
@@ -100,7 +103,7 @@ public class LectureRecommendationService {
 		return response;
 	}
 
-	private ChatMessageResponse generateFinalRecommendation(Map<String, String> collectedInfo, Long chatRoomId) {
+	private ChatMessageResponse generateFinalRecommendation(Map<String, String> collectedInfo, Long chatRoomId, User.MembershipLevel membershipLevel) {
 		try {
 			// 수집된 정보로 검색 쿼리 생성
 			String searchQuery = buildSearchQuery(collectedInfo);
@@ -123,6 +126,19 @@ public class LectureRecommendationService {
 				formatCollectedInfo(collectedInfo),
 				lectureInfo
 			);
+
+			// 브레이브 검색 결과 추가 (비회원이 아닐 때만)
+			if (!User.MembershipLevel.GUEST.equals(membershipLevel)) {
+				BraveSearchResponseDto braveResponse = braveSearchService.search(searchQuery);
+				List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
+				if (braveResults != null && !braveResults.isEmpty()) {
+					String braveInfo = braveResults.stream()
+							.map(r -> "제목: %s, 설명: %s, 썸네일 링크: %s".formatted(
+									r.title(), r.description(), r.thumbnail()))
+							.collect(Collectors.joining("\n"));
+					promptText += "\n\n[브레이브 검색 결과]\n" + braveInfo;
+				}
+			}
 
 			resetChatState(chatRoomId);
 			return aiService.getRecommendations(promptText, true);
