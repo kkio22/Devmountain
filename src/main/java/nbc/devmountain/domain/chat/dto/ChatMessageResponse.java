@@ -43,28 +43,71 @@ public class ChatMessageResponse {
 			.updatedAt(chatMessage.getUpdatedAt())
 			.messageType(chatMessage.getMessageType());
 
+		log.debug("[ChatMessageResponse] 변환 시작 - AI응답: {}, 메시지타입: {}, 메시지: {}",
+			chatMessage.getIsAiResponse(), chatMessage.getMessageType(),
+			chatMessage.getMessage() != null ? chatMessage.getMessage().substring(0, Math.min(100, chatMessage.getMessage().length())) + "..." : "null");
+
 		// AI 응답인 경우 (isAiResponse가 true)
 		if (chatMessage.getIsAiResponse()) {
 			if (chatMessage.getMessageType() == MessageType.RECOMMENDATION) {
-				try {
-					List<RecommendationDto> recommendationsList = objectMapper.readValue(
-						chatMessage.getMessage(),
-						new TypeReference<List<RecommendationDto>>() {
-						}
-					);
-					builder.recommendations(recommendationsList).message(null);
-				} catch (JsonProcessingException e) {
-					builder.message("추천 응답을 처리하는 중 오류가 발생했습니다.")
+				String rawMessage = chatMessage.getMessage();
+				log.info("[ChatMessageResponse] 추천 메시지 파싱 시작, 원본 길이: {}",
+					rawMessage != null ? rawMessage.length() : 0);
+
+				if (rawMessage == null || rawMessage.trim().isEmpty()) {
+					log.warn("[ChatMessageResponse] 추천 메시지가 비어있음");
+					builder.message("추천 데이터가 비어있습니다.")
 						.recommendations(Collections.emptyList())
 						.messageType(MessageType.ERROR);
-					log.error("[ChatMessageResponse] 추천 메시지 파싱 실패: {}", e.getMessage());
+				} else {
+					try {
+						log.debug("[ChatMessageResponse] JSON 파싱 시도: {}",
+							rawMessage.substring(0, Math.min(200, rawMessage.length())));
+
+						List<RecommendationDto> recommendationsList = objectMapper.readValue(
+							rawMessage,
+							new TypeReference<List<RecommendationDto>>() {}
+						);
+
+						log.info("[ChatMessageResponse] 추천 파싱 성공: {} 개 항목",
+							recommendationsList != null ? recommendationsList.size() : 0);
+
+						if (recommendationsList != null && !recommendationsList.isEmpty()) {
+							for (int i = 0; i < recommendationsList.size(); i++) {
+								RecommendationDto rec = recommendationsList.get(i);
+								log.debug("[ChatMessageResponse] 추천 {}: lectureId={}, title={}",
+									i + 1, rec.lectureId(), rec.title());
+							}
+						}
+
+						builder.recommendations(recommendationsList != null ? recommendationsList : Collections.emptyList())
+							.message(null);
+					} catch (JsonProcessingException e) {
+						log.error("[ChatMessageResponse] 추천 메시지 파싱 실패: {}", e.getMessage());
+						log.error("[ChatMessageResponse] 파싱 실패한 원본 데이터: {}", rawMessage);
+						builder.message("추천 응답을 처리하는 중 오류가 발생했습니다.")
+							.recommendations(Collections.emptyList())
+							.messageType(MessageType.ERROR);
+					}
 				}
 			} else {
-				builder.message(chatMessage.getMessage()).recommendations(Collections.emptyList());
+				// 일반 AI 메시지
+				log.debug("[ChatMessageResponse] 일반 AI 메시지 처리");
+				builder.message(chatMessage.getMessage())
+					.recommendations(Collections.emptyList());
 			}
 		} else {
-			builder.message(chatMessage.getMessage()).recommendations(Collections.emptyList());
+			// 사용자 메시지
+			log.debug("[ChatMessageResponse] 사용자 메시지 처리");
+			builder.message(chatMessage.getMessage())
+				.recommendations(Collections.emptyList());
 		}
-		return builder.build();
+
+		ChatMessageResponse result = builder.build();
+		log.debug("[ChatMessageResponse] 변환 완료 - 추천 개수: {}, 메시지 존재: {}",
+			result.recommendations != null ? result.recommendations.size() : 0,
+			result.message != null);
+
+		return result;
 	}
 }

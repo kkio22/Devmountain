@@ -1,7 +1,6 @@
 package nbc.devmountain.domain.chat.service;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -72,8 +71,10 @@ public class ChatMessageService {
 		return ChatMessageResponse.from(chatMessageRepository.save(chatMessage));
 	}
 	@Transactional
-	public ChatMessageResponse createAIMessage(Long chatRoomId, ChatMessageResponse aiResponse){
+	public ChatMessageResponse createAIMessage(Long chatId,Long chatRoomId, ChatMessageResponse aiResponse) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		ChatMessage chatMessage = chatMessageRepository.findById(chatId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
 		User user = chatRoom.getUser();
@@ -85,16 +86,27 @@ public class ChatMessageService {
 				messageContent = objectMapper.writeValueAsString(aiResponse.getRecommendations());
 				messageType = MessageType.RECOMMENDATION;
 
+				log.info("추천 데이터 JSON 직렬화 완료: {}", messageContent);
 				// 추천 기록 저장
 				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
-					Lecture lecture = lectureRepository.findByTitle(recDto.title()).orElse(null);
 
-					if (lecture == null) {
-						log.warn("추천 강의 '{}'에 해당하는 실제 강의를 찾을 수 없습니다. Recommendation으로 저장하지 않습니다.", recDto.title());
-						continue;
+					Lecture lecture = null;
+					lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
+					log.info("lectureId {}로 강의 검색 결과: {}", recDto.lectureId(), lecture != null ? "성공" : "실패");
+					//null일 경우 제목,강사로 가져오기
+					if (lecture == null && recDto.title() != null) {
+						List<Lecture> lectures;
+
+						if (recDto.instructor() != null) {
+							lectures = lectureRepository.findByTitleAndInstructor(recDto.title(), recDto.instructor());
+						} else {
+							lectures = lectureRepository.findByTitle(recDto.title());
+						}
+						lecture = lectures.get(0);
 					}
+					//todo:추천정보 유사도값 넣어야함
 					Recommendation recommendation = Recommendation.builder()
-						.chatMessage(null)
+						.chatMessage(chatMessage)
 						.user(user)
 						.lecture(lecture)
 						.score(null)
@@ -129,7 +141,6 @@ public class ChatMessageService {
 			throw new RuntimeException("AI 응답을 저장하는 중 오류가 발생했습니다.", e);
 		}
 	}
-
 
 	public List<ChatMessageResponse> getMessages(Long userId, Long roomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)

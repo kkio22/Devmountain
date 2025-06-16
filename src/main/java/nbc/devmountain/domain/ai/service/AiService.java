@@ -197,6 +197,14 @@ public class AiService {
 				return createErrorResponse(AiConstants.ERROR_NO_SUITABLE_LECTURES);
 			}
 
+			for (RecommendationDto rec : recommendations) {
+				if (rec.lectureId() == null) {
+					log.warn("[AiService] 추천 결과에 lectureId가 없음: {}", rec.title());
+				} else {
+					log.info("[AiService] 추천 강의 검증 성공: lectureId={}, title={}", rec.lectureId(), rec.title());
+				}
+			}
+
 			log.info("[AiService] AI 추천 결과 파싱 성공: {}", recommendations);
 			return ChatMessageResponse.builder()
 				.message(null)

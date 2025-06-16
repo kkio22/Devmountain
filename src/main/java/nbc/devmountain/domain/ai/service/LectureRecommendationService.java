@@ -113,8 +113,9 @@ public class LectureRecommendationService {
 			}
 
 			String lectureInfo = similarLectures.stream()
-				.map(l -> "제목: %s, 설명: %s, 강사: %s, 난이도: %s, 썸네일: %s".formatted(
-					l.getTitle(), l.getDescription(), l.getInstructor(), l.getLevelCode(), l.getThumbnailUrl()))
+				.map(l -> "강의 ID: %d, 제목: %s, 설명: %s, 강사: %s, 난이도: %s, 썸네일: %s".formatted
+					(l.getLectureId(),l.getTitle(), l.getDescription(), l.getInstructor(), l.getLevelCode(),
+					l.getThumbnailUrl()))
 				.collect(Collectors.joining("\n"));
 
 			String promptText = String.format(
@@ -153,16 +154,25 @@ public class LectureRecommendationService {
 	private String formatCollectedInfo(Map<String, String> info) {
 		StringBuilder formatted = new StringBuilder();
 		if (info.containsKey(AiConstants.INFO_INTEREST)) {
-			formatted.append(AiConstants.LABEL_INTEREST).append(": ").append(info.get(AiConstants.INFO_INTEREST)).append("\n");
+			formatted.append(AiConstants.LABEL_INTEREST)
+				.append(": ")
+				.append(info.get(AiConstants.INFO_INTEREST))
+				.append("\n");
 		}
 		if (info.containsKey(AiConstants.INFO_LEVEL)) {
-			formatted.append(AiConstants.LABEL_LEVEL).append(": ").append(info.get(AiConstants.INFO_LEVEL)).append("\n");
+			formatted.append(AiConstants.LABEL_LEVEL)
+				.append(": ")
+				.append(info.get(AiConstants.INFO_LEVEL))
+				.append("\n");
 		}
 		if (info.containsKey(AiConstants.INFO_GOAL)) {
 			formatted.append(AiConstants.LABEL_GOAL).append(": ").append(info.get(AiConstants.INFO_GOAL)).append("\n");
 		}
 		if (info.containsKey(AiConstants.INFO_ADDITIONAL)) {
-			formatted.append(AiConstants.LABEL_ADDITIONAL).append(": ").append(info.get(AiConstants.INFO_ADDITIONAL)).append("\n");
+			formatted.append(AiConstants.LABEL_ADDITIONAL)
+				.append(": ")
+				.append(info.get(AiConstants.INFO_ADDITIONAL))
+				.append("\n");
 		}
 		return formatted.toString();
 	}

@@ -16,6 +16,7 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
 	List<Lecture> findTop5ByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String title,
 		String description);
 
-	Optional<Lecture> findByTitle(String title);
+	List<Lecture> findByTitle(String title);
 
+	List<Lecture> findByTitleAndInstructor(String title, String instructor);
 }
