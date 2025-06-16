@@ -100,6 +100,8 @@ public class LectureService {
 			}
 		}
 		lectureSkillTagRepository.saveAll(lectureSkillTags);
+
+		log.info("강의 데이터 처리 완료 : {}", lectures.size());
 	}
 
 

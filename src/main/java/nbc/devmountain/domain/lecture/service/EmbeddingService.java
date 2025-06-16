@@ -12,6 +12,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public class EmbeddingService {
 	private final VectorStore vectorStore;
 	private final JdbcTemplate jdbcTemplate;
 
+	@Transactional
 	public void embedLecture() {
 		log.info("embeddingModel class: {}", embeddingModel.getClass().getName());
 		//벡터스토어 초기화
