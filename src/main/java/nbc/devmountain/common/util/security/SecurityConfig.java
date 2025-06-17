@@ -54,6 +54,8 @@ public class SecurityConfig {
 					response.sendRedirect("http://localhost:5173/home");
 				})
 			)
+			// 일반 로그인은 UserController에서 처리하므로 비활성화
+			.formLogin(form -> form.disable())
 			// 로그아웃
 			.logout(logout -> logout
 				.logoutUrl("/logout")
@@ -62,8 +64,6 @@ public class SecurityConfig {
 				})
 				.invalidateHttpSession(true)
 				.deleteCookies("JSESSIONID")
-			)
-			.formLogin(form -> form.disable()
 			);
 
 		return http.build();

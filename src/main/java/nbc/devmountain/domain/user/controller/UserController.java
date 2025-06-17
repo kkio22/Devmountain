@@ -38,25 +38,33 @@ public class UserController {
 
 	@PostMapping("/login")
 	public ResponseEntity<UserResponseDto> loginUser(@RequestBody UserLoginRequestDto userLoginRequestDto, HttpServletRequest request) {
-		User user = userService.loginUser(userLoginRequestDto);
+		try {
+			User user = userService.loginUser(userLoginRequestDto);
 
-		// 세션에 사용자 정보 저장
-		SessionUser sessionUser = new SessionUser(user);
-		request.getSession().setAttribute("user", sessionUser);
+			// 세션에 사용자 정보 저장
+			SessionUser sessionUser = new SessionUser(user);
+			request.getSession().setAttribute("user", sessionUser);
 
-		// Spring Security 컨텍스트에 인증 정보 등록
-		CustomUserPrincipal principal = new CustomUserPrincipal(user);
-		UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-			principal,
-			null,
-			principal.getAuthorities()
-		);
-		SecurityContextHolder.getContext().setAuthentication(authentication);
+			// Spring Security 컨텍스트에 인증 정보 등록
+			CustomUserPrincipal principal = new CustomUserPrincipal(user);
+			UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+				principal,
+				null,
+				principal.getAuthorities()
+			);
+			SecurityContextHolder.getContext().setAuthentication(authentication);
 
-		request.getSession().setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+			request.getSession().setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
-		// 응답 반환
-		return ResponseEntity.ok(UserResponseDto.from(user, user.getUserCategory()));
+			// 응답 반환
+			return ResponseEntity.ok(UserResponseDto.from(user, user.getUserCategory()));
+		} catch (IllegalArgumentException e) {
+			// 로그인 실패 시 401 Unauthorized 반환
+			return ResponseEntity.status(401).build();
+		} catch (Exception e) {
+			// 기타 예외 시 500 Internal Server Error 반환
+			return ResponseEntity.status(500).build();
+		}
 	}
 
 	@GetMapping("/me")
