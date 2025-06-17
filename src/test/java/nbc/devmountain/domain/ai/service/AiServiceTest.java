@@ -306,6 +306,7 @@ class AiServiceTest {
 			// given
 			collectedInfo.put(AiConstants.INFO_INTEREST, "자바");
 			collectedInfo.put(AiConstants.INFO_GOAL, "취업");
+			collectedInfo.put(AiConstants.INFO_LEVEL, "고급");
 			
 			String readyResponse = "일반 응답";
 			ChatResponse mockChatResponse = createMockChatResponse(readyResponse);
@@ -325,6 +326,7 @@ class AiServiceTest {
 		void shouldBeReadyWithInterestAndLevel() {
 			// given
 			collectedInfo.put(AiConstants.INFO_INTEREST, "자바");
+			collectedInfo.put(AiConstants.INFO_GOAL, "취업");
 			collectedInfo.put(AiConstants.INFO_LEVEL, "초급");
 			
 			String readyResponse = "일반 응답";
@@ -370,7 +372,8 @@ class AiServiceTest {
 			"자바 기초 강의",
 			"자바 기초부터 차근차근",
 			"김강사",
-			"초급"
+			"초급",
+				"https://www.example.com/course/"
 		);
 	}
 } 

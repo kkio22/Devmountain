@@ -371,7 +371,8 @@ class LectureRecommendationServiceTest {
 			"스프링 입문 강의",
 			"스프링 프레임워크 기초 학습",
 			"김강사",
-			"초급"
+			"초급",
+				"https://www.example.com/course/"
 		);
 	}
 
@@ -379,6 +380,7 @@ class LectureRecommendationServiceTest {
 		BraveSearchResponseDto.Result result = new BraveSearchResponseDto.Result(
 				"AI 기초 강의",
 				"AI 입문자를 위한 강의입니다.",
+				"http:fewfewfewfewfew",
 				new BraveSearchResponseDto.Result.ThumbnailWrapper("https://imgs.search.brave.com/thumb.jpg", "https://example.com/original.jpg")
 		);
 		BraveSearchResponseDto.Web web = new BraveSearchResponseDto.Web(List.of(result));
