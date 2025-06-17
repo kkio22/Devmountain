@@ -371,7 +371,8 @@ class AiServiceTest {
 			"자바 기초 강의",
 			"자바 기초부터 차근차근",
 			"김강사",
-			"초급"
+			"초급",
+				"https://www.example.com/course/"
 		);
 	}
 } 
