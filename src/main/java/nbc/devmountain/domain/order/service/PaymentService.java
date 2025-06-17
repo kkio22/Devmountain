@@ -17,6 +17,8 @@ import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -31,6 +33,12 @@ public class PaymentService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new OrderException(OrderExceptionCode.USER_NOT_FOUND));
+
+        if (user.getMembershipLevel() == User.MembershipLevel.PRO &&
+                user.getSubscriptionExpiresAt() != null &&
+                user.getSubscriptionExpiresAt().isAfter(LocalDateTime.now())) {
+            throw new OrderException(OrderExceptionCode.ALREADY_SUBSCRIBED);
+        }
 
         // 토스 API 승인 요청
         TossPaymentResponse response = tossApiClient.confirmPayment(
@@ -60,6 +68,8 @@ public class PaymentService {
             user.updateMembershipLevel(User.MembershipLevel.PRO);
             userRepository.save(user);
 
+            user.updateSubscriptionExpiresAt(LocalDateTime.now().plusDays(30));
+
             order.updateOrderStatus(OrderStatus.SUCCESS);
             orderRepository.save(order);
         }
@@ -73,7 +83,7 @@ public class PaymentService {
             case "가상계좌" -> Method.TRANSFER;
             case "휴대폰" -> Method.PHONE;
             case "간편결제" -> Method.SIMPLE_PAYMENT;
-            default -> throw new OrderException(OrderExceptionCode.ORDER_NOT_FOUND);
+            default -> throw new OrderException(OrderExceptionCode.PAYMENT_FAILED);
         };
     }
 
