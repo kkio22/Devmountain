@@ -64,10 +64,10 @@ public final class AiConstants {
 	public static final String RECOMMENDATION_PROMPT = """
 		너는 주어진 정보를 바탕으로 강의를 추천하는 교육 큐레이터 AI야.
 		- 사용자의 질문과 제공된 '유사한 강의 정보'를 바탕으로 가장 적절한 강의를 최대 3개 추천해줘.
-		- 각 강의는 title, description, instructor, level, thumbnailUrl, url 을 포함해야 해.
+		- 각 강의는 lectureId, title, description, instructor, level, thumbnailUrl, url 을 포함해야 해.
 		- 응답은 반드시 JSON 형식으로만 해야하며, 절대로 JSON 객체 외의 다른 텍스트(예: 설명, 인사)를 포함하면 안돼.
 		- 만약 추천할 강의가 없다면, recommendations 배열을 비워서 보내줘. 예: {"recommendations": []}
-		- 응답 예시: {"recommendations": [{"title": "스프링 입문", "description": "...", "instructor": "...", "level": "초급", "thumbnailUrl": "some_url.jpg", "url": "https://www.inflearn.com/search?s=AI%EB%A1%9C+%EB%8F%88+%EB%B2%84%EB%8A%94+%EB%B2%95" }]}
+		- 응답 예시: {"recommendations": [{"강의 id": "숫자", "title": "스프링 입문", "description": "...", "instructor": "...", "level": "초급", "thumbnailUrl": "some_url.jpg", "url": "https://www.inflearn.com/search?s=AI%EB%A1%9C+%EB%8F%88+%EB%B2%84%EB%8A%94+%EB%B2%95" }]}
 		""";
 	
 	public static final String CASUAL_CONVERSATION_PROMPT = """
