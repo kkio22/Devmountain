@@ -116,8 +116,8 @@ public class LectureRecommendationService {
 			}
 
 			String lectureInfo = similarLectures.stream()
-				.map(l -> "제목: %s, 설명: %s, 강사: %s, 난이도: %s, 썸네일: %s".formatted(
-					l.getTitle(), l.getDescription(), l.getInstructor(), l.getLevelCode(), l.getThumbnailUrl()))
+				.map(l -> "제목: %s, 설명: %s, 강사: %s, 난이도: %s, 썸네일: %s url: https://www.inflearn.com/search?s=%s".formatted(
+					l.getTitle(), l.getDescription(), l.getInstructor(), l.getLevelCode(), l.getThumbnailUrl(), l.getTitle()))
 				.collect(Collectors.joining("\n"));
 
 			String promptText = String.format(
@@ -132,8 +132,8 @@ public class LectureRecommendationService {
 				List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
 				if (braveResults != null && !braveResults.isEmpty()) {
 					String braveInfo = braveResults.stream()
-							.map(r -> "제목: %s, 설명: %s, 썸네일 링크: %s".formatted(
-									r.title(), r.description(), r.thumbnail()))
+							.map(r -> "제목: %s, 설명: %s, url: %s, 썸네일 링크: %s".formatted(
+									r.title(), r.description(), r.url(), r.thumbnail()))
 							.collect(Collectors.joining("\n"));
 					promptText += "\n\n[브레이브 검색 결과]\n" + braveInfo;
 				}

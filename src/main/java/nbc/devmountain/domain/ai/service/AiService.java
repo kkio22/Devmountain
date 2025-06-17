@@ -131,7 +131,7 @@ public class AiService {
 	private boolean isReadyForRecommendation(Map<String, String> collectedInfo) {
 		// 최소 관심분야와 (목표 또는 난이도) 중 하나가 있으면 추천 가능
 		return collectedInfo.containsKey(AiConstants.INFO_INTEREST) && 
-			   (collectedInfo.containsKey(AiConstants.INFO_GOAL) || collectedInfo.containsKey(AiConstants.INFO_LEVEL));
+			   (collectedInfo.containsKey(AiConstants.INFO_GOAL) && collectedInfo.containsKey(AiConstants.INFO_LEVEL));
 	}
 
 	private String formatCollectedInfo(Map<String, String> info) {

@@ -8,5 +8,6 @@ public record RecommendationDto(
 	String title,
 	String description,
 	String instructor,
-	String level
+	String level,
+	String url
 ) {}
