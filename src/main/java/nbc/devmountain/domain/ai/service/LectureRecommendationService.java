@@ -32,7 +32,8 @@ public class LectureRecommendationService {
 	// 수집된 정보 저장 (chatRoomId -> 수집된 정보)
 	private final Map<Long, Map<String, String>> collectedInfo = new ConcurrentHashMap<>();
 
-	public ChatMessageResponse recommendationResponse(String query, User.MembershipLevel membershipLevel, Long chatRoomId) {
+	public ChatMessageResponse recommendationResponse(String query, User.MembershipLevel membershipLevel,
+		Long chatRoomId) {
 		if (query == null || query.trim().isEmpty()) {
 			log.warn("빈 쿼리 수신: chatRoomId={}", chatRoomId);
 			return createErrorResponse(AiConstants.ERROR_EMPTY_QUERY);
@@ -52,7 +53,8 @@ public class LectureRecommendationService {
 		}
 	}
 
-	private ChatMessageResponse processConversation(String userMessage, Long chatRoomId, User.MembershipLevel membershipLevel) {
+	private ChatMessageResponse processConversation(String userMessage, Long chatRoomId,
+		User.MembershipLevel membershipLevel) {
 		// 대화 히스토리 업데이트
 		StringBuilder history = conversationHistory.computeIfAbsent(chatRoomId, k -> new StringBuilder());
 		history.append("사용자: ").append(userMessage).append("\n");
@@ -67,8 +69,8 @@ public class LectureRecommendationService {
 
 		// AI에게 대화 분석 및 다음 단계 결정 요청
 		ChatMessageResponse analysisResponse = aiService.analyzeConversationAndDecideNext(
-			history.toString(), 
-			info, 
+			history.toString(),
+			info,
 			userMessage
 		);
 
@@ -90,8 +92,8 @@ public class LectureRecommendationService {
 		// 첫 대화에서도 AI가 자연스럽게 응답하도록 처리
 		Map<String, String> emptyInfo = new HashMap<>();
 		ChatMessageResponse response = aiService.analyzeConversationAndDecideNext(
-			"사용자: " + userMessage + "\n", 
-			emptyInfo, 
+			"사용자: " + userMessage + "\n",
+			emptyInfo,
 			userMessage
 		);
 
@@ -103,11 +105,12 @@ public class LectureRecommendationService {
 		return response;
 	}
 
-	private ChatMessageResponse generateFinalRecommendation(Map<String, String> collectedInfo, Long chatRoomId, User.MembershipLevel membershipLevel) {
+	private ChatMessageResponse generateFinalRecommendation(Map<String, String> collectedInfo, Long chatRoomId,
+		User.MembershipLevel membershipLevel) {
 		try {
 			// 수집된 정보로 검색 쿼리 생성
 			String searchQuery = buildSearchQuery(collectedInfo);
-			
+
 			List<Lecture> similarLectures = ragService.searchSimilarLectures(searchQuery);
 
 			if (similarLectures.isEmpty()) {
@@ -116,12 +119,22 @@ public class LectureRecommendationService {
 			}
 
 			String lectureInfo = similarLectures.stream()
-				.map(l -> "제목: %s, 설명: %s, 강사: %s, 난이도: %s, 썸네일: %s url: https://www.inflearn.com/search?s=%s".formatted(
-					l.getTitle(), l.getDescription(), l.getInstructor(), l.getLevelCode(), l.getThumbnailUrl(), l.getTitle()))
+				.map(
+					l -> "강의ID: %d,제목: %s, 설명: %s, 강사: %s, 난이도: %s, 썸네일: %s url: https://www.inflearn.com/search?s=%s".formatted(
+						l.getLectureId(), l.getTitle(), l.getDescription(), l.getInstructor(), l.getLevelCode(),
+						l.getThumbnailUrl(), l.getTitle()))
 				.collect(Collectors.joining("\n"));
 
-			String promptText = String.format(
-				"[수집된 사용자 정보]\n%s\n\n[유사한 강의 정보]\n%s",
+			String promptText = String.format("""
+					[수집된 사용자 정보]
+					%s
+					
+					[유사한 강의 정보]
+					{
+					    "recommendations": [
+					        %s
+					    ]
+					}""",
 				formatCollectedInfo(collectedInfo),
 				lectureInfo
 			);
@@ -132,9 +145,9 @@ public class LectureRecommendationService {
 				List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
 				if (braveResults != null && !braveResults.isEmpty()) {
 					String braveInfo = braveResults.stream()
-							.map(r -> "제목: %s, 설명: %s, url: %s, 썸네일 링크: %s".formatted(
-									r.title(), r.description(), r.url(), r.thumbnail()))
-							.collect(Collectors.joining("\n"));
+						.map(r -> "제목: %s, 설명: %s, url: %s, 썸네일 링크: %s".formatted(
+							r.title(), r.description(), r.url(), r.thumbnail()))
+						.collect(Collectors.joining("\n"));
 					promptText += "\n\n[브레이브 검색 결과]\n" + braveInfo;
 				}
 			}
@@ -169,16 +182,25 @@ public class LectureRecommendationService {
 	private String formatCollectedInfo(Map<String, String> info) {
 		StringBuilder formatted = new StringBuilder();
 		if (info.containsKey(AiConstants.INFO_INTEREST)) {
-			formatted.append(AiConstants.LABEL_INTEREST).append(": ").append(info.get(AiConstants.INFO_INTEREST)).append("\n");
+			formatted.append(AiConstants.LABEL_INTEREST)
+				.append(": ")
+				.append(info.get(AiConstants.INFO_INTEREST))
+				.append("\n");
 		}
 		if (info.containsKey(AiConstants.INFO_LEVEL)) {
-			formatted.append(AiConstants.LABEL_LEVEL).append(": ").append(info.get(AiConstants.INFO_LEVEL)).append("\n");
+			formatted.append(AiConstants.LABEL_LEVEL)
+				.append(": ")
+				.append(info.get(AiConstants.INFO_LEVEL))
+				.append("\n");
 		}
 		if (info.containsKey(AiConstants.INFO_GOAL)) {
 			formatted.append(AiConstants.LABEL_GOAL).append(": ").append(info.get(AiConstants.INFO_GOAL)).append("\n");
 		}
 		if (info.containsKey(AiConstants.INFO_ADDITIONAL)) {
-			formatted.append(AiConstants.LABEL_ADDITIONAL).append(": ").append(info.get(AiConstants.INFO_ADDITIONAL)).append("\n");
+			formatted.append(AiConstants.LABEL_ADDITIONAL)
+				.append(": ")
+				.append(info.get(AiConstants.INFO_ADDITIONAL))
+				.append("\n");
 		}
 		return formatted.toString();
 	}

@@ -367,6 +367,7 @@ class AiServiceTest {
 
 	private RecommendationDto createMockRecommendationDto() {
 		return new RecommendationDto(
+			1L,
 			"thumb1.jpg",
 			"자바 기초 강의",
 			"자바 기초부터 차근차근",

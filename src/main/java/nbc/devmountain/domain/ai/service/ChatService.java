@@ -4,9 +4,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.WebSocketSession;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +25,6 @@ public class ChatService {
 	private final ChatMessageService chatMessageService;
 	private final LectureRecommendationService recommendationService;
 	private final WebSocketMessageSender messageSender;
-	private final ObjectMapper objectMapper;
 
 	public ChatMessageResponse handleMessage(WebSocketSession session, Long roomId, String payload) {
 		SessionUser sessionUser = (SessionUser)session.getAttributes().get("user");
@@ -60,11 +58,11 @@ public class ChatService {
 		}
 		messageSender.sendMessageToRoom(roomId, userMsg);
 
-		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId);
 
+		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId);
 		ChatMessageResponse aiMsg;
 		if (membershipType != User.MembershipLevel.GUEST) {
-			aiMsg = chatMessageService.createAIMessage(roomId, aiResponse);
+			aiMsg = chatMessageService.createAIMessage(userMsg.getChatId(),roomId, aiResponse);
 			log.info("AI 메세지 생성 완료");
 		} else {
 			aiMsg = aiResponse;

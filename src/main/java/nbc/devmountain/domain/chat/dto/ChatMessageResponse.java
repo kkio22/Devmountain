@@ -43,28 +43,40 @@ public class ChatMessageResponse {
 			.updatedAt(chatMessage.getUpdatedAt())
 			.messageType(chatMessage.getMessageType());
 
-		// AI 응답인 경우 (isAiResponse가 true)
 		if (chatMessage.getIsAiResponse()) {
 			if (chatMessage.getMessageType() == MessageType.RECOMMENDATION) {
-				try {
-					List<RecommendationDto> recommendationsList = objectMapper.readValue(
-						chatMessage.getMessage(),
-						new TypeReference<List<RecommendationDto>>() {
-						}
-					);
-					builder.recommendations(recommendationsList).message(null);
-				} catch (JsonProcessingException e) {
-					builder.message("추천 응답을 처리하는 중 오류가 발생했습니다.")
+				// 추천 메시지인 경우 파싱 수행
+				String rawMessage = chatMessage.getMessage();
+				if (rawMessage == null || rawMessage.trim().isEmpty()) {
+					builder.message("추천 데이터가 비어있습니다.")
 						.recommendations(Collections.emptyList())
 						.messageType(MessageType.ERROR);
-					log.error("[ChatMessageResponse] 추천 메시지 파싱 실패: {}", e.getMessage());
+				} else {
+					try {
+						List<RecommendationDto> recommendationsList = objectMapper.readValue(
+							rawMessage,
+							new TypeReference<List<RecommendationDto>>() {}
+						);
+						builder.recommendations(recommendationsList != null ? recommendationsList : Collections.emptyList())
+							.message(null);
+					} catch (JsonProcessingException e) {
+						log.error("[ChatMessageResponse] 추천 메시지 파싱 실패: {}", e.getMessage());
+						builder.message("추천 응답을 처리하는 중 오류가 발생했습니다.")
+							.recommendations(Collections.emptyList())
+							.messageType(MessageType.ERROR);
+					}
 				}
 			} else {
-				builder.message(chatMessage.getMessage()).recommendations(Collections.emptyList());
+				// 일반 AI 메시지
+				builder.message(chatMessage.getMessage())
+					.recommendations(Collections.emptyList());
 			}
 		} else {
-			builder.message(chatMessage.getMessage()).recommendations(Collections.emptyList());
+			// 사용자 메시지
+			builder.message(chatMessage.getMessage())
+				.recommendations(Collections.emptyList());
 		}
+
 		return builder.build();
 	}
 }
