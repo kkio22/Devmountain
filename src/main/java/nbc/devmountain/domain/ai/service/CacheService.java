@@ -38,19 +38,20 @@ public class CacheService {
 
 		for (Map.Entry<Object, Object> embedding : allEmbedding.entrySet()) {
 			String pastQuery = embedding.getKey().toString();
+			// 역직렬화 문제
 			float[] pastEmbedding = (float[])embedding.getValue();
 
 			double similarity = cosineSimilarity(currentEmbedding, pastEmbedding);
 			if (similarity > 0.8) {
 				log.info("강의 유사도: {}, 강의 유사도 질문 {}", similarity, pastQuery);
-				Object cached = redisTemplate.opsForValue().get(LECTURE_CACHE_PREFIX + pastQuery);
-
-				if (cached instanceof List<?>) {
-					return (List<Lecture>)cached;
-				}
+				List<Lecture> cached = (List<Lecture>)redisTemplate.opsForValue().get(LECTURE_CACHE_PREFIX + pastQuery);
+				// 역직렬화 문제
+				return cached;
 
 			}
+
 		}
+
 		return List.of();
 
 	}
