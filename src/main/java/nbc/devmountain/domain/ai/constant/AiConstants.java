@@ -1,25 +1,25 @@
 package nbc.devmountain.domain.ai.constant;
 
 public final class AiConstants {
-	
+
 	private AiConstants() {
 		// 유틸리티 클래스는 인스턴스화 방지
 	}
-	
+
 	// 정보 수집 키
 	public static final String INFO_INTEREST = "interest";
 	public static final String INFO_LEVEL = "level";
 	public static final String INFO_GOAL = "goal";
 	public static final String INFO_ADDITIONAL = "additional";
-	
+
 	// 난이도 레벨
 	public static final String LEVEL_BEGINNER = "초급";
 	public static final String LEVEL_INTERMEDIATE = "중급";
 	public static final String LEVEL_ADVANCED = "고급";
-	
+
 	// AI 응답 시그널
 	public static final String READY_FOR_RECOMMENDATION = "READY_FOR_RECOMMENDATION";
-	
+
 	// 프롬프트 템플릿
 	public static final String CONVERSATION_ANALYSIS_PROMPT = """
 		너는 강의 추천을 위해 사용자와 자연스러운 대화를 나누는 교육 큐레이터 AI야.
@@ -42,7 +42,7 @@ public final class AiConstants {
 		
 		중요: 수집된 정보가 부족하거나 모호하면 계속 대화를 이어가고, 충분하다고 판단되면 추천 단계로 넘어가야 해.
 		""";
-	
+
 	public static final String INFO_CLASSIFICATION_PROMPT = """
 		너는 사용자의 메시지를 분석해서 강의 추천에 필요한 정보를 추출하는 AI야.
 		
@@ -60,23 +60,60 @@ public final class AiConstants {
 		사용자: "자바 스프링 배워서 백엔드 개발자로 취업하고 싶어요"
 		응답: {"interest": "자바 스프링 백엔드", "level": "", "goal": "백엔드 개발자 취업", "additional": ""}
 		""";
-	
+
 	public static final String RECOMMENDATION_PROMPT = """
 		너는 주어진 정보를 바탕으로 강의를 추천하는 교육 큐레이터 AI야.
-		- 사용자의 질문과 제공된 '유사한 강의 정보'를 바탕으로 가장 적절한 강의를 최대 3개 추천해줘.
-		- 각 강의는 lectureId, title, description, instructor, level, thumbnailUrl, url 을 포함해야 해.
-		- 응답은 반드시 JSON 형식으로만 해야하며, 절대로 JSON 객체 외의 다른 텍스트(예: 설명, 인사)를 포함하면 안돼.
-		- 만약 추천할 강의가 없다면, recommendations 배열을 비워서 보내줘. 예: {"recommendations": []}
-		- 응답 예시: {"recommendations": [{"강의 id": "숫자", "title": "스프링 입문", "description": "...", "instructor": "...", "level": "초급", "thumbnailUrl": "some_url.jpg", "url": "https://www.inflearn.com/search?s=AI%EB%A1%9C+%EB%8F%88+%EB%B2%84%EB%8A%94+%EB%B2%95" }]}
+		
+		   **우선순위:**
+		   1. [유사한 강의 정보]의 강의를 우선 검토
+		   2. 사용자 요구에 적합하지 않거나 개수가 부족하면 [브레이브 검색 결과] 활용
+		   3. 반드시 최대 3개의 강의를 추천해야 함
+		
+		   **브레이브 검색 결과 활용 규칙:**
+		   - 제목에서 핵심 키워드 추출하여 강의명으로 사용
+		   - description에서 강의 설명 추출
+		   - instructor는 "온라인 강의" 또는 블로그 작성자로 설정
+		   - level은 사용자 요구 난이도에 맞춰 설정 (초급/중급/고급)
+		   - lectureId는 반드시 null로 설정
+		   - thumbnailUrl은 "null"로 설정
+		
+		   **필수 조건:**
+		   - 사용자 관심분야와 직접 관련된 강의만 추천
+		   - 각 강의는 lectureId, title, description, instructor, level, thumbnailUrl, url 필드 모두 포함
+		   - JSON 형식으로만 응답, 다른 설명 금지
+		
+		   **응답 예시:**
+		   {
+		     "recommendations": [
+		       {
+		         "lectureId": "238",
+		         "title": "Spring Boot 채팅 플랫폼",
+		         "description": "Spring Boot JWT, ws 통신 학습",
+		         "instructor": "Hong",
+		         "level": "초급",
+		         "thumbnailUrl": "https://cdn.inflearn.com/...",
+		         "url": "https://www.inflearn.com/..."
+		       },
+		       {
+		         "lectureId": null,
+		         "title": "WebFlux 기초 가이드",
+		         "description": "스프링 웹플럭스 기본 개념과 실습",
+		         "instructor": "온라인 강의",
+		         "level": "초급",
+		         "thumbnailUrl": "null",
+		         "url": "https://realzero0.github.io/study/2021/12/02/Lets_Start_Webflux.html"
+		       }
+		     ]
+		   }
 		""";
-	
+
 	public static final String CASUAL_CONVERSATION_PROMPT = """
 		너는 교육 큐레이터 AI야. 사용자와의 대화를 통해 강의를 추천하기 위한 정보를 수집하고 있어.
 		- 사용자의 응답에 대해 자연스럽게 대화하듯이 답변해줘.
 		- JSON 형식으로 응답할 필요 없이, 자연스러운 대화형 메시지를 반환해줘.
 		- 다음 단계로 넘어가기 위한 안내 메시지를 포함해줘.
 		""";
-	
+
 	// 에러 메시지
 	public static final String ERROR_EMPTY_QUERY = "메시지를 입력해주세요.";
 	public static final String ERROR_NO_CHATROOM = "채팅방 정보를 찾을 수 없습니다.";
@@ -87,10 +124,10 @@ public final class AiConstants {
 	public static final String ERROR_AI_INVALID_FORMAT = "AI가 올바른 형식의 응답을 생성하지 못했습니다. 다시 시도해주세요.";
 	public static final String ERROR_AI_PARSING_FAILED = "AI 응답을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 	public static final String ERROR_NO_SUITABLE_LECTURES = "아쉽지만, 현재 조건에 맞는 강의를 찾지 못했어요. 질문을 조금 더 구체적으로 해주시겠어요?";
-	
+
 	// 성공 메시지
 	public static final String SUCCESS_READY_FOR_RECOMMENDATION = "수집된 정보를 바탕으로 최적의 강의를 찾아드릴게요!";
-	
+
 	// 정보 표시용 라벨
 	public static final String LABEL_INTEREST = "관심 분야";
 	public static final String LABEL_LEVEL = "희망 난이도";
