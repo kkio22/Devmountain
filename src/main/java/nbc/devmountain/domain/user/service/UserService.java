@@ -73,6 +73,11 @@ public class UserService {
 		User user = userRepository.findByEmail(userLoginRequestDto.getEmail())
 			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 이메일입니다."));
 
+		if (user.getLoginType() != User.LoginType.EMAIL) {
+			System.out.println("소셜로그인을 이용해주세요");
+			throw new IllegalArgumentException("소셜로그인을 이용해주세요");
+		}
+
 		if (!passwordEncoder.matches(userLoginRequestDto.getPassword(), user.getPassword())) {
 			throw new IllegalArgumentException("비밀번호가 틀렸습니다.");
 		}

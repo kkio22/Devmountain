@@ -23,6 +23,7 @@ import nbc.devmountain.domain.user.dto.request.UserRequestDto;
 import nbc.devmountain.domain.user.dto.response.UserResponseDto;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.service.UserService;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -37,7 +38,7 @@ public class UserController {
 	}
 
 	@PostMapping("/login")
-	public ResponseEntity<UserResponseDto> loginUser(@RequestBody UserLoginRequestDto userLoginRequestDto, HttpServletRequest request) {
+	public ResponseEntity<?> loginUser(@RequestBody UserLoginRequestDto userLoginRequestDto, HttpServletRequest request) {
 		try {
 			User user = userService.loginUser(userLoginRequestDto);
 
@@ -60,7 +61,9 @@ public class UserController {
 			return ResponseEntity.ok(UserResponseDto.from(user, user.getUserCategory()));
 		} catch (IllegalArgumentException e) {
 			// 로그인 실패 시 401 Unauthorized 반환
-			return ResponseEntity.status(401).build();
+			return ResponseEntity.status(401).body(Map.of(
+            "success", false,
+            "message", e.getMessage()));
 		} catch (Exception e) {
 			// 기타 예외 시 500 Internal Server Error 반환
 			return ResponseEntity.status(500).build();
