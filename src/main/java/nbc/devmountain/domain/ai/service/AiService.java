@@ -162,6 +162,14 @@ public class AiService {
 			.orElse("");
 
 		log.info("[AiService] AI 추천 응답 >>>\n{}", rawAiResponse);
+		if (!isFinalRecommendation) {
+			// 일반 대화인 경우 텍스트 그대로 반환
+			return ChatMessageResponse.builder()
+				.message(rawAiResponse)
+				.isAiResponse(true)
+				.messageType(MessageType.CHAT)
+				.build();
+		}
 
 		// JSON 문자열 추출
 		String pureJson = extractJsonString(rawAiResponse);
