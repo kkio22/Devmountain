@@ -64,6 +64,7 @@ public class ChatMessageService {
 			.chatRoom(chatRoom)
 			.user(user)
 			.message(message)
+			.messageType(MessageType.CHAT)
 			.isAiResponse(false)
 			.build();
 
@@ -71,14 +72,11 @@ public class ChatMessageService {
 		ChatMessage savedMsg = chatMessageRepository.save(chatMessage);
 
 		return ChatMessageResponse.from(savedMsg);
-
 	}
 
 	@Transactional
-	public ChatMessageResponse createAIMessage(Long chatId, Long chatRoomId, ChatMessageResponse aiResponse) {
+	public ChatMessageResponse createAIMessage(Long chatRoomId, ChatMessageResponse aiResponse) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-		ChatMessage chatMessage = chatMessageRepository.findById(chatId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
 		User user = chatRoom.getUser();
@@ -91,34 +89,8 @@ public class ChatMessageService {
 				messageType = MessageType.RECOMMENDATION;
 
 				log.info("추천 데이터 JSON 직렬화 완료: {}", messageContent);
-				// 추천 기록 저장
-				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
-					Lecture lecture = null;
-					lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
-					log.info("lectureId {}로 강의 검색 결과: {}", recDto.lectureId(), lecture != null ? "성공" : "실패");
-					//null일 경우 제목,강사로 가져오기
-					if (lecture == null && recDto.title() != null) {
-						List<Lecture> lectures;
 
-						if (recDto.instructor() != null) {
-							lectures = lectureRepository.findByTitleAndInstructor(recDto.title(), recDto.instructor());
-						} else {
-							lectures = lectureRepository.findByTitle(recDto.title());
-						}
-						lecture = lectures.get(0);
-					}
-					//todo:추천정보 유사도값 넣어야함
-					Recommendation recommendation = Recommendation.builder()
-						.chatMessage(chatMessage)
-						.user(user)
-						.lecture(lecture)
-						.score(null)
-						.build();
-					// Recommendation 엔티티 저장
-					recommendationRepository.save(recommendation);
-					log.info("강의 추천 기록 저장 성공: lectureId={}, userId={}", lecture.getLectureId(), user.getUserId());
-				}
-
+				// AI 메시지를 생성
 				ChatMessage aiChatMessage = ChatMessage.builder()
 					.chatRoom(chatRoom)
 					.user(null)
@@ -129,9 +101,39 @@ public class ChatMessageService {
 
 				chatRoom.addMessages(aiChatMessage);
 				ChatMessage savedChatMessage = chatMessageRepository.save(aiChatMessage);
+
+				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
+					Lecture lecture = null;
+
+					// DB에 저장된 강의인 경우
+					if (recDto.lectureId() != null) {
+						lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
+						if (lecture != null) {
+							log.info("DB 강의 검색 성공: lectureId={}", recDto.lectureId());
+						} else {
+							log.warn("DB 강의 검색 실패: lectureId={}", recDto.lectureId());
+						}
+					} else {
+						log.info("브레이브 검색 결과 추천: title={}", recDto.title());
+					}
+					// 추천 기록 저장
+					Recommendation recommendation = Recommendation.builder()
+						.chatMessage(savedChatMessage)
+						.user(user)
+						.lecture(lecture)
+						.score(null)
+						.build();
+					recommendationRepository.save(recommendation);
+
+					if (lecture != null) {
+						log.info("DB 강의 추천 저장 성공: lectureId={}, userId={}", lecture.getLectureId(), user.getUserId());
+					} else {
+						log.info("브레이브 검색 결과 추천 저장 성공: title={}, userId={}", recDto.title(), user.getUserId());
+					}
+				}
+
 				log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
 
-				// 이미 파싱된 recommendations를 직접 전달
 				return ChatMessageResponse.builder()
 					.chatroomId(savedChatMessage.getChatRoom().getChatroomId())
 					.chatId(savedChatMessage.getChatId())
@@ -144,7 +146,7 @@ public class ChatMessageService {
 					.updatedAt(savedChatMessage.getUpdatedAt())
 					.build();
 			} else {
-				// 일반 AI 메시지인 경우
+				// 일반 AI 메시지 처리
 				messageContent = aiResponse.getMessage();
 				messageType = aiResponse.getMessageType();
 
@@ -181,11 +183,9 @@ public class ChatMessageService {
 	public List<ChatMessageResponse> getMessages(Long userId, Long roomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
 		if (!chatRoom.getUser().getUserId().equals(userId)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
-
 		List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomId(roomId);
 
 		return chatMessages.stream()

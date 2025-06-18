@@ -68,11 +68,8 @@ public class LectureRecommendationService {
 		}
 
 		// AI에게 대화 분석 및 다음 단계 결정 요청
-		ChatMessageResponse analysisResponse = aiService.analyzeConversationAndDecideNext(
-			history.toString(),
-			info,
-			userMessage
-		);
+		ChatMessageResponse analysisResponse = aiService.analyzeConversationAndDecideNext(history.toString(), info,
+			userMessage);
 
 		// AI 응답을 히스토리에 추가
 		if (analysisResponse.getMessage() != null) {
@@ -91,11 +88,8 @@ public class LectureRecommendationService {
 	private ChatMessageResponse handleFirstConversation(String userMessage, Long chatRoomId) {
 		// 첫 대화에서도 AI가 자연스럽게 응답하도록 처리
 		Map<String, String> emptyInfo = new HashMap<>();
-		ChatMessageResponse response = aiService.analyzeConversationAndDecideNext(
-			"사용자: " + userMessage + "\n",
-			emptyInfo,
-			userMessage
-		);
+		ChatMessageResponse response = aiService.analyzeConversationAndDecideNext("사용자: " + userMessage + "\n",
+			emptyInfo, userMessage);
 
 		// AI 응답을 히스토리에 추가
 		if (response.getMessage() != null) {
@@ -119,42 +113,64 @@ public class LectureRecommendationService {
 			}
 
 			String lectureInfo = similarLectures.stream()
-				.map(
-					l -> "강의ID: %d,제목: %s, 설명: %s, 강사: %s, 난이도: %s, 썸네일: %s url: https://www.inflearn.com/search?s=%s".formatted(
-						l.getLectureId(), l.getTitle(), l.getDescription(), l.getInstructor(), l.getLevelCode(),
-						l.getThumbnailUrl(), l.getTitle()))
-				.collect(Collectors.joining("\n"));
+				.map(l -> """
+                {
+                    "lectureId": "%d",
+                    "title": "%s",
+                    "description": "%s",
+                    "instructor": "%s",
+                    "level": "%s",
+                    "thumbnailUrl": "%s",
+                    "url": "https://www.inflearn.com/search?s=%s"
+                }
+                """.formatted(
+					l.getLectureId(), l.getTitle(), l.getDescription(), l.getInstructor(),
+					l.getLevelCode(), l.getThumbnailUrl(), l.getTitle())
+				)
+				.collect(Collectors.joining(",\n"));
 
-			String promptText = String.format("""
-					[수집된 사용자 정보]
-					%s
-					
-					[유사한 강의 정보]
-					{
-					    "recommendations": [
-					        %s
-					    ]
-					}""",
+			StringBuilder promptText = new StringBuilder();
+			promptText.append(String.format("""
+            [수집된 사용자 정보]
+            %s
+            
+            [유사한 강의 정보]
+            {
+                "recommendations": [
+                    %s
+                ]
+            }""",
 				formatCollectedInfo(collectedInfo),
 				lectureInfo
-			);
+			));
 
-			// 브레이브 검색 결과 추가 (비회원이 아닐 때만)
 			if (!User.MembershipLevel.GUEST.equals(membershipLevel)) {
 				BraveSearchResponseDto braveResponse = braveSearchService.search(searchQuery);
 				List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
 				if (braveResults != null && !braveResults.isEmpty()) {
 					String braveInfo = braveResults.stream()
-						.map(r -> "제목: %s, 설명: %s, url: %s, 썸네일 링크: %s".formatted(
-							r.title(), r.description(), r.url(), r.thumbnail()))
-						.collect(Collectors.joining("\n"));
-					promptText += "\n\n[브레이브 검색 결과]\n" + braveInfo;
+						.map(r -> """
+                        {
+                            "lectureId": null,
+                            "title": "%s",
+                            "description": "%s",
+                            "instructor": null,
+                            "level": null,
+                            "thumbnailUrl": "%s",
+                            "url": "%s"
+                        }
+                        """.formatted(
+							r.title(), r.description(), r.thumbnail(), r.url()))
+						.collect(Collectors.joining(",\n"));
+
+					promptText.append("\n\n[브레이브 검색 결과]\n")
+						.append("{\n    \"recommendations\": [\n")
+						.append(braveInfo)
+						.append("\n    ]\n}");
 				}
 			}
 
-			resetChatState(chatRoomId);
-			return aiService.getRecommendations(promptText, true);
-
+			return aiService.getRecommendations(promptText.toString(), true);
 		} catch (Exception e) {
 			log.error("강의 검색 중 오류 발생: chatRoomId={}, error={}", chatRoomId, e.getMessage(), e);
 			resetChatState(chatRoomId);

@@ -188,7 +188,7 @@ class AiServiceTest {
 			ChatMessageResponse response = aiService.getRecommendations(promptText, true);
 
 			// then
-			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_AI_NO_RESPONSE);
+			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_AI_INVALID_FORMAT);
 			assertThat(response.getMessageType()).isEqualTo(MessageType.ERROR);
 		}
 
