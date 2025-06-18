@@ -26,6 +26,7 @@ public class LectureRecommendationService {
 	private final RagService ragService;
 	private final AiService aiService;
 	private final BraveSearchService braveSearchService;
+	private final CacheService cacheService;
 
 	// 대화 히스토리를 저장 (chatRoomId -> 대화 내용들)
 	private final Map<Long, StringBuilder> conversationHistory = new ConcurrentHashMap<>();
@@ -105,6 +106,13 @@ public class LectureRecommendationService {
 			// 수집된 정보로 검색 쿼리 생성
 			String searchQuery = buildSearchQuery(collectedInfo);
 
+			//cache에 저장된 정보가 있는지 확인
+			List<Lecture> cachedLecture = cacheService.cacheSimilarLectures(searchQuery);
+
+			if ( cachedLecture != null && !cachedLecture.isEmpty()) {
+				return respondWithLectures(cachedLecture, collectedInfo, searchQuery, membershipLevel);
+			}
+
 			List<Lecture> similarLectures = ragService.searchSimilarLectures(searchQuery);
 
 			if (similarLectures.isEmpty()) {
@@ -112,8 +120,20 @@ public class LectureRecommendationService {
 				return createErrorResponse(AiConstants.ERROR_NO_LECTURES_FOUND);
 			}
 
-			String lectureInfo = similarLectures.stream()
-				.map(l -> """
+			//cache에 강의 없을 때 저장
+			cacheService.saveLecture(searchQuery, similarLectures);
+			return respondWithLectures(similarLectures, collectedInfo, searchQuery, membershipLevel);
+
+		} catch (Exception e) {
+			log.error("강의 검색 중 오류 발생: chatRoomId={}, error={}", chatRoomId, e.getMessage(), e);
+			resetChatState(chatRoomId);
+			return createErrorResponse(AiConstants.ERROR_LECTURE_SEARCH_FAILED);
+		}
+	}
+
+	private ChatMessageResponse respondWithLectures(List<Lecture> lectureList, Map<String, String> collectedInfo, String searchQuery,  User.MembershipLevel membershipLevel){
+		String lectureInfo = lectureList.stream()
+			.map(l -> """
                 {
                     "lectureId": "%d",
                     "title": "%s",
@@ -124,13 +144,13 @@ public class LectureRecommendationService {
                     "url": "https://www.inflearn.com/search?s=%s"
                 }
                 """.formatted(
-					l.getLectureId(), l.getTitle(), l.getDescription(), l.getInstructor(),
-					l.getLevelCode(), l.getThumbnailUrl(), l.getTitle())
-				)
-				.collect(Collectors.joining(",\n"));
+				l.getLectureId(), l.getTitle(), l.getDescription(), l.getInstructor(),
+				l.getLevelCode(), l.getThumbnailUrl(), l.getTitle())
+			)
+			.collect(Collectors.joining(",\n"));
 
-			StringBuilder promptText = new StringBuilder();
-			promptText.append(String.format("""
+		StringBuilder promptText = new StringBuilder();
+		promptText.append(String.format("""
             [수집된 사용자 정보]
             %s
             
@@ -140,16 +160,16 @@ public class LectureRecommendationService {
                     %s
                 ]
             }""",
-				formatCollectedInfo(collectedInfo),
-				lectureInfo
-			));
+			formatCollectedInfo(collectedInfo),
+			lectureInfo
+		));
 
-			if (!User.MembershipLevel.GUEST.equals(membershipLevel)) {
-				BraveSearchResponseDto braveResponse = braveSearchService.search(searchQuery);
-				List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
-				if (braveResults != null && !braveResults.isEmpty()) {
-					String braveInfo = braveResults.stream()
-						.map(r -> """
+		if (!User.MembershipLevel.GUEST.equals(membershipLevel)) {
+			BraveSearchResponseDto braveResponse = braveSearchService.search(searchQuery);
+			List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
+			if (braveResults != null && !braveResults.isEmpty()) {
+				String braveInfo = braveResults.stream()
+					.map(r -> """
                         {
                             "lectureId": null,
                             "title": "%s",
@@ -160,22 +180,17 @@ public class LectureRecommendationService {
                             "url": "%s"
                         }
                         """.formatted(
-							r.title(), r.description(), r.thumbnail(), r.url()))
-						.collect(Collectors.joining(",\n"));
+						r.title(), r.description(), r.thumbnail(), r.url()))
+					.collect(Collectors.joining(",\n"));
 
-					promptText.append("\n\n[브레이브 검색 결과]\n")
-						.append("{\n    \"recommendations\": [\n")
-						.append(braveInfo)
-						.append("\n    ]\n}");
-				}
+				promptText.append("\n\n[브레이브 검색 결과]\n")
+					.append("{\n    \"recommendations\": [\n")
+					.append(braveInfo)
+					.append("\n    ]\n}");
 			}
-
-			return aiService.getRecommendations(promptText.toString(), true);
-		} catch (Exception e) {
-			log.error("강의 검색 중 오류 발생: chatRoomId={}, error={}", chatRoomId, e.getMessage(), e);
-			resetChatState(chatRoomId);
-			return createErrorResponse(AiConstants.ERROR_LECTURE_SEARCH_FAILED);
 		}
+
+		return aiService.getRecommendations(promptText.toString(), true);
 	}
 
 	private String buildSearchQuery(Map<String, String> info) {
