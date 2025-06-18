@@ -149,13 +149,10 @@ public class AiService {
 		return formatted.toString();
 	}
 
-	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalStep) {
-		SystemMessage systemMessage = new SystemMessage(
-			isFinalStep ? AiConstants.RECOMMENDATION_PROMPT : AiConstants.CASUAL_CONVERSATION_PROMPT
-		);
-
+	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalRecommendation) {
+		SystemMessage systemMessage = new SystemMessage(AiConstants.RECOMMENDATION_PROMPT);
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
-		log.info("[AiService] 프롬프트 전송 >>>\n{}", promptText);
+		log.info("[AiService] 추천 프롬프트 전송 >>>\n{}", promptText);
 
 		ChatResponse response = chatModel.call(prompt);
 		String rawAiResponse = response.getResults()
@@ -164,21 +161,13 @@ public class AiService {
 			.map(result -> result.getOutput().getContent())
 			.orElse("");
 
-		log.info("[AiService] AI 응답(원본) >>>\n{}", rawAiResponse);
+		log.info("[AiService] AI 추천 응답 >>>\n{}", rawAiResponse);
 
-		if (!isFinalStep) {
-			return ChatMessageResponse.builder()
-				.message(rawAiResponse)
-				.isAiResponse(true)
-				.messageType(MessageType.CHAT)
-				.build();
-		}
-
+		// JSON 문자열 추출
 		String pureJson = extractJsonString(rawAiResponse);
-
 		if (pureJson.isEmpty()) {
-			log.warn("[AiService] AI 응답에서 JSON을 찾을 수 없음.");
-			return createErrorResponse(AiConstants.ERROR_AI_NO_RESPONSE);
+			log.warn("[AiService] AI 응답에서 JSON을 찾을 수 없음: {}", rawAiResponse);
+			return createErrorResponse(AiConstants.ERROR_AI_INVALID_FORMAT);
 		}
 
 		try {
@@ -192,20 +181,20 @@ public class AiService {
 			List<RecommendationDto> recommendations = objectMapper.convertValue(recNode,
 				objectMapper.getTypeFactory().constructCollectionType(List.class, RecommendationDto.class));
 
-			if (recommendations == null || recommendations.isEmpty()) {
+			if (recommendations.isEmpty()) {
 				log.info("[AiService] AI가 추천할 강의를 찾지 못함.");
 				return createErrorResponse(AiConstants.ERROR_NO_SUITABLE_LECTURES);
 			}
 
+			// 추천 결과 검증 및 로깅
 			for (RecommendationDto rec : recommendations) {
 				if (rec.lectureId() == null) {
-					log.warn("[AiService] 추천 결과에 lectureId가 없음: {}", rec.title());
+					log.info("[AiService] 브레이브 검색 결과 추천: title={}", rec.title());
 				} else {
-					log.info("[AiService] 추천 강의 검증 성공: lectureId={}, title={}", rec.lectureId(), rec.title());
+					log.info("[AiService] DB 강의 추천: lectureId={}, title={}", rec.lectureId(), rec.title());
 				}
 			}
 
-			log.info("[AiService] AI 추천 결과 파싱 성공: {}", recommendations);
 			return ChatMessageResponse.builder()
 				.message(null)
 				.recommendations(recommendations)

@@ -62,7 +62,7 @@ public class ChatService {
 		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId);
 		ChatMessageResponse aiMsg;
 		if (membershipType != User.MembershipLevel.GUEST) {
-			aiMsg = chatMessageService.createAIMessage(userMsg.getChatId(),roomId, aiResponse);
+			aiMsg = chatMessageService.createAIMessage(roomId, aiResponse);
 			log.info("AI 메세지 생성 완료");
 		} else {
 			aiMsg = aiResponse;
