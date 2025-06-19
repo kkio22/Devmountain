@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import java.util.Collections;
 import java.util.List;
 
+import nbc.devmountain.domain.search.sevice.BraveSearchService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.search.dto.BraveSearchResponseDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.lecture.model.Lecture;
@@ -32,6 +34,9 @@ class LectureRecommendationServiceTest {
 
 	@Mock
 	private AiService aiService;
+
+	@Mock
+	private BraveSearchService braveSearchService;
 
 	@InjectMocks
 	private LectureRecommendationService lectureRecommendationService;
@@ -216,6 +221,7 @@ class LectureRecommendationServiceTest {
 			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery)))
 				.thenReturn(readyResponse);
 			when(ragService.searchSimilarLectures(anyString())).thenReturn(mockLectures);
+			when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
 			when(aiService.getRecommendations(anyString(), eq(true))).thenReturn(finalResponse);
 
 			// when - 첫 번째 대화
@@ -360,11 +366,24 @@ class LectureRecommendationServiceTest {
 
 	private RecommendationDto createMockRecommendation() {
 		return new RecommendationDto(
+			1L,
 			"thumbnail.jpg",
 			"스프링 입문 강의",
 			"스프링 프레임워크 기초 학습",
 			"김강사",
-			"초급"
+			"초급",
+				"https://www.example.com/course/"
 		);
+	}
+
+	private BraveSearchResponseDto mockBraveSearchResponse() {
+		BraveSearchResponseDto.Result result = new BraveSearchResponseDto.Result(
+				"AI 기초 강의",
+				"AI 입문자를 위한 강의입니다.",
+				"http:fewfewfewfewfew",
+				new BraveSearchResponseDto.Result.ThumbnailWrapper("https://imgs.search.brave.com/thumb.jpg", "https://example.com/original.jpg")
+		);
+		BraveSearchResponseDto.Web web = new BraveSearchResponseDto.Web(List.of(result));
+		return new BraveSearchResponseDto(web);
 	}
 } 

@@ -12,11 +12,16 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import jakarta.servlet.http.HttpServletResponse;
 import nbc.devmountain.common.util.oauth2.CustomOAuth2UserService;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
@@ -25,7 +30,8 @@ public class SecurityConfig {
 	public SecurityFilterChain filterChain(HttpSecurity http, CustomOAuth2UserService customOAuth2UserService) throws
 		Exception {
 		http
-			.cors().and()
+			// .cors().and()
+			.cors(cors -> cors.configurationSource(corsConfigurationSource()))
 			.csrf().disable() //csrf 비활성화
 			.sessionManagement(session ->
 				session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // 세션 기반 인증 사용
@@ -45,9 +51,11 @@ public class SecurityConfig {
 				// 추후 프론트 개발 후 url 수정
 				// localhost:5173/chatrooms -> ? 이게 맞나? -> 아니다 홈으로 가야하는데 "/" ?
 				.successHandler((request, response, authentication) -> {
-					response.sendRedirect("http://localhost:5173/chatrooms");
+					response.sendRedirect("http://localhost:5173/home");
 				})
 			)
+			// 일반 로그인은 UserController에서 처리하므로 비활성화
+			.formLogin(form -> form.disable())
 			// 로그아웃
 			.logout(logout -> logout
 				.logoutUrl("/logout")
@@ -56,11 +64,24 @@ public class SecurityConfig {
 				})
 				.invalidateHttpSession(true)
 				.deleteCookies("JSESSIONID")
-			)
-			.formLogin(form -> form.disable()
 			);
 
 		return http.build();
+	}
+
+	// cors 커스텀
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+		configuration.setAllowedHeaders(Arrays.asList("*"));
+		configuration.setAllowCredentials(true);
+		configuration.setMaxAge(3600L);
+
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
 	}
 
 	// 인증 매니저 Bean 등록

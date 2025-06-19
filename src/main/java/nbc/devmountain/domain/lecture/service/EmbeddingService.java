@@ -7,8 +7,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.ai.document.Document;
-
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -28,18 +26,16 @@ import nbc.devmountain.domain.lecture.repository.LectureSkillTagRepository;
 public class EmbeddingService {
 	private final LectureRepository lectureRepository;
 	private final LectureSkillTagRepository lectureSkillTagRepository;
-	private final EmbeddingModel embeddingModel;
 	private final VectorStore vectorStore;
 	private final JdbcTemplate jdbcTemplate;
 
 	@Transactional
 	public void embedLecture() {
-		log.info("embeddingModel class: {}", embeddingModel.getClass().getName());
-		//벡터스토어 초기화
+		// 벡터스토어 초기화
 		clearVectorStore();
 
 		List<Lecture> lectureList = lectureRepository.findAll();
-		log.info("저장 대상 강의 수: {}", lectureList.size());
+		log.info("임베딩 시작: {} 총 강의", lectureList.size());
 
 		if (lectureList.isEmpty())
 			return;
@@ -55,7 +51,6 @@ public class EmbeddingService {
 			log.info("배치 {}/{} 처리 시작", batchIndex + 1, totalBatches);
 			List<Document> documents = new ArrayList<>();
 			for (int i = startIndex; i < endIndex; i++) {
-
 				Lecture lecture = lectureList.get(i);
 
 				try {
@@ -101,6 +96,7 @@ public class EmbeddingService {
 				}
 			}
 		}
+		log.info("임베딩 완료: 총 {} 강의", lectureList.size());
 	}
 
 	/**

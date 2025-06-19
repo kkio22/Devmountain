@@ -1,7 +1,7 @@
 package nbc.devmountain.domain.chat.service;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
@@ -64,15 +64,18 @@ public class ChatMessageService {
 			.chatRoom(chatRoom)
 			.user(user)
 			.message(message)
+			.messageType(MessageType.CHAT)
 			.isAiResponse(false)
 			.build();
 
 		chatRoom.addMessages(chatMessage);
+		ChatMessage savedMsg = chatMessageRepository.save(chatMessage);
 
-		return ChatMessageResponse.from(chatMessageRepository.save(chatMessage));
+		return ChatMessageResponse.from(savedMsg);
 	}
+
 	@Transactional
-	public ChatMessageResponse createAIMessage(Long chatRoomId, ChatMessageResponse aiResponse){
+	public ChatMessageResponse createAIMessage(Long chatRoomId, ChatMessageResponse aiResponse) {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
@@ -85,60 +88,104 @@ public class ChatMessageService {
 				messageContent = objectMapper.writeValueAsString(aiResponse.getRecommendations());
 				messageType = MessageType.RECOMMENDATION;
 
-				// 추천 기록 저장
-				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
-					Lecture lecture = lectureRepository.findByTitle(recDto.title()).orElse(null);
+				log.info("추천 데이터 JSON 직렬화 완료: {}", messageContent);
 
-					if (lecture == null) {
-						log.warn("추천 강의 '{}'에 해당하는 실제 강의를 찾을 수 없습니다. Recommendation으로 저장하지 않습니다.", recDto.title());
-						continue;
+				// AI 메시지를 생성
+				ChatMessage aiChatMessage = ChatMessage.builder()
+					.chatRoom(chatRoom)
+					.user(null)
+					.message(messageContent)
+					.isAiResponse(true)
+					.messageType(messageType)
+					.build();
+
+				chatRoom.addMessages(aiChatMessage);
+				ChatMessage savedChatMessage = chatMessageRepository.save(aiChatMessage);
+
+				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
+					Lecture lecture = null;
+
+					// DB에 저장된 강의인 경우
+					if (recDto.lectureId() != null) {
+						lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
+						if (lecture != null) {
+							log.info("DB 강의 검색 성공: lectureId={}", recDto.lectureId());
+						} else {
+							log.warn("DB 강의 검색 실패: lectureId={}", recDto.lectureId());
+						}
+					} else {
+						log.info("브레이브 검색 결과 추천: title={}", recDto.title());
 					}
+					// 추천 기록 저장
 					Recommendation recommendation = Recommendation.builder()
-						.chatMessage(null)
+						.chatMessage(savedChatMessage)
 						.user(user)
 						.lecture(lecture)
 						.score(null)
 						.build();
-					// Recommendation 엔티티 저장
 					recommendationRepository.save(recommendation);
-					log.info("강의 추천 기록 저장 성공: lectureId={}, userId={}", lecture.getLectureId(), user.getUserId());
+
+					if (lecture != null) {
+						log.info("DB 강의 추천 저장 성공: lectureId={}, userId={}", lecture.getLectureId(), user.getUserId());
+					} else {
+						log.info("브레이브 검색 결과 추천 저장 성공: title={}, userId={}", recDto.title(), user.getUserId());
+					}
 				}
+
+				log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
+
+				return ChatMessageResponse.builder()
+					.chatroomId(savedChatMessage.getChatRoom().getChatroomId())
+					.chatId(savedChatMessage.getChatId())
+					.userId(null)
+					.message(null)
+					.recommendations(aiResponse.getRecommendations())
+					.isAiResponse(true)
+					.messageType(MessageType.RECOMMENDATION)
+					.createdAt(savedChatMessage.getCreatedAt())
+					.updatedAt(savedChatMessage.getUpdatedAt())
+					.build();
 			} else {
-				// 일반 AI 메시지인 경우, message 필드 사용
+				// 일반 AI 메시지 처리
 				messageContent = aiResponse.getMessage();
 				messageType = aiResponse.getMessageType();
+
+				ChatMessage aiChatMessage = ChatMessage.builder()
+					.chatRoom(chatRoom)
+					.user(null)
+					.message(messageContent)
+					.isAiResponse(true)
+					.messageType(messageType)
+					.build();
+
+				chatRoom.addMessages(aiChatMessage);
+				ChatMessage savedChatMessage = chatMessageRepository.save(aiChatMessage);
+				log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
+
+				return ChatMessageResponse.builder()
+					.chatroomId(savedChatMessage.getChatRoom().getChatroomId())
+					.chatId(savedChatMessage.getChatId())
+					.userId(null)
+					.message(messageContent)
+					.recommendations(Collections.emptyList())
+					.isAiResponse(true)
+					.messageType(messageType)
+					.createdAt(savedChatMessage.getCreatedAt())
+					.updatedAt(savedChatMessage.getUpdatedAt())
+					.build();
 			}
-
-			ChatMessage aiChatMessage = ChatMessage.builder()
-				.chatRoom(chatRoom)
-				.user(null)
-				.message(messageContent)
-				.isAiResponse(true)
-				.messageType(messageType)
-				.build();
-
-			chatRoom.addMessages(aiChatMessage);
-
-			ChatMessage savedChatMessage = chatMessageRepository.save(aiChatMessage);
-			log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
-
-			return ChatMessageResponse.from(savedChatMessage);
-
 		} catch (JsonProcessingException e) {
-			log.error("AI 응답 직렬화 실패: {}", e.getMessage());
-			throw new RuntimeException("AI 응답을 저장하는 중 오류가 발생했습니다.", e);
+			log.error("AI 메시지 생성 중 오류 발생: {}", e.getMessage());
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "AI 메시지 생성 실패");
 		}
 	}
-
 
 	public List<ChatMessageResponse> getMessages(Long userId, Long roomId) {
 		ChatRoom chatRoom = chatRoomRepository.findById(roomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
 		if (!chatRoom.getUser().getUserId().equals(userId)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
-
 		List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomId(roomId);
 
 		return chatMessages.stream()

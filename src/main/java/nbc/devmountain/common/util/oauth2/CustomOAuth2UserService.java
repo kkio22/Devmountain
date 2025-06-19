@@ -15,6 +15,8 @@ import nbc.devmountain.common.util.security.SessionUser;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
@@ -25,14 +27,25 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
 	@Override
 	public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-		// provider 추(google 등)
-		// String provider = userRequest.getClientRegistration().getClientId();
+		// provider 추출(google 등)
+		String provider = userRequest.getClientRegistration().getRegistrationId();
 
 		// OAuth2로 사용자 정보 load
 		OAuth2User oAuth2User = new DefaultOAuth2UserService().loadUser(userRequest);
 
 		// email 정보 저장
 		String email = oAuth2User.getAttribute("email");
+		String name = oAuth2User.getAttribute("name");
+
+		// 네이버는 response 안에 email이 있으므로
+		if ("naver".equals(provider)) {
+			Object responseObj = oAuth2User.getAttribute("response");
+			if (responseObj instanceof Map) {
+				Map<String, Object> response = (Map<String, Object>) responseObj;
+				email = (String) response.get("email");
+				name = (String) response.get("name");
+			}
+		}
 
 		if (email == null) {
 			throw new OAuth2AuthenticationException("이메일은 필수입니다.");
@@ -47,14 +60,18 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 		// OAuth2로부터 받은 정보를 OAuthAttributes로 매핑
 		OAuthAttributes attributes = OAuthAttributes.of(registrationId, userNameAttribute, oAuth2User.getAttributes());
 
+		// 최종 사용자 정보 결정
+		final String finalEmail = email;
+		final String finalName = name != null ? name : attributes.getName();
+
 		// 유저가 이미 존재하는지 확인하거나 새로 생성
-		User user = userRepository.findByEmail(email).orElseGet(() -> {
+		User user = userRepository.findByEmail(finalEmail).orElseGet(() -> {
 			// 처음 로그인한 경우 사용자 생성
 			return userRepository.save(
 				User.builder()
-					.email(email)
+					.email(finalEmail)
 					.password(passwordEncoder.encode("0000")) // 임시 비번
-					.name(attributes.getName())
+					.name(finalName)
 					.phoneNumber("010-0000-0000")
 					.loginType(attributes.getLoginType()) // 추후 kakao 등 추가 예정
 					.role(User.Role.USER) // 기본 admin설정
