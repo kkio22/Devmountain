@@ -44,5 +44,16 @@ public class WebSocketSessionManager {
 	public WebSocketSession getSession(Long roomId) {
 		return activeSessions.get(roomId);
 	}
-
+	//채팅방 삭제시 해당 채팅방의 세션 끊기
+	public void removeRoomSessions(Long roomId) {
+		WebSocketSession session = activeSessions.remove(roomId);
+		if (session != null) {
+			try {
+				session.close();
+			} catch (Exception e) {
+				log.error("채팅방 세션 종료 중 오류 발생. roomId={}, sessionId={}", roomId, session.getId(), e);
+			}
+			sessionToRoom.remove(session.getId());
+		}
+	}
 }

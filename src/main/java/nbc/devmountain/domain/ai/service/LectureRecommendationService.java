@@ -185,7 +185,7 @@ public class LectureRecommendationService {
 				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(),chatRoomId,summarizedChatRoomName);
 			}
 
-
+			resetChatState(chatRoomId);
 			return aiService.getRecommendations(promptText.toString(), true);
 		} catch (Exception e) {
 			log.error("강의 검색 중 오류 발생: chatRoomId={}, error={}", chatRoomId, e.getMessage(), e);

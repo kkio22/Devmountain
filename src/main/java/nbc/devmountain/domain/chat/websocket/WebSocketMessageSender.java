@@ -5,8 +5,6 @@ import java.io.IOException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -52,8 +50,6 @@ public class WebSocketMessageSender {
 				String json = objectMapper.writeValueAsString(msg);
 				session.sendMessage(new TextMessage(json));
 			}
-		} catch (JsonProcessingException e) {
-			log.error("방이름 업데이트중 오류 발생: {}", newName);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

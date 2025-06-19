@@ -15,6 +15,7 @@ import nbc.devmountain.domain.chat.dto.ChatRoomDetailResponse;
 import nbc.devmountain.domain.chat.dto.ChatRoomResponse;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
 import nbc.devmountain.domain.chat.websocket.WebSocketMessageSender;
+import nbc.devmountain.domain.chat.websocket.WebSocketSessionManager;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 
@@ -26,6 +27,7 @@ public class ChatRoomService {
 	private final ChatRoomRepository chatRoomRepository;
 	private final UserRepository userRepository;
 	private final WebSocketMessageSender messageSender;
+	private final WebSocketSessionManager webSocketSessionManager;
 
 	@Transactional
 	public ChatRoomResponse createChatRoom(Long userId) {
@@ -93,5 +95,6 @@ public class ChatRoomService {
 		}
 		chatRoom.delete();
 		log.info("채팅방 삭제 완료 - userId: {}, roomId: {}", userId, chatroomId);
+		webSocketSessionManager.removeRoomSessions(chatroomId);
 	}
 }
