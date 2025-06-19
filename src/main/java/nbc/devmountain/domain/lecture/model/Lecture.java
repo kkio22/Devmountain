@@ -61,4 +61,14 @@ public class Lecture {
 		this.crawledAt = crawledAt;
 
 	}
+
+	public Lecture(Long lectureId, String title, String description, String instructor, String levelCode, String thumbnailUrl) {
+		this.lectureId =lectureId;
+		this.thumbnailUrl = thumbnailUrl;
+		this.title = title;
+		this.instructor = instructor;
+		this.description = description;
+		this.levelCode = levelCode;
+
+	}
 }

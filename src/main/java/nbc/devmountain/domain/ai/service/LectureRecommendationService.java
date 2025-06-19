@@ -166,6 +166,7 @@ public class LectureRecommendationService {
 
 		if (!User.MembershipLevel.GUEST.equals(membershipLevel)) {
 			BraveSearchResponseDto braveResponse = braveSearchService.search(searchQuery);
+			log.info("Brave API 요청 쿼리: {}", searchQuery);
 			List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
 			if (braveResults != null && !braveResults.isEmpty()) {
 				String braveInfo = braveResults.stream()

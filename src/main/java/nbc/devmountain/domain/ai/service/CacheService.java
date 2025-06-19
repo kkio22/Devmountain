@@ -28,6 +28,7 @@ public class CacheService {
 		float[] embedding = embeddingModel.embed(searchQuery);
 		redisTemplate.opsForHash().put(QUERY_EMBEDDING_KEY, searchQuery, embedding);
 		redisTemplate.opsForValue().set(LECTURE_CACHE_PREFIX + searchQuery, similarLecture, Duration.ofDays(4));
+		log.info("강의가 Redis에 저장되었습니다");
 	}
 
 	//새로 들어온 질문 임베딩해서 레디스에 있는지 비교하는 로직
@@ -38,21 +39,39 @@ public class CacheService {
 
 		for (Map.Entry<Object, Object> embedding : allEmbedding.entrySet()) {
 			String pastQuery = embedding.getKey().toString();
-			// 역직렬화 문제
-			float[] pastEmbedding = (float[])embedding.getValue();
 
-			double similarity = cosineSimilarity(currentEmbedding, pastEmbedding);
-			if (similarity > 0.8) {
-				log.info("강의 유사도: {}, 강의 유사도 질문 {}", similarity, pastQuery);
-				List<Lecture> cached = (List<Lecture>)redisTemplate.opsForValue().get(LECTURE_CACHE_PREFIX + pastQuery);
-				// 역직렬화 문제
-				return cached;
+			Object cacheLecture = redisTemplate.opsForValue().get(LECTURE_CACHE_PREFIX + pastQuery);
 
+			if (cacheLecture instanceof List<?> cachedList && !cachedList.isEmpty()) {
+
+				float[] pastEmbedding = (float[])embedding.getValue();
+
+				double similarity = cosineSimilarity(currentEmbedding, pastEmbedding);
+				if (similarity > 0.9) {
+					log.info("강의 유사도: {}, 강의 유사도 질문 {}", similarity, pastQuery);
+
+					return cachedList.stream()
+						.map(linkedHashMap -> mapToLecture((LinkedHashMap<String, ?>)linkedHashMap))
+						.toList();
+
+				}
 			}
 
 		}
 
 		return List.of();
+
+	}
+
+	private Lecture mapToLecture(LinkedHashMap<String, ?> linkedHashMap) {
+		return new Lecture(
+			Long.valueOf(linkedHashMap.get("lectureId").toString()),
+			linkedHashMap.get("title").toString(),
+			linkedHashMap.get("description").toString(),
+			linkedHashMap.get("instructor").toString(),
+			linkedHashMap.get("levelCode").toString(),
+			linkedHashMap.get("thumbnailUrl").toString()
+		);
 
 	}
 
