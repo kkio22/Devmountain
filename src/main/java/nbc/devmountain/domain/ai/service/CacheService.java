@@ -9,6 +9,8 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.lecture.model.Lecture;
@@ -19,6 +21,7 @@ import nbc.devmountain.domain.lecture.model.Lecture;
 public class CacheService {
 
 	private final RedisTemplate<String, Object> redisTemplate;
+	private final ObjectMapper objectMapper;
 	private final EmbeddingModel embeddingModel;
 	private static final String QUERY_EMBEDDING_KEY = "queryEmbedding";
 	private static final String LECTURE_CACHE_PREFIX = "lecture";
@@ -64,14 +67,16 @@ public class CacheService {
 	}
 
 	private Lecture mapToLecture(LinkedHashMap<String, ?> linkedHashMap) {
-		return new Lecture(
-			Long.valueOf(linkedHashMap.get("lectureId").toString()),
-			linkedHashMap.get("title").toString(),
-			linkedHashMap.get("description").toString(),
-			linkedHashMap.get("instructor").toString(),
-			linkedHashMap.get("levelCode").toString(),
-			linkedHashMap.get("thumbnailUrl").toString()
-		);
+		return objectMapper.convertValue(linkedHashMap, Lecture.class);
+
+		// return new Lecture(
+		// 	Long.valueOf(linkedHashMap.get("lectureId").toString()),
+		// 	linkedHashMap.get("title").toString(),
+		// 	linkedHashMap.get("description").toString(),
+		// 	linkedHashMap.get("instructor").toString(),
+		// 	linkedHashMap.get("levelCode").toString(),
+		// 	linkedHashMap.get("thumbnailUrl").toString()
+		// );
 
 	}
 
