@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.WebSocketSession;
 
 import lombok.RequiredArgsConstructor;
@@ -53,7 +52,6 @@ public class ChatService {
 				.message(payload)
 				.recommendations(Collections.emptyList())
 				.isAiResponse(false)
-				.messageType(MessageType.CHAT)
 				.build();
 		}
 		messageSender.sendMessageToRoom(roomId, userMsg);

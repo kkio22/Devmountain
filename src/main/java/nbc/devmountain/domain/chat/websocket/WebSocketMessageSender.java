@@ -1,14 +1,18 @@
 package nbc.devmountain.domain.chat.websocket;
 
+import java.io.IOException;
+
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
+import nbc.devmountain.domain.chat.dto.ChatRoomNameUpdateResponse;
 
 @Component
 @Slf4j
@@ -36,6 +40,22 @@ public class WebSocketMessageSender {
 		WebSocketSession session = sessionManager.getSession(roomId);
 		if (session != null) {
 			sendMessage(session, message);
+		}
+	}
+
+	public void sendUpdateRoomName(Long roomId, String newName) {
+		WebSocketSession session = sessionManager.getSession(roomId);
+		try {
+			if (session != null) {
+				ChatRoomNameUpdateResponse msg = new ChatRoomNameUpdateResponse(roomId, newName);
+
+				String json = objectMapper.writeValueAsString(msg);
+				session.sendMessage(new TextMessage(json));
+			}
+		} catch (JsonProcessingException e) {
+			log.error("방이름 업데이트중 오류 발생: {}", newName);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

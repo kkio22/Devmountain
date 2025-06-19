@@ -9,11 +9,16 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
+import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.model.MessageType;
+import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
+import nbc.devmountain.domain.chat.service.ChatRoomService;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.search.sevice.BraveSearchService;
@@ -26,11 +31,13 @@ public class LectureRecommendationService {
 	private final RagService ragService;
 	private final AiService aiService;
 	private final BraveSearchService braveSearchService;
+	private final ChatRoomService chatRoomService;
 
 	// 대화 히스토리를 저장 (chatRoomId -> 대화 내용들)
 	private final Map<Long, StringBuilder> conversationHistory = new ConcurrentHashMap<>();
 	// 수집된 정보 저장 (chatRoomId -> 수집된 정보)
 	private final Map<Long, Map<String, String>> collectedInfo = new ConcurrentHashMap<>();
+	private final ChatRoomRepository chatRoomRepository;
 
 	public ChatMessageResponse recommendationResponse(String query, User.MembershipLevel membershipLevel,
 		Long chatRoomId) {
@@ -169,6 +176,15 @@ public class LectureRecommendationService {
 						.append("\n    ]\n}");
 				}
 			}
+			ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+			if(chatRoom.getChatroomName().equals("새 채팅방")){
+				String chatHistory = conversationHistory.get(chatRoomId).toString();
+				String summarizedChatRoomName = aiService.summarizeChatRoomName(chatHistory);
+				log.info("요약된 채팅방 이름 :{}",summarizedChatRoomName);
+				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(),chatRoomId,summarizedChatRoomName);
+			}
+
 
 			return aiService.getRecommendations(promptText.toString(), true);
 		} catch (Exception e) {

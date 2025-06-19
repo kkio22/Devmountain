@@ -238,4 +238,10 @@ public class AiService {
 			.messageType(MessageType.ERROR)
 			.build();
 	}
+
+	//강의 추천정보 요약
+	public String summarizeChatRoomName(String chatHistory) {
+		String prompt = AiConstants.SUMMARIZATION_CHATROOM_PROMPT + "\n\n[대화 내용]\n" + chatHistory;
+		return chatModel.call(prompt);
+	}
 }

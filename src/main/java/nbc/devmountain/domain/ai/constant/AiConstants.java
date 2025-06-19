@@ -114,6 +114,12 @@ public final class AiConstants {
 		- 다음 단계로 넘어가기 위한 안내 메시지를 포함해줘.
 		""";
 
+	public static final String SUMMARIZATION_CHATROOM_PROMPT = """
+		   너는 채팅방에서 오간 대화 내용을 바탕으로
+		   한 문장으로 요약해서 채팅방 제목을 만들어줘.
+		   예시: '입문 수준의 파이썬 강의', '해외 취업 목표의 머신러닝 강의' 등
+		""";
+
 	// 에러 메시지
 	public static final String ERROR_EMPTY_QUERY = "메시지를 입력해주세요.";
 	public static final String ERROR_NO_CHATROOM = "채팅방 정보를 찾을 수 없습니다.";

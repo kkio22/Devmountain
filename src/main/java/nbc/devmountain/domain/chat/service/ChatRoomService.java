@@ -14,6 +14,7 @@ import nbc.devmountain.domain.chat.RoomType;
 import nbc.devmountain.domain.chat.dto.ChatRoomDetailResponse;
 import nbc.devmountain.domain.chat.dto.ChatRoomResponse;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
+import nbc.devmountain.domain.chat.websocket.WebSocketMessageSender;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 
@@ -24,22 +25,23 @@ public class ChatRoomService {
 
 	private final ChatRoomRepository chatRoomRepository;
 	private final UserRepository userRepository;
+	private final WebSocketMessageSender messageSender;
 
 	@Transactional
-	public ChatRoomResponse createChatRoom(Long userId, String chatroomName) {
+	public ChatRoomResponse createChatRoom(Long userId) {
 		User user = userRepository.findById(userId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
 		ChatRoom chatRoom = ChatRoom.builder()
 			.user(user)
-			.chatroomName(chatroomName)
+			.chatroomName("새 채팅방")
 			.type(RoomType.valueOf(user.getMembershipLevel().name()))
 			.build();
 
 		ChatRoom saveRoom = chatRoomRepository.save(chatRoom);
 
-		log.info("채팅방 생성 완료 - userId: {}, roomId: {}, roomName: {}",
-			userId, saveRoom.getChatroomId(), chatroomName);
+		log.info("채팅방 생성 완료 - userId: {}, roomId: {}",
+			userId, saveRoom.getChatroomId());
 
 		return ChatRoomResponse.from(saveRoom);
 	}
@@ -67,7 +69,7 @@ public class ChatRoomService {
 	}
 
 	@Transactional
-	public ChatRoomResponse updateChatRoomName(Long userId, Long chatroomId, String newName) {
+	public ChatRoomResponse updateChatRoomName(Long userId, Long chatroomId, String newName) throws Exception {
 		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
@@ -75,8 +77,10 @@ public class ChatRoomService {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 		chatRoom.updateName(newName);
-
-		return ChatRoomResponse.from(chatRoom);
+		ChatRoomResponse updatedRoomName = ChatRoomResponse.from(chatRoom);
+		log.info("채팅방 이름 변경완료 - userId: {},chatroomId: {},newName: {}", userId, chatroomId, newName);
+		messageSender.sendUpdateRoomName(chatroomId,newName);
+		return updatedRoomName;
 	}
 
 	@Transactional

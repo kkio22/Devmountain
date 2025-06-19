@@ -34,8 +34,7 @@ public class ChatRoomController {
 		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
 		@RequestBody ChatRoomRequest request) {
 
-		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(customUserPrincipal.getUserId(),
-			request.chatroomName());
+		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(customUserPrincipal.getUserId());
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 생성 성공", HttpStatus.CREATED.value(), chatRoom));
 	}
@@ -63,7 +62,7 @@ public class ChatRoomController {
 	public ResponseEntity<ApiResponse<ChatRoomResponse>> updateChatRoomName(
 		@PathVariable Long chatroomId,
 		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
-		@RequestBody ChatRoomRequest request) {
+		@RequestBody ChatRoomRequest request) throws Exception {
 
 		ChatRoomResponse response = chatRoomService.updateChatRoomName(customUserPrincipal.getUserId(), chatroomId,
 			request.chatroomName());
