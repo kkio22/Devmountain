@@ -32,7 +32,6 @@ public class LectureService {
 	private final LectureRepository lectureRepository;
 	private final SkillTagRepository skillTagRepository;
 	private final LectureSkillTagRepository lectureSkillTagRepository;
-	private final RagService ragService;
 
 	public void getLecture() {
 
