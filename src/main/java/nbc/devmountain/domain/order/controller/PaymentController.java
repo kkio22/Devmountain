@@ -3,11 +3,9 @@ package nbc.devmountain.domain.order.controller;
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.util.security.CustomUserPrincipal;
 import nbc.devmountain.domain.order.dto.ConfirmPaymentRequest;
-import nbc.devmountain.domain.order.dto.OrderPaymentRequestDto;
 import nbc.devmountain.domain.order.dto.PaymentResponseDto;
 import nbc.devmountain.domain.order.dto.TossPaymentResponse;
 import nbc.devmountain.domain.order.service.PaymentService;
-import nbc.devmountain.domain.user.model.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +27,7 @@ public class PaymentController {
 
     @GetMapping("/payments/{paymentId}")
     public ResponseEntity<PaymentResponseDto> get(@PathVariable Long paymentId,
-                                                  @AuthenticationPrincipal User user) {
+                                                  @AuthenticationPrincipal CustomUserPrincipal user) {
         return ResponseEntity.ok(paymentService.getPayment(paymentId, user.getUserId()));
     }
 }
