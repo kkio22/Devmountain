@@ -6,14 +6,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +23,7 @@ public class CacheService {
 
 	private final RedisTemplate<String, Object> redisTemplate;
 	@Qualifier("redisObjectMapper")
-	private final ObjectMapper objectMapper;
+	private final ObjectMapper redisObjectMapper;
 	private final EmbeddingModel embeddingModel;
 	private static final String QUERY_EMBEDDING_KEY = "queryEmbedding";
 	private static final String LECTURE_CACHE_PREFIX = "lecture";
@@ -60,7 +57,6 @@ public class CacheService {
 
 					return cachedList.stream()
 						.map(linkedHashMap -> mapToLecture((LinkedHashMap<String, ?>)linkedHashMap))
-						//.map(linkedHashMap ->  redisObjectMapper.convertValue(linkedHashMap, Lecture.class))
 						.toList();
 
 				}
@@ -73,10 +69,8 @@ public class CacheService {
 	}
 
 	private Lecture mapToLecture(LinkedHashMap<String, ?> linkedHashMap) {
-		// ObjectMapper objectMapper = new ObjectMapper();
-		// objectMapper.registerModule(new JavaTimeModule());
-		// objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-		return objectMapper.convertValue(linkedHashMap, Lecture.class);
+
+		return redisObjectMapper.convertValue(linkedHashMap, Lecture.class);
 
 	}
 

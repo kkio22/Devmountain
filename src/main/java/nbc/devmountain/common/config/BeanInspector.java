@@ -1,23 +1,27 @@
 package nbc.devmountain.common.config;
 
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class BeanInspector {
-	@Autowired
-	private List<ObjectMapper> mappers;
-	@PostConstruct
-	public void inspect() {
-		log.info("등록된 ObjectMapper 개수: {}", mappers.size());
-		mappers.forEach(m -> log.info("→ {}", m));
+@RequiredArgsConstructor
+public class BeanInspector implements ApplicationRunner {
+	private final ApplicationContext applicationContext;
+	@Override
+	public void run(ApplicationArguments args) throws Exception {
+		String[] beanNamesForType = applicationContext.getBeanNamesForType(ObjectMapper.class);
+		for (String s : beanNamesForType) {
+			System.out.println("bean 이름 = " + s);
+		}
+		System.out.println("BeanInspector.run");
 	}
+
 }

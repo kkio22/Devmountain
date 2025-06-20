@@ -6,18 +6,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.stereotype.Service;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.lecture.model.Lecture;
-import nbc.devmountain.domain.user.model.User;
-import nbc.devmountain.domain.search.sevice.BraveSearchService;
 import nbc.devmountain.domain.search.dto.BraveSearchResponseDto;
+import nbc.devmountain.domain.search.sevice.BraveSearchService;
+import nbc.devmountain.domain.user.model.User;
 
 @Slf4j
 @Service
