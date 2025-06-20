@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.ai.service;
+package nbc.devmountain.domain.chat.service;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,10 +10,10 @@ import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.SessionUser;
+import nbc.devmountain.domain.ai.service.LectureRecommendationService;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 
 import nbc.devmountain.domain.chat.model.MessageType;
-import nbc.devmountain.domain.chat.service.ChatMessageService;
 import nbc.devmountain.domain.chat.websocket.WebSocketMessageSender;
 import nbc.devmountain.domain.user.model.User;
 
@@ -25,7 +25,7 @@ public class ChatService {
 	private final LectureRecommendationService recommendationService;
 	private final WebSocketMessageSender messageSender;
 
-	public ChatMessageResponse handleMessage(WebSocketSession session, Long roomId, String payload) {
+	public void handleMessage(WebSocketSession session, Long roomId, String payload) {
 		SessionUser sessionUser = (SessionUser)session.getAttributes().get("user");
 		User.MembershipLevel membershipType = (User.MembershipLevel)session.getAttributes().get("membershipType");
 
@@ -37,8 +37,7 @@ public class ChatService {
 					.isAiResponse(true)
 					.messageType(MessageType.ERROR)
 					.build();
-				messageSender.sendMessageToRoom(roomId, limitMsg);
-				return limitMsg;
+				messageSender.sendMessageChunk(roomId, limitMsg);
 			}
 			session.getAttributes().put("guestCount", guestCount + 1);
 		}
@@ -54,7 +53,7 @@ public class ChatService {
 				.isAiResponse(false)
 				.build();
 		}
-		messageSender.sendMessageToRoom(roomId, userMsg);
+		messageSender.sendMessageChunk(roomId, userMsg);
 
 
 		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId);
@@ -65,8 +64,7 @@ public class ChatService {
 		} else {
 			aiMsg = aiResponse;
 		}
-		messageSender.sendMessageToRoom(roomId, aiMsg);
-		return aiMsg;
+		messageSender.sendMessageChunk(roomId, aiMsg);
 	}
 
 	public List<ChatMessageResponse> getChatHistory(Long userId, Long roomId) {

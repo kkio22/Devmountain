@@ -5,12 +5,14 @@ import java.io.IOException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.dto.ChatRoomNameUpdateResponse;
+import nbc.devmountain.domain.chat.model.MessageType;
 
 @Component
 @Slf4j
@@ -49,9 +51,42 @@ public class WebSocketMessageSender {
 
 				String json = objectMapper.writeValueAsString(msg);
 				session.sendMessage(new TextMessage(json));
+				log.info("메세지 전송 완료 : sessionId={}", session.getId());
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	public void sendMessageChunk(Long roomId, ChatMessageResponse chatMessageResponse ) {
+		WebSocketSession session = sessionManager.getSession(roomId);
+		int chunkSize = 5; 	//청크사이즈
+		int delayMillis = 200;//메세지 딜레이
+
+		if (session == null || !session.isOpen()) {
+			log.warn("메시지 전송 실패: roomId={}", roomId);
+			return;
+		}
+		String fullMessage = chatMessageResponse.getMessage();
+		try {
+			int length = fullMessage.length();
+			for (int i = 0; i < length; i += chunkSize) {
+				int end = Math.min(i + chunkSize, length);
+				String chunk = fullMessage.substring(i, end);
+
+				ChatMessageResponse chunkMessage = ChatMessageResponse.builder()
+					.message(chunk)
+					.isAiResponse(true)
+					.messageType(MessageType.CHAT)
+					.build();
+
+				String json= objectMapper.writeValueAsString(chunkMessage);
+				session.sendMessage(new TextMessage(json));
+				Thread.sleep(delayMillis);
+			}
+			log.info("청크 메시지 전송 완료");
+		}catch (Exception e) {
+			log.error("청크 메시지 전송 중 오류 발생");
 		}
 	}
 }

@@ -32,12 +32,12 @@ public class LectureRecommendationService {
 	private final AiService aiService;
 	private final BraveSearchService braveSearchService;
 	private final ChatRoomService chatRoomService;
+	private final ChatRoomRepository chatRoomRepository;
 
 	// 대화 히스토리를 저장 (chatRoomId -> 대화 내용들)
 	private final Map<Long, StringBuilder> conversationHistory = new ConcurrentHashMap<>();
 	// 수집된 정보 저장 (chatRoomId -> 수집된 정보)
 	private final Map<Long, Map<String, String>> collectedInfo = new ConcurrentHashMap<>();
-	private final ChatRoomRepository chatRoomRepository;
 
 	public ChatMessageResponse recommendationResponse(String query, User.MembershipLevel membershipLevel,
 		Long chatRoomId) {
@@ -175,16 +175,10 @@ public class LectureRecommendationService {
 						.append(braveInfo)
 						.append("\n    ]\n}");
 				}
+				if (chatRoomId != null) {
+					maybeUpdateChatRoomName(chatRoomId);
+				}
 			}
-			ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-			if(chatRoom.getChatroomName().equals("새 채팅방")){
-				String chatHistory = conversationHistory.get(chatRoomId).toString();
-				String summarizedChatRoomName = aiService.summarizeChatRoomName(chatHistory);
-				log.info("요약된 채팅방 이름 :{}",summarizedChatRoomName);
-				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(),chatRoomId,summarizedChatRoomName);
-			}
-
 			resetChatState(chatRoomId);
 			return aiService.getRecommendations(promptText.toString(), true);
 		} catch (Exception e) {
@@ -248,5 +242,16 @@ public class LectureRecommendationService {
 			.isAiResponse(true)
 			.messageType(MessageType.ERROR)
 			.build();
+	}
+
+	private void maybeUpdateChatRoomName(Long chatRoomId) {
+		chatRoomRepository.findById(chatRoomId).ifPresent(chatRoom -> {
+			if ("새 채팅방".equals(chatRoom.getChatroomName())) {
+				String chatHistory = conversationHistory.get(chatRoomId).toString();
+				String summarizedName = aiService.summarizeChatRoomName(chatHistory);
+				log.info("요약된 채팅방 이름 : {}", summarizedName);
+				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(),chatRoom, summarizedName);
+			}
+		});
 	}
 }

@@ -71,17 +71,14 @@ public class ChatRoomService {
 	}
 
 	@Transactional
-	public ChatRoomResponse updateChatRoomName(Long userId, Long chatroomId, String newName) throws Exception {
-		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-
+	public ChatRoomResponse updateChatRoomName(Long userId, ChatRoom chatRoom, String newName){
 		if (!chatRoom.getUser().getUserId().equals(userId)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 		chatRoom.updateName(newName);
 		ChatRoomResponse updatedRoomName = ChatRoomResponse.from(chatRoom);
-		log.info("채팅방 이름 변경완료 - userId: {},chatroomId: {},newName: {}", userId, chatroomId, newName);
-		messageSender.sendUpdateRoomName(chatroomId,newName);
+		log.info("채팅방 이름 변경완료 - userId: {},chatroomId: {},newName: {}", userId, chatRoom.getChatroomId(), newName);
+		messageSender.sendUpdateRoomName(chatRoom.getChatroomId(), newName);
 		return updatedRoomName;
 	}
 
@@ -96,5 +93,11 @@ public class ChatRoomService {
 		chatRoom.delete();
 		log.info("채팅방 삭제 완료 - userId: {}, roomId: {}", userId, chatroomId);
 		webSocketSessionManager.removeRoomSessions(chatroomId);
+	}
+
+	@Transactional(readOnly = true)
+	public ChatRoom getChatRoomOrThrow(Long chatRoomId) {
+		return chatRoomRepository.findById(chatRoomId)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 	}
 }

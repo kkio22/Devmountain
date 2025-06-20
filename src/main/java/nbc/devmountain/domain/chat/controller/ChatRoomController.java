@@ -20,6 +20,7 @@ import nbc.devmountain.common.util.security.CustomUserPrincipal;
 import nbc.devmountain.domain.chat.dto.ChatRoomRequest;
 import nbc.devmountain.domain.chat.dto.ChatRoomDetailResponse;
 import nbc.devmountain.domain.chat.dto.ChatRoomResponse;
+import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.service.ChatRoomService;
 
 @RestController
@@ -62,9 +63,10 @@ public class ChatRoomController {
 	public ResponseEntity<ApiResponse<ChatRoomResponse>> updateChatRoomName(
 		@PathVariable Long chatroomId,
 		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
-		@RequestBody ChatRoomRequest request) throws Exception {
+		@RequestBody ChatRoomRequest request) {
 
-		ChatRoomResponse response = chatRoomService.updateChatRoomName(customUserPrincipal.getUserId(), chatroomId,
+		ChatRoom chatRoom = chatRoomService.getChatRoomOrThrow(chatroomId);
+		ChatRoomResponse response = chatRoomService.updateChatRoomName(customUserPrincipal.getUserId(), chatRoom,
 			request.chatroomName());
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 이름 수정 완료", HttpStatus.OK.value(), response));
