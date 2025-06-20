@@ -26,7 +26,7 @@ public class CacheService {
 	private final ObjectMapper redisObjectMapper;
 	private final EmbeddingModel embeddingModel;
 	private static final String QUERY_EMBEDDING_KEY = "queryEmbedding";
-	private static final String LECTURE_CACHE_PREFIX = "lecture";
+	private static final String LECTURE_CACHE_PREFIX = "lecture: ";
 
 	//새로운 질문과 비슷한 강의가 레디스에 없어서 저장 로직
 	public void saveLecture(String searchQuery, List<Lecture> similarLecture) {
