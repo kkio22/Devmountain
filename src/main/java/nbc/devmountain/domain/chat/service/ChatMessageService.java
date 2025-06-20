@@ -64,7 +64,6 @@ public class ChatMessageService {
 			.chatRoom(chatRoom)
 			.user(user)
 			.message(message)
-			.messageType(MessageType.CHAT)
 			.isAiResponse(false)
 			.build();
 
