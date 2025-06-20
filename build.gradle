@@ -44,7 +44,6 @@ dependencies {
 
     // Thymeleaf (관리 UI 또는 테스트용)
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    testImplementation 'org.springframework.batch:spring-batch-test'
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -80,9 +79,14 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
     implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter'
 
+    //redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+
     //Spring batch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
-    
+
 }
 
 bootJar {

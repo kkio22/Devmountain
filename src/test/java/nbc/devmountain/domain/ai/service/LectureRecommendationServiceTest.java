@@ -7,7 +7,6 @@ import static org.mockito.Mockito.*;
 import java.util.Collections;
 import java.util.List;
 
-import nbc.devmountain.domain.search.sevice.BraveSearchService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,10 +18,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.ai.dto.RecommendationDto;
-import nbc.devmountain.domain.search.dto.BraveSearchResponseDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.lecture.model.Lecture;
+import nbc.devmountain.domain.search.dto.BraveSearchResponseDto;
+import nbc.devmountain.domain.search.sevice.BraveSearchService;
 import nbc.devmountain.domain.user.model.User;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +34,10 @@ class LectureRecommendationServiceTest {
 
 	@Mock
 	private AiService aiService;
+
+	@Mock
+	private CacheService cacheService;
+
 
 	@Mock
 	private BraveSearchService braveSearchService;
@@ -386,4 +390,46 @@ class LectureRecommendationServiceTest {
 		BraveSearchResponseDto.Web web = new BraveSearchResponseDto.Web(List.of(result));
 		return new BraveSearchResponseDto(web);
 	}
-} 
+
+	@Test
+	@DisplayName("유사 질문이 캐시에 존재할 경우 RAG 호출 없이 응답 반환")
+	void shouldReturnCachedLecturesWhenCacheHit() {
+		// given
+		String firstQuery = "자바 배우고 싶어요";
+		String secondQuery = "취업 준비입니다.";
+
+		ChatMessageResponse firstResponse = ChatMessageResponse.builder()
+			.message("어떤 목적으로 자바를 배우고 싶으신가요?")
+			.isAiResponse(true)
+			.messageType(MessageType.CHAT)
+			.build();
+
+		ChatMessageResponse readyResponse = ChatMessageResponse.builder()
+			.message(AiConstants.SUCCESS_READY_FOR_RECOMMENDATION)
+			.isAiResponse(true)
+			.messageType(MessageType.RECOMMENDATION)
+			.build();
+
+		List<Lecture> cachedLectures = List.of(createMockLecture());
+		ChatMessageResponse finalResponse = ChatMessageResponse.builder()
+			.recommendations(List.of(createMockRecommendation()))
+			.isAiResponse(true)
+			.messageType(MessageType.RECOMMENDATION)
+			.build();
+
+		when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery))).thenReturn(firstResponse);
+		when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery))).thenReturn(readyResponse);
+		when(cacheService.cacheSimilarLectures(anyString())).thenReturn(cachedLectures);
+		when(aiService.getRecommendations(anyString(), eq(true))).thenReturn(finalResponse);
+		when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
+
+		// when
+		lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId);
+		ChatMessageResponse response = lectureRecommendationService.recommendationResponse(secondQuery, memberType, chatRoomId);
+
+		// then
+		verify(cacheService, times(1)).cacheSimilarLectures(anyString());
+		verify(ragService, never()).searchSimilarLectures(anyString()); // 캐시가 있으므로 RAG 미호출
+		assertThat(response.getRecommendations()).isNotNull();
+	}
+}
