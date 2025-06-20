@@ -37,7 +37,7 @@ public class ChatService {
 					.isAiResponse(true)
 					.messageType(MessageType.ERROR)
 					.build();
-				messageSender.sendMessageChunk(roomId, limitMsg);
+				messageSender.sendMessage(session, limitMsg);
 			}
 			session.getAttributes().put("guestCount", guestCount + 1);
 		}
@@ -53,8 +53,7 @@ public class ChatService {
 				.isAiResponse(false)
 				.build();
 		}
-		messageSender.sendMessageChunk(roomId, userMsg);
-
+		messageSender.sendMessage(session, userMsg);
 
 		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId);
 		ChatMessageResponse aiMsg;
@@ -63,6 +62,10 @@ public class ChatService {
 			log.info("AI 메세지 생성 완료");
 		} else {
 			aiMsg = aiResponse;
+		}
+		if (aiMsg.getMessageType() == MessageType.RECOMMENDATION && aiMsg.getRecommendations() != null
+			&& !aiMsg.getRecommendations().isEmpty()) {
+			messageSender.sendMessageToRoom(roomId, aiMsg);
 		}
 		messageSender.sendMessageChunk(roomId, aiMsg);
 	}

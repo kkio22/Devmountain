@@ -66,7 +66,7 @@ public class ChatRoomController {
 		@RequestBody ChatRoomRequest request) {
 
 		ChatRoom chatRoom = chatRoomService.getChatRoomOrThrow(chatroomId);
-		ChatRoomResponse response = chatRoomService.updateChatRoomName(customUserPrincipal.getUserId(), chatRoom,
+		ChatRoomResponse response = chatRoomService.updateChatRoomName(customUserPrincipal.getUserId(), chatroomId,
 			request.chatroomName());
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 이름 수정 완료", HttpStatus.OK.value(), response));

@@ -60,8 +60,8 @@ public class WebSocketMessageSender {
 
 	public void sendMessageChunk(Long roomId, ChatMessageResponse chatMessageResponse ) {
 		WebSocketSession session = sessionManager.getSession(roomId);
-		int chunkSize = 5; 	//청크사이즈
-		int delayMillis = 200;//메세지 딜레이
+		int chunkSize = 1; 	//청크사이즈
+		int delayMillis = 10;//메세지 딜레이
 
 		if (session == null || !session.isOpen()) {
 			log.warn("메시지 전송 실패: roomId={}", roomId);
@@ -77,6 +77,7 @@ public class WebSocketMessageSender {
 				ChatMessageResponse chunkMessage = ChatMessageResponse.builder()
 					.message(chunk)
 					.isAiResponse(true)
+					.recommendations(chatMessageResponse.getRecommendations())
 					.messageType(MessageType.CHAT)
 					.build();
 

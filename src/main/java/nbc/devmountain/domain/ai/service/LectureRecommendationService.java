@@ -175,6 +175,7 @@ public class LectureRecommendationService {
 						.append(braveInfo)
 						.append("\n    ]\n}");
 				}
+				//채팅방 제목 자동 변경
 				if (chatRoomId != null) {
 					maybeUpdateChatRoomName(chatRoomId);
 				}
@@ -250,7 +251,7 @@ public class LectureRecommendationService {
 				String chatHistory = conversationHistory.get(chatRoomId).toString();
 				String summarizedName = aiService.summarizeChatRoomName(chatHistory);
 				log.info("요약된 채팅방 이름 : {}", summarizedName);
-				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(),chatRoom, summarizedName);
+				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(),chatRoomId, summarizedName);
 			}
 		});
 	}

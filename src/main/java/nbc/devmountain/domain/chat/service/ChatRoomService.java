@@ -71,14 +71,17 @@ public class ChatRoomService {
 	}
 
 	@Transactional
-	public ChatRoomResponse updateChatRoomName(Long userId, ChatRoom chatRoom, String newName){
+	public ChatRoomResponse updateChatRoomName(Long userId, Long chatroomId, String newName){
+		ChatRoom chatRoom = chatRoomRepository.findById(chatroomId)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
 		if (!chatRoom.getUser().getUserId().equals(userId)) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 		chatRoom.updateName(newName);
 		ChatRoomResponse updatedRoomName = ChatRoomResponse.from(chatRoom);
-		log.info("채팅방 이름 변경완료 - userId: {},chatroomId: {},newName: {}", userId, chatRoom.getChatroomId(), newName);
-		messageSender.sendUpdateRoomName(chatRoom.getChatroomId(), newName);
+		log.info("채팅방 이름 변경완료 - userId: {},chatroomId: {},newName: {}", userId, chatroomId, newName);
+		messageSender.sendUpdateRoomName(chatroomId,newName);
 		return updatedRoomName;
 	}
 
