@@ -1,0 +1,12 @@
+FROM openjdk:11-jre-slim
+
+WORKDIR /opt/ngrinder-controller
+
+# nGrinder Controller WAR 파일 복사 (사용자가 다운로드해야 함)
+COPY ngrinder-controller-*.war ngrinder-controller.war
+
+# 포트 노출
+EXPOSE 8080 16001 12000-12099
+
+# Controller 실행
+CMD ["java", "-jar", "ngrinder-controller.war", "--port=8080"]

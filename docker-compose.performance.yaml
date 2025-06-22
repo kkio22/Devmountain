@@ -1,0 +1,117 @@
+# DevMountain Docker Compose Configuration (Performance Testing)
+# 
+# 성능 테스트용 구성: Redis, PostgreSQL, Spring Boot App + nGrinder Controller/Agent
+#
+# IPv4 고정 주소 설정 이유:
+# 1. nGrinder DNS 해결 문제: nGrinder가 자체 로컬 DNS를 사용하여 Docker 내부 DNS와 충돌
+# 2. nGrinder와 Spring Boot App 간 안정적인 통신을 위해 필요
+# 3. nGrinder Controller와 Agent 간 통신을 위해 필요
+#
+# 고정 IP가 필요한 서비스:
+# - app: nGrinder 성능 테스트 대상
+# - ngrinder-controller: nGrinder 컨트롤러  
+# - ngrinder-agent: Agent와 Controller 간 통신
+#
+# Redis, PostgreSQL은 Docker 내부 DNS로 충분히 작동하므로 서비스명 사용
+#
+# 다른 PC에서 사용 시 IP 주소 변경 방법:
+# 1. 현재 PC의 네트워크 확인: ip route show (Linux/Mac) 또는 ipconfig (Windows)
+# 2. 충돌하지 않는 서브넷 선택 (예: 172.26.0.0/16, 10.1.0.0/16 등)
+# 3. app, ngrinder-controller, ngrinder-agent의 IP 주소만 변경
+# 4. 변경 시 주의사항: 
+#    - environment 변수의 CONTROLLER_HOST도 함께 변경 필요
+#    - performance/ 폴더의 테스트 스크립트도 새 IP로 업데이트 필요
+#
+# 예시: 다른 서브넷으로 변경 시
+# 172.25.0.0/16 → 172.26.0.0/16 으로 변경하는 경우:
+# - App: 172.25.0.30 → 172.26.0.30
+# - nGrinder Controller: 172.25.0.40 → 172.26.0.40
+# - nGrinder Agent: 172.25.0.50 → 172.26.0.50
+#
+# 사용법:
+# - 성능 테스트: docker-compose -f docker-compose.performance.yaml up
+# - 일반 개발: docker-compose up (기본 docker-compose.yaml 사용)
+
+services:
+  redis:
+    image: redis:7.2
+    container_name: devmountain-redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    networks:
+      - devmonntain-net
+
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: devmountain-postgres
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - devmountain-postgres-volume:/var/lib/postgresql/data
+    networks:
+      - devmonntain-net
+      
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devmountain-app
+    ports:
+      - "${APP_PORT}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      REDIS_HOST: redis
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      devmonntain-net:
+        ipv4_address: 172.25.0.30  # nGrinder 테스트 대상이므로 고정 IP 필요
+
+  ngrinder-controller:
+    container_name: ngrinder_controller
+    build:
+      context: ./performance
+      dockerfile: ngriner-Dockerfile
+    ports:
+      - "8081:8080"         # Controller 웹 인터페이스
+      - "16001:16001"       # Agent Controller 포트
+      - "12000-12099:12000-12099"  # Agent 통신 포트 범위
+    networks:
+      devmonntain-net:
+        ipv4_address: 172.25.0.40  # Agent와 통신을 위해 고정 IP 필요
+    depends_on:
+      - app
+
+  ngrinder-agent:
+    container_name: ngrinder_agent
+    build:
+      context: ./performance
+      dockerfile: agent-Dockerfile
+    environment:
+      - CONTROLLER_HOST=172.25.0.40  # Controller IP 참조 - Controller IP 변경 시 함께 변경 필요
+      - CONTROLLER_PORT=16001
+      - AGENT_REGION=localhost
+      - AGENT_CONSOLE_PORT=16001
+    networks:
+      devmonntain-net:
+        ipv4_address: 172.25.0.50  # Controller와 통신을 위해 고정 IP 필요
+    depends_on:
+      - ngrinder-controller
+
+volumes:
+  devmountain-postgres-volume:
+
+networks:
+  devmonntain-net:
+    name: devmonntain-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16  # nGrinder 관련 서비스들을 위한 서브넷 
