@@ -60,7 +60,7 @@ public class RateLimitFilter implements Filter {
 
 		// 인증된 사용자 요청 제한 설정 (1분마다 10개 토큰)
 		// this.authenticatedConfig = BucketConfiguration.builder()
-		// 	.addLimit(Bandwidth.classic(2, Refill.intervally(2, Duration.ofMinutes(1))))
+		// 	.addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofMinutes(1))))
 		// 	.build();
 		// 요청 제한 설정
 		this.config = BucketConfiguration.builder()
@@ -79,8 +79,14 @@ public class RateLimitFilter implements Filter {
 		String requestURI = request.getRequestURI();
 		String method = request.getMethod();
 
-		// GET 요청이고 제외 경로인 경우 제한 적용하지 않음
-		if ("GET".equals(method) || isExcludedPath(requestURI)) {
+		// POST 요청이 아니면 Rate Limit 적용하지 않음
+		if (!"POST".equals(method)) {
+			filterChain.doFilter(servletRequest, servletResponse);
+			return;
+		}
+
+		// POST 요청 중에서도 채팅 메시지 전송에만 Rate Limit 적용
+		if (!requestURI.matches("/chatrooms/\\d+/messages")) {
 			filterChain.doFilter(servletRequest, servletResponse);
 			return;
 		}
@@ -95,7 +101,7 @@ public class RateLimitFilter implements Filter {
 		//
 		// // 인증 상태에 따라 다른 설정
 		// BucketConfiguration config = isAuthenticated ? authenticatedConfig : guestConfig;
-		//
+
 		// 동일한 구성의 버킷을 생성하기 위한 Supplier 정의
 		Supplier<BucketConfiguration> configSupplier = () -> config;
 
@@ -110,7 +116,7 @@ public class RateLimitFilter implements Filter {
 			HttpServletResponse res = (HttpServletResponse) servletResponse;
 			res.setStatus(429);
 			res.getWriter().write("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
-			log.warn("Rate limit exceeded for IP: {}", ipKey);
+			log.warn("Rate limit exceeded for IP: {} - Chat message", ipKey);
 
 			// log.warn("Rate limit exceeded for IP: {} (Authenticated: {})", ipKey, isAuthenticated);
 		}
