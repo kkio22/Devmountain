@@ -2,13 +2,7 @@ FROM openjdk:11-jre-slim
 
 WORKDIR /opt/ngrinder-agent
 
-# 필요한 패키지 설치
-RUN apt-get update && apt-get install -y \
-    wget \
-    unzip \
-    && rm -rf /var/lib/apt/lists/*
-
-# nGrinder Agent TAR 파일 복사 및 압축 해제 (사용자가 다운로드해야 함)
+# nGrinder Agent TAR 파일 복사 및 압축 해제
 COPY ngrinder-agent-*.tar .
 RUN tar -xf ngrinder-agent-*.tar && \
     rm ngrinder-agent-*.tar
@@ -21,15 +15,19 @@ ENV CONTROLLER_HOST=172.25.0.40
 ENV CONTROLLER_PORT=16001
 ENV AGENT_REGION=localhost
 
+# 원본 설정 파일 수정
+RUN sed -i "s/agent.controller_host=localhost/agent.controller_host=${CONTROLLER_HOST}/" ngrinder-agent/__agent.conf && \
+    sed -i "s/agent.controller_port=16001/agent.controller_port=${CONTROLLER_PORT}/" ngrinder-agent/__agent.conf
+
 # 시작 스크립트 생성
 RUN echo '#!/bin/bash\n\
-echo "controller_host=${CONTROLLER_HOST}" > ~/.ngrinder_agent/__agent.conf\n\
-echo "controller_port=${CONTROLLER_PORT}" >> ~/.ngrinder_agent/__agent.conf\n\
-echo "region=${AGENT_REGION}" >> ~/.ngrinder_agent/__agent.conf\n\
-echo "Agent configuration created:"\n\
-cat ~/.ngrinder_agent/__agent.conf\n\
-echo "Starting nGrinder Agent..."\n\
-exec ./run_agent.sh' > start_agent.sh && chmod +x start_agent.sh
+mkdir -p ~/.ngrinder_agent\n\
+echo "agent.controller_host=${CONTROLLER_HOST}" > ~/.ngrinder_agent/__agent.conf\n\
+echo "agent.controller_port=${CONTROLLER_PORT}" >> ~/.ngrinder_agent/__agent.conf\n\
+echo "agent.subregion=${AGENT_REGION}" >> ~/.ngrinder_agent/__agent.conf\n\
+echo "common.start_mode=agent" >> ~/.ngrinder_agent/__agent.conf\n\
+exec ./ngrinder-agent/run_agent.sh\n\
+' > start_agent.sh && chmod +x start_agent.sh
 
 # Agent 실행
-CMD ["./start_agent.sh"] 
+CMD ["./start_agent.sh"]

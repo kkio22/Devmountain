@@ -14,7 +14,7 @@ services:
     ports:
       - "${REDIS_PORT}:6379"
     networks:
-      - devmonntain-net
+      - devmountain-net
 
   postgres:
     image: ankane/pgvector:latest
@@ -27,7 +27,7 @@ services:
     volumes:
       - devmountain-postgres-volume:/var/lib/postgresql/data
     networks:
-      - devmonntain-net
+      - devmountain-net
       
   app:
     build:
@@ -46,12 +46,12 @@ services:
       - redis
       - postgres
     networks:
-      - devmonntain-net
+      - devmountain-net
 
 volumes:
   devmountain-postgres-volume:
 
 networks:
-  devmonntain-net:
-    name: devmonntain-net
+  devmountain-net:
+    name: devmountain-net
     driver: bridge
