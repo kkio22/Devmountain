@@ -188,7 +188,7 @@ class AiServiceTest {
 			ChatMessageResponse response = aiService.getRecommendations(promptText, true);
 
 			// then
-			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_AI_NO_RESPONSE);
+			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_AI_INVALID_FORMAT);
 			assertThat(response.getMessageType()).isEqualTo(MessageType.ERROR);
 		}
 
@@ -367,6 +367,7 @@ class AiServiceTest {
 
 	private RecommendationDto createMockRecommendationDto() {
 		return new RecommendationDto(
+			1L,
 			"thumb1.jpg",
 			"자바 기초 강의",
 			"자바 기초부터 차근차근",

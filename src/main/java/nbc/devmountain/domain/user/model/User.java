@@ -69,6 +69,8 @@ public class User {
     @Column(name = "membership_level")
     private MembershipLevel membershipLevel;
 
+    private LocalDateTime subscriptionExpiresAt;
+
     // 카테고리 연관관계 추가
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "userCategoryId")
@@ -107,6 +109,7 @@ public class User {
         this.membershipLevel = membershipLevel;
     }
 
+    public void updateSubscriptionExpiresAt(LocalDateTime subscriptionExpiresAt) { this.subscriptionExpiresAt = subscriptionExpiresAt; }
 
     public enum LoginType {
         GOOGLE, KAKAO, NAVER, EMAIL, APPLE

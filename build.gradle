@@ -81,8 +81,11 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
     implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter'
 
-    // Bucket4j + Redis
+    //redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // Bucket4j + Redis
     implementation 'com.bucket4j:bucket4j-core:8.9.0'
     implementation 'com.bucket4j:bucket4j-redis:8.9.0'
 

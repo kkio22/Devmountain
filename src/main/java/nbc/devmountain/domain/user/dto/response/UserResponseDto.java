@@ -20,6 +20,7 @@ public class UserResponseDto {
 	private final String phoneNumber;
 	private final User.Role role;
 	private final User.MembershipLevel membership;
+	private final LocalDateTime subscribeExpiredAt;
 	private final LocalDateTime createdAt;
 	private final List<UserCategory> category;
 
@@ -32,6 +33,7 @@ public class UserResponseDto {
 			.phoneNumber(user.getPhoneNumber())
 			.role(user.getRole())
 			.membership(user.getMembershipLevel())
+			.subscribeExpiredAt(user.getSubscriptionExpiresAt())
 			.createdAt(user.getCreatedAt())
 			.category(category)
 			.build();
