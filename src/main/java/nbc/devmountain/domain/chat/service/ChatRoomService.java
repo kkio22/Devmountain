@@ -81,7 +81,7 @@ public class ChatRoomService {
 		chatRoom.updateName(newName);
 		ChatRoomResponse updatedRoomName = ChatRoomResponse.from(chatRoom);
 		log.info("채팅방 이름 변경완료 - userId: {},chatroomId: {},newName: {}", userId, chatroomId, newName);
-		messageSender.sendUpdateRoomName(chatroomId,newName);
+		messageSender.sendRoomNameUpdate(chatroomId,newName);
 		return updatedRoomName;
 	}
 

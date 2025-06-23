@@ -38,6 +38,7 @@ public class ChatService {
 					.messageType(MessageType.ERROR)
 					.build();
 				messageSender.sendMessage(session, limitMsg);
+				return;
 			}
 			session.getAttributes().put("guestCount", guestCount + 1);
 		}
