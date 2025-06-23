@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
+import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
+import nbc.devmountain.domain.chat.service.ChatRoomService;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.search.dto.BraveSearchResponseDto;
 import nbc.devmountain.domain.search.sevice.BraveSearchService;
@@ -110,8 +112,8 @@ public class LectureRecommendationService {
 			//cache에 저장된 정보가 있는지 확인
 			List<Lecture> cachedLecture = cacheService.cacheSimilarLectures(searchQuery);
 
-			if ( cachedLecture != null && !cachedLecture.isEmpty()) {
-				return respondWithLectures(cachedLecture, collectedInfo, searchQuery, membershipLevel);
+			if (cachedLecture != null && !cachedLecture.isEmpty()) {
+				return respondWithLectures(cachedLecture, collectedInfo, searchQuery, membershipLevel,chatRoomId);
 			}
 
 			List<Lecture> similarLectures = ragService.searchSimilarLectures(searchQuery);
@@ -123,7 +125,7 @@ public class LectureRecommendationService {
 
 			//cache에 강의 없을 때 저장
 			cacheService.saveLecture(searchQuery, similarLectures);
-			return respondWithLectures(similarLectures, collectedInfo, searchQuery, membershipLevel);
+			return respondWithLectures(similarLectures, collectedInfo, searchQuery, membershipLevel,chatRoomId);
 
 		} catch (Exception e) {
 			log.error("강의 검색 중 오류 발생: chatRoomId={}, error={}", chatRoomId, e.getMessage(), e);
@@ -132,7 +134,8 @@ public class LectureRecommendationService {
 		}
 	}
 
-	private ChatMessageResponse respondWithLectures(List<Lecture> lectureList, Map<String, String> collectedInfo, String searchQuery,  User.MembershipLevel membershipLevel){
+	private ChatMessageResponse respondWithLectures(List<Lecture> lectureList, Map<String, String> collectedInfo,
+		String searchQuery, User.MembershipLevel membershipLevel,Long chatRoomId) {
 		String lectureInfo = lectureList.stream()
 			.map(l -> """
                 {
@@ -260,8 +263,17 @@ public class LectureRecommendationService {
 				String chatHistory = conversationHistory.get(chatRoomId).toString();
 				String summarizedName = aiService.summarizeChatRoomName(chatHistory);
 				log.info("요약된 채팅방 이름 : {}", summarizedName);
-				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(),chatRoomId, summarizedName);
+				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(), chatRoomId, summarizedName);
 			}
 		});
 	}
+
+	public StringBuilder getConversationHistory(Long chatRoomId) {
+		return conversationHistory.computeIfAbsent(chatRoomId, k -> new StringBuilder());
+	}
+
+	public Map<String, String> getCollectedInfo(Long chatRoomId) {
+		return collectedInfo.computeIfAbsent(chatRoomId, k -> new HashMap<>());
+	}
+
 }
