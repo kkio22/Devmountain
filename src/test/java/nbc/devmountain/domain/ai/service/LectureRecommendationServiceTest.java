@@ -417,8 +417,8 @@ class LectureRecommendationServiceTest {
 			.messageType(MessageType.RECOMMENDATION)
 			.build();
 
-		when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery))).thenReturn(firstResponse);
-		when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery))).thenReturn(readyResponse);
+		when(aiService.analyzeConversationAndDecideNext(anyString(),anyMap(),eq(firstQuery),any(User.MembershipLevel.class))).thenReturn(firstResponse);
+		when(aiService.analyzeConversationAndDecideNext(anyString(),anyMap() , eq(secondQuery), any(User.MembershipLevel.class))).thenReturn(readyResponse);
 		when(cacheService.cacheSimilarLectures(anyString())).thenReturn(cachedLectures);
 		when(aiService.getRecommendations(anyString(), eq(true))).thenReturn(finalResponse);
 		when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
