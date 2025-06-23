@@ -1,0 +1,26 @@
+FROM openjdk:11-jre-slim
+
+WORKDIR /opt/ngrinder-controller
+
+# nGrinder Controller WAR 파일 복사
+COPY ngrinder-controller-*.war ngrinder-controller.war
+
+# Controller 설정 디렉토리 생성
+RUN mkdir -p ~/.ngrinder
+
+# nGrinder DNS 문제 해결을 위한 환경 변수
+ENV JAVA_OPTS="-Dngrinder.enable.local-dns=false"
+
+# 포트 노출
+EXPOSE 8080 16001 12000-12099
+
+# 시작 스크립트 생성
+RUN echo '#!/bin/bash\n\
+mkdir -p ~/.ngrinder\n\
+echo "controller.host=0.0.0.0" > ~/.ngrinder/system.conf\n\
+echo "controller.front_page_enabled=false" >> ~/.ngrinder/system.conf\n\
+exec java $JAVA_OPTS -jar ngrinder-controller.war --port=8080\n\
+' > start_controller.sh && chmod +x start_controller.sh
+
+# Controller 실행
+CMD ["./start_controller.sh"]

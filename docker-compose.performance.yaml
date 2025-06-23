@@ -1,0 +1,94 @@
+# DevMountain Docker Compose Configuration (Performance Testing)
+# 
+# 성능 테스트용 구성: Spring Boot App + nGrinder Controller + nGrinder Agent
+#
+# 고정 IP 설정 이유: nGrinder DNS 문제 해결 및 안정적인 컨테이너 간 통신
+# 
+# 다른 PC에서 사용 시: 172.25.0.0/16 서브넷을 172.26.0.0/16 등으로 변경
+# 변경 시 주의사항: CONTROLLER_HOST 환경변수와 테스트 스크립트도 함께 업데이트
+#
+# 사용법:
+# - 성능 테스트: docker-compose -f docker-compose.performance.yaml up
+# - 일반 개발: docker-compose up
+# - Agent 스케일링: docker-compose -f docker-compose.performance.yaml up -d --scale ngrinder-agent=5
+
+services:
+  redis:
+    image: redis:7.2
+    container_name: devmountain-redis-perf
+    networks:
+      devmountain-perf-net:
+        ipv4_address: 172.25.0.10
+
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: devmountain-postgres-perf
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - devmountain-postgres-perf-volume:/var/lib/postgresql/data
+    networks:
+      devmountain-perf-net:
+        ipv4_address: 172.25.0.20
+      
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devmountain-app-perf
+    ports:
+      - "${APP_PORT}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      REDIS_HOST: 172.25.0.10
+      POSTGRES_HOST: 172.25.0.20
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      devmountain-perf-net:
+        ipv4_address: 172.25.0.30
+
+  ngrinder-controller:
+    container_name: ngrinder_controller
+    build:
+      context: ./performance
+      dockerfile: ngrinder-Dockerfile
+    ports:
+      - "8081:8080"
+      - "16001:16001"
+      - "12000-12099:12000-12099"
+    networks:
+      devmountain-perf-net:
+        ipv4_address: 172.25.0.40
+    depends_on:
+      - app
+
+  ngrinder-agent:
+    build:
+      context: ./performance
+      dockerfile: agent-Dockerfile
+    environment:
+      - CONTROLLER_HOST=172.25.0.40
+      - CONTROLLER_PORT=16001
+      - AGENT_REGION=localhost
+    networks:
+      - devmountain-perf-net
+    depends_on:
+      - ngrinder-controller
+    deploy:
+      replicas: 3
+
+volumes:
+  devmountain-postgres-perf-volume:
+
+networks:
+  devmountain-perf-net:
+    name: devmountain-perf-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
