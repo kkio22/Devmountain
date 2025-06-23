@@ -106,7 +106,7 @@ class LectureRecommendationServiceTest {
 		void shouldReturnErrorWhenExceptionOccurs() {
 			// given
 			String query = "자바 배우고 싶어요";
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), anyString()))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(),eq(query), any(User.MembershipLevel.class)))
 				.thenThrow(new RuntimeException("AI 서비스 에러"));
 
 			// when
@@ -134,7 +134,7 @@ class LectureRecommendationServiceTest {
 				.messageType(MessageType.CHAT)
 				.build();
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(query)))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(query),any(User.MembershipLevel.class)))
 				.thenReturn(mockResponse);
 
 			// when
@@ -145,7 +145,8 @@ class LectureRecommendationServiceTest {
 			verify(aiService).analyzeConversationAndDecideNext(
 				eq("사용자: " + query + "\n"),
 				any(),
-				eq(query)
+				eq(query),
+				eq(memberType)
 			);
 			assertThat(response.getMessage()).contains("자바와 스프링");
 			assertThat(response.getMessageType()).isEqualTo(MessageType.CHAT);
@@ -175,9 +176,9 @@ class LectureRecommendationServiceTest {
 				.messageType(MessageType.CHAT)
 				.build();
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery)))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery),any(User.MembershipLevel.class)))
 				.thenReturn(firstResponse);
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery)))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery),any(User.MembershipLevel.class)))
 				.thenReturn(secondResponse);
 
 			// when
@@ -186,7 +187,7 @@ class LectureRecommendationServiceTest {
 				.recommendationResponse(secondQuery, memberType, chatRoomId);
 
 			// then
-			verify(aiService, times(2)).analyzeConversationAndDecideNext(anyString(), any(), anyString());
+			verify(aiService, times(2)).analyzeConversationAndDecideNext(anyString(), any(), anyString(),any(User.MembershipLevel.class));
 			assertThat(response.getMessage()).contains("프로그래밍 경험");
 			assertThat(response.getMessageType()).isEqualTo(MessageType.CHAT);
 		}
@@ -220,9 +221,9 @@ class LectureRecommendationServiceTest {
 				.messageType(MessageType.RECOMMENDATION)
 				.build();
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery)))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery),any(User.MembershipLevel.class)))
 				.thenReturn(firstResponse);
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery)))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery),any(User.MembershipLevel.class)))
 				.thenReturn(readyResponse);
 			when(ragService.searchSimilarLectures(anyString())).thenReturn(mockLectures);
 			when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
@@ -268,9 +269,9 @@ class LectureRecommendationServiceTest {
 				.messageType(MessageType.RECOMMENDATION)
 				.build();
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery)))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery),any(User.MembershipLevel.class)))
 				.thenReturn(firstResponse);
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery)))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery),any(User.MembershipLevel.class)))
 				.thenReturn(readyResponse);
 			when(ragService.searchSimilarLectures(anyString())).thenReturn(Collections.emptyList());
 
@@ -307,9 +308,9 @@ class LectureRecommendationServiceTest {
 				.messageType(MessageType.RECOMMENDATION)
 				.build();
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery)))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery),any(User.MembershipLevel.class)))
 				.thenReturn(firstResponse);
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery)))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery),any(User.MembershipLevel.class)))
 				.thenReturn(readyResponse);
 			when(ragService.searchSimilarLectures(anyString()))
 				.thenThrow(new RuntimeException("RAG 검색 실패"));
@@ -340,7 +341,7 @@ class LectureRecommendationServiceTest {
 			String query1 = "자바 배우고 싶어요";
 			String query2 = "파이썬 배우고 싶어요";
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), anyString()))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), anyString(),any(User.MembershipLevel.class)))
 				.thenReturn(ChatMessageResponse.builder()
 					.message("응답")
 					.messageType(MessageType.CHAT)
@@ -352,9 +353,9 @@ class LectureRecommendationServiceTest {
 
 			// then
 			verify(aiService).analyzeConversationAndDecideNext(
-				eq("사용자: " + query1 + "\n"), any(), eq(query1));
+				eq("사용자: " + query1 + "\n"), any(), eq(query1),eq(memberType));
 			verify(aiService).analyzeConversationAndDecideNext(
-				eq("사용자: " + query2 + "\n"), any(), eq(query2));
+				eq("사용자: " + query2 + "\n"), any(), eq(query2),eq(memberType));
 		}
 	}
 
@@ -376,7 +377,9 @@ class LectureRecommendationServiceTest {
 			"스프링 프레임워크 기초 학습",
 			"김강사",
 			"초급",
-				"https://www.example.com/course/"
+				"https://www.example.com/course/",
+			"15000",
+			"false"
 		);
 	}
 
@@ -417,8 +420,8 @@ class LectureRecommendationServiceTest {
 			.messageType(MessageType.RECOMMENDATION)
 			.build();
 
-		when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery))).thenReturn(firstResponse);
-		when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery))).thenReturn(readyResponse);
+		when(aiService.analyzeConversationAndDecideNext(anyString(),any(),eq(firstQuery),any(User.MembershipLevel.class))).thenReturn(firstResponse);
+		when(aiService.analyzeConversationAndDecideNext(anyString(),any(), eq(secondQuery), any(User.MembershipLevel.class))).thenReturn(readyResponse);
 		when(cacheService.cacheSimilarLectures(anyString())).thenReturn(cachedLectures);
 		when(aiService.getRecommendations(anyString(), eq(true))).thenReturn(finalResponse);
 		when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());

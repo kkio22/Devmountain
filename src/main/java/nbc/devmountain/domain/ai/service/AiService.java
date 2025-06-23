@@ -24,6 +24,7 @@ import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
+import nbc.devmountain.domain.user.model.User;
 
 @Service
 @AllArgsConstructor
@@ -32,7 +33,11 @@ public class AiService {
 	private final ChatModel chatModel;
 	private final ObjectMapper objectMapper;
 
-	public ChatMessageResponse analyzeConversationAndDecideNext(String conversationHistory, Map<String, String> collectedInfo, String latestUserMessage) {
+	public ChatMessageResponse analyzeConversationAndDecideNext(
+		String conversationHistory,
+		Map<String, String> collectedInfo,
+		String latestUserMessage,
+		User.MembershipLevel membershipLevel) {
 		SystemMessage systemMessage = new SystemMessage(AiConstants.CONVERSATION_ANALYSIS_PROMPT);
 
 		String promptText = String.format(
@@ -58,7 +63,7 @@ public class AiService {
 		extractAndUpdateInfoByAI(collectedInfo, latestUserMessage);
 
 		// 추천 준비 완료 확인
-		if (aiResponse.contains(AiConstants.READY_FOR_RECOMMENDATION) || isReadyForRecommendation(collectedInfo)) {
+		if (aiResponse.contains(AiConstants.READY_FOR_RECOMMENDATION) || isReadyForRecommendation(collectedInfo, membershipLevel)) {
 			return ChatMessageResponse.builder()
 				.message(AiConstants.SUCCESS_READY_FOR_RECOMMENDATION)
 				.isAiResponse(true)
@@ -104,6 +109,7 @@ public class AiService {
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_INTEREST);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_LEVEL);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_GOAL);
+				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_PRICE);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_ADDITIONAL);
 				
 				log.info("[AiService] 정보 업데이트 완료: {}", collectedInfo);
@@ -128,10 +134,18 @@ public class AiService {
 		}
 	}
 
-	private boolean isReadyForRecommendation(Map<String, String> collectedInfo) {
-		// 최소 관심분야와 (목표 또는 난이도) 중 하나가 있으면 추천 가능
-		return collectedInfo.containsKey(AiConstants.INFO_INTEREST) && 
-			   (collectedInfo.containsKey(AiConstants.INFO_GOAL) && collectedInfo.containsKey(AiConstants.INFO_LEVEL));
+	private boolean isReadyForRecommendation(Map<String, String> collectedInfo, User.MembershipLevel membershipLevel) {
+		// 기본 필수 정보: 관심분야, 목표, 난이도
+		boolean hasBasicInfo = collectedInfo.containsKey(AiConstants.INFO_INTEREST) && 
+			   collectedInfo.containsKey(AiConstants.INFO_GOAL) && 
+			   collectedInfo.containsKey(AiConstants.INFO_LEVEL);
+		
+		// PRO 회원의 경우 가격 정보도 필수
+		if (User.MembershipLevel.PRO.equals(membershipLevel)) {
+			return hasBasicInfo && collectedInfo.containsKey(AiConstants.INFO_PRICE);
+		}
+		
+		return hasBasicInfo;
 	}
 
 	private String formatCollectedInfo(Map<String, String> info) {
