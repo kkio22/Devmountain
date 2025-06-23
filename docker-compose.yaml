@@ -1,3 +1,12 @@
+# DevMountain Docker Compose Configuration (Development)
+# 
+# 개발용 구성: Redis, PostgreSQL, Spring Boot App만 포함
+# 성능 테스트가 필요한 경우: docker-compose.performance.yaml 사용
+#
+# 사용법:
+# - 개발: docker-compose up
+# - 성능 테스트: docker-compose -f docker-compose.performance.yaml up
+
 services:
   redis:
     image: redis:7.2
@@ -5,7 +14,7 @@ services:
     ports:
       - "${REDIS_PORT}:6379"
     networks:
-      - devmonntain-net
+      - devmountain-net
 
   postgres:
     image: ankane/pgvector:latest
@@ -18,31 +27,31 @@ services:
     volumes:
       - devmountain-postgres-volume:/var/lib/postgresql/data
     networks:
-      - devmonntain-net
-
-#  app:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: devmountain-app
-#    ports:
-#      - "${APP_PORT}:8080"
-#    environment:
-#      SPRING_PROFILES_ACTIVE: prod
-#      REDIS_HOST: redis
-#      POSTGRES_HOST: postgres
-#      POSTGRES_DB: ${POSTGRES_DB}
-#      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#    depends_on:
-#      - redis
-#      - postgres
-#    networks:
-#      - devmonntain-net
+      - devmountain-net
+      
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: devmountain-app
+    ports:
+      - "${APP_PORT}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      REDIS_HOST: redis
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - devmountain-net
 
 volumes:
   devmountain-postgres-volume:
 
 networks:
-  devmonntain-net:
-    name: devmonntain-net # 네트워크 명시를 해놔서 각 컨테이너에서 networks를 선언할 필요는 없지만 compose는 명시적으로 적어두는게 좋다고 권장함.
+  devmountain-net:
+    name: devmountain-net
     driver: bridge
