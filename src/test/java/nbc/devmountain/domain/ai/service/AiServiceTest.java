@@ -262,7 +262,7 @@ class AiServiceTest {
 				new ObjectMapper().readTree(extractionResponse));
 
 			// when
-			aiService.analyzeConversationAndDecideNext(conversationHistory, collectedInfo, "자바 스프링 백엔드 배우고 싶어요");
+			aiService.analyzeConversationAndDecideNext(conversationHistory, collectedInfo, "자바 스프링 백엔드 배우고 싶어요", User.MembershipLevel.GUEST);
 
 			// then
 			verify(chatModel, atLeast(2)).call(any(Prompt.class)); // 대화 분석 + 정보 추출
