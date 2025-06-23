@@ -21,7 +21,7 @@ class SignUpAndLoginTestRunner {
 	public static GTest test
 	public static HTTPRequest request
 	public static Map<String, String> headers = [:]
-	public static String baseUrl = "http://devmountain-app:8080"
+	public static String baseUrl = "http://172.25.0.30:8080"
 
 	@BeforeProcess
 	public static void beforeProcess() {
