@@ -13,8 +13,11 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,8 +34,11 @@ import nbc.devmountain.domain.chat.model.MessageType;
 public class AiService {
 	private final ChatModel chatModel;
 	private final ObjectMapper objectMapper;
+	private final StreamingChatModel streamingChatModel;
 
-	public ChatMessageResponse analyzeConversationAndDecideNext(String conversationHistory, Map<String, String> collectedInfo, String latestUserMessage) {
+	public ChatMessageResponse analyzeConversationAndDecideNext(String conversationHistory,
+		Map<String, String> collectedInfo, String latestUserMessage,WebSocketSession session) {
+
 		SystemMessage systemMessage = new SystemMessage(AiConstants.CONVERSATION_ANALYSIS_PROMPT);
 
 		String promptText = String.format(
@@ -75,7 +81,7 @@ public class AiService {
 
 	private void extractAndUpdateInfoByAI(Map<String, String> collectedInfo, String userMessage) {
 		SystemMessage systemMessage = new SystemMessage(AiConstants.INFO_CLASSIFICATION_PROMPT);
-		
+
 		String promptText = String.format(
 			"사용자 메시지: %s\n\n현재 수집된 정보:\n%s",
 			userMessage,
@@ -99,13 +105,13 @@ public class AiService {
 			String jsonString = extractJsonString(aiResponse);
 			if (!jsonString.isEmpty()) {
 				JsonNode jsonNode = objectMapper.readTree(jsonString);
-				
+
 				// 각 정보 업데이트 (빈 값이 아닌 경우에만)
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_INTEREST);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_LEVEL);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_GOAL);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_ADDITIONAL);
-				
+
 				log.info("[AiService] 정보 업데이트 완료: {}", collectedInfo);
 			}
 		} catch (Exception e) {
@@ -117,7 +123,7 @@ public class AiService {
 		JsonNode valueNode = jsonNode.get(key);
 		if (valueNode != null && !valueNode.asText().trim().isEmpty()) {
 			String newValue = valueNode.asText().trim();
-			
+
 			// 기존 값이 있는 경우 추가 정보는 합치고, 다른 정보는 더 구체적인 것으로 업데이트
 			if (AiConstants.INFO_ADDITIONAL.equals(key) && collectedInfo.containsKey(key)) {
 				String existingValue = collectedInfo.get(key);
@@ -130,8 +136,8 @@ public class AiService {
 
 	private boolean isReadyForRecommendation(Map<String, String> collectedInfo) {
 		// 최소 관심분야와 (목표 또는 난이도) 중 하나가 있으면 추천 가능
-		return collectedInfo.containsKey(AiConstants.INFO_INTEREST) && 
-			   (collectedInfo.containsKey(AiConstants.INFO_GOAL) && collectedInfo.containsKey(AiConstants.INFO_LEVEL));
+		return collectedInfo.containsKey(AiConstants.INFO_INTEREST) &&
+			(collectedInfo.containsKey(AiConstants.INFO_GOAL) && collectedInfo.containsKey(AiConstants.INFO_LEVEL));
 	}
 
 	private String formatCollectedInfo(Map<String, String> info) {
@@ -243,5 +249,36 @@ public class AiService {
 	public String summarizeChatRoomName(String chatHistory) {
 		String prompt = AiConstants.SUMMARIZATION_CHATROOM_PROMPT + "\n\n[대화 내용]\n" + chatHistory;
 		return chatModel.call(prompt);
+	}
+
+	public void streamChatResponse(WebSocketSession session, String userInput) {
+		Prompt prompt = new Prompt(List.of(
+			new SystemMessage(AiConstants.CONVERSATION_ANALYSIS_PROMPT),
+			new UserMessage(userInput)
+		));
+
+		streamingChatModel.stream(prompt)
+			.map(chatResponse -> {
+				if (chatResponse.getResult() == null || chatResponse.getResult().getOutput() == null) return "";
+				return chatResponse.getResult().getOutput().getContent();
+			})
+			.filter(chunk -> !chunk.isBlank())
+			.doOnNext(chunk -> {
+				try {
+					ChatMessageResponse message = ChatMessageResponse.builder()
+						.message(chunk)
+						.isAiResponse(true)
+						.messageType(MessageType.CHAT)
+						.build();
+
+					String json = objectMapper.writeValueAsString(message);
+					session.sendMessage(new TextMessage(json));
+				} catch (Exception e) {
+					log.warn("[AiService] 메시지 전송 실패", e);
+				}
+			})
+			.doOnComplete(() -> log.info("[AiService] 스트리밍 완료"))
+			.doOnError(e -> log.error("[AiService] 스트리밍 중 오류", e))
+			.subscribe();
 	}
 }
