@@ -43,7 +43,7 @@ public class WebSocketMessageSender {
 		}
 	}
 
-	public void sendUpdateRoomName(Long roomId, String newName) {
+	public void sendRoomNameUpdate(Long roomId, String newName) {
 		WebSocketSession session = sessionManager.getSession(roomId);
 		try {
 			if (session != null) {
@@ -58,21 +58,38 @@ public class WebSocketMessageSender {
 		}
 	}
 
-	public void sendMessageChunk(Long roomId, ChatMessageResponse chatMessageResponse ) {
+	public void sendMessageChunk(Long roomId, ChatMessageResponse chatMessageResponse) {
 		WebSocketSession session = sessionManager.getSession(roomId);
-		int chunkSize = 1; 	//청크사이즈
-		int delayMillis = 10;//메세지 딜레이
+		int chunkSize = 2;     // 청크사이즈
+		int delayMillis = 50;  // 메세지 딜레이
 
 		if (session == null || !session.isOpen()) {
 			log.warn("메시지 전송 실패: roomId={}", roomId);
 			return;
 		}
+
 		String fullMessage = chatMessageResponse.getMessage();
+		if (fullMessage == null || fullMessage.trim().isEmpty()) {
+			return;
+		}
 		try {
-			int length = fullMessage.length();
-			for (int i = 0; i < length; i += chunkSize) {
-				int end = Math.min(i + chunkSize, length);
-				String chunk = fullMessage.substring(i, end);
+			String[] words = fullMessage.split("\\s+");
+
+			for (int i = 0; i < words.length; i += chunkSize) {
+				int end = Math.min(i + chunkSize, words.length);
+
+				// 단어 조합
+				StringBuilder chunkBuilder = new StringBuilder();
+				for (int j = i; j < end; j++) {
+					chunkBuilder.append(words[j]);
+					if (j < end - 1) {
+						chunkBuilder.append(" ");
+					}
+				}
+				String chunk = chunkBuilder.toString();
+				if (end < words.length) {
+					chunk += " ";
+				}
 
 				ChatMessageResponse chunkMessage = ChatMessageResponse.builder()
 					.message(chunk)
@@ -81,13 +98,13 @@ public class WebSocketMessageSender {
 					.messageType(MessageType.CHAT)
 					.build();
 
-				String json= objectMapper.writeValueAsString(chunkMessage);
+				String json = objectMapper.writeValueAsString(chunkMessage);
 				session.sendMessage(new TextMessage(json));
 				Thread.sleep(delayMillis);
 			}
 			log.info("청크 메시지 전송 완료");
-		}catch (Exception e) {
-			log.error("청크 메시지 전송 중 오류 발생");
+		} catch (Exception e) {
+			log.error("청크 메시지 전송 중 오류 발생", e);
 		}
 	}
 }
