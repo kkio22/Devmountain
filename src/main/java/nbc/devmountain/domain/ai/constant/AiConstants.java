@@ -77,6 +77,11 @@ public final class AiConstants {
 		   - lectureId는 반드시 null로 설정
 		   - thumbnailUrl은 "null"로 설정
 		
+		   **예외 사항**
+		   - 만약 프롬프트에 "유튜브"나 "YouTube"라는 키워드가 포함되어 있다면:
+		   - 'videos_searchVideos' 툴을 사용해서 유튜브 강의만 검색하여 최대 3개를 추천 강의로 반환하여 응답
+		   - '[유사한 강의 정보]'나 '[브레이브 검색 결과]'는 이 경우 무시
+		
 		   **필수 조건:**
 		   - 사용자 관심분야와 직접 관련된 강의만 추천
 		   - 각 강의는 lectureId, title, description, instructor, level, thumbnailUrl, url 필드 모두 포함

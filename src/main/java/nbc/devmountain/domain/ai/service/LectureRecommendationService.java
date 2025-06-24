@@ -190,7 +190,7 @@ public class LectureRecommendationService {
 			}
 		}
 
-		return aiService.getRecommendations(promptText.toString(), true);
+		return aiService.getRecommendations(promptText.toString(), true, membershipLevel);
 	}
 
 	private String buildSearchQuery(Map<String, String> info) {
