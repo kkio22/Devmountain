@@ -9,6 +9,8 @@ import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import nbc.devmountain.domain.user.model.User;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -24,6 +26,7 @@ import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
+import nbc.devmountain.domain.user.model.User;
 
 @Service
 @AllArgsConstructor
@@ -32,7 +35,11 @@ public class AiService {
 	private final ChatModel chatModel;
 	private final ObjectMapper objectMapper;
 
-	public ChatMessageResponse analyzeConversationAndDecideNext(String conversationHistory, Map<String, String> collectedInfo, String latestUserMessage) {
+	public ChatMessageResponse analyzeConversationAndDecideNext(
+		String conversationHistory,
+		Map<String, String> collectedInfo,
+		String latestUserMessage,
+		User.MembershipLevel membershipLevel) {
 		SystemMessage systemMessage = new SystemMessage(AiConstants.CONVERSATION_ANALYSIS_PROMPT);
 
 		String promptText = String.format(
@@ -49,7 +56,7 @@ public class AiService {
 		String aiResponse = response.getResults()
 			.stream()
 			.findFirst()
-			.map(result -> result.getOutput().getContent())
+			.map(result -> result.getOutput().getText())
 			.orElse("");
 
 		log.info("[AiService] 대화 분석 AI 응답 >>>\n{}", aiResponse);
@@ -58,7 +65,7 @@ public class AiService {
 		extractAndUpdateInfoByAI(collectedInfo, latestUserMessage);
 
 		// 추천 준비 완료 확인
-		if (aiResponse.contains(AiConstants.READY_FOR_RECOMMENDATION) || isReadyForRecommendation(collectedInfo)) {
+		if (aiResponse.contains(AiConstants.READY_FOR_RECOMMENDATION) || isReadyForRecommendation(collectedInfo, membershipLevel)) {
 			return ChatMessageResponse.builder()
 				.message(AiConstants.SUCCESS_READY_FOR_RECOMMENDATION)
 				.isAiResponse(true)
@@ -90,7 +97,7 @@ public class AiService {
 			String aiResponse = response.getResults()
 				.stream()
 				.findFirst()
-				.map(result -> result.getOutput().getContent())
+				.map(result -> result.getOutput().getText())
 				.orElse("");
 
 			log.info("[AiService] 정보 분류 AI 응답 >>>\n{}", aiResponse);
@@ -104,6 +111,7 @@ public class AiService {
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_INTEREST);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_LEVEL);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_GOAL);
+				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_PRICE);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_ADDITIONAL);
 				
 				log.info("[AiService] 정보 업데이트 완료: {}", collectedInfo);
@@ -128,10 +136,18 @@ public class AiService {
 		}
 	}
 
-	private boolean isReadyForRecommendation(Map<String, String> collectedInfo) {
-		// 최소 관심분야와 (목표 또는 난이도) 중 하나가 있으면 추천 가능
-		return collectedInfo.containsKey(AiConstants.INFO_INTEREST) && 
-			   (collectedInfo.containsKey(AiConstants.INFO_GOAL) && collectedInfo.containsKey(AiConstants.INFO_LEVEL));
+	private boolean isReadyForRecommendation(Map<String, String> collectedInfo, User.MembershipLevel membershipLevel) {
+		// 기본 필수 정보: 관심분야, 목표, 난이도
+		boolean hasBasicInfo = collectedInfo.containsKey(AiConstants.INFO_INTEREST) && 
+			   collectedInfo.containsKey(AiConstants.INFO_GOAL) && 
+			   collectedInfo.containsKey(AiConstants.INFO_LEVEL);
+		
+		// PRO 회원의 경우 가격 정보도 필수
+		if (User.MembershipLevel.PRO.equals(membershipLevel)) {
+			return hasBasicInfo && collectedInfo.containsKey(AiConstants.INFO_PRICE);
+		}
+		
+		return hasBasicInfo;
 	}
 
 	private String formatCollectedInfo(Map<String, String> info) {
@@ -149,17 +165,33 @@ public class AiService {
 		return formatted.toString();
 	}
 
-	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalRecommendation) {
+	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalRecommendation, User.MembershipLevel membershipLevel) {
 		SystemMessage systemMessage = new SystemMessage(AiConstants.RECOMMENDATION_PROMPT);
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 		log.info("[AiService] 추천 프롬프트 전송 >>>\n{}", promptText);
 
-		ChatResponse response = chatModel.call(prompt);
-		String rawAiResponse = response.getResults()
-			.stream()
-			.findFirst()
-			.map(result -> result.getOutput().getContent())
-			.orElse("");
+		String rawAiResponse;
+
+		if (!User.MembershipLevel.GUEST.equals(membershipLevel)) {
+			log.info("[AiService] 회원 유저 추천 호출");
+			// PRO 유저: Tool을 활용한 ChatClient 호출
+
+			rawAiResponse = ChatClient.create(chatModel)
+					.prompt(prompt)
+					.tools("videos_searchVideos")
+					.call()
+					.content();
+			log.info("[AiService] ai 응답값 >>>\n{}",rawAiResponse );
+		} else {
+			log.info("[AiService] 게스트 추천 호출");
+			// GUEST 유저: 기존 ChatModel 호출 방식
+			ChatResponse response = chatModel.call(prompt);
+			rawAiResponse = response.getResults()
+				.stream()
+				.findFirst()
+				.map(result -> result.getOutput().getText())
+				.orElse("");
+		}
 
 		log.info("[AiService] AI 추천 응답 >>>\n{}", rawAiResponse);
 		if (!isFinalRecommendation) {
