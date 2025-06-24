@@ -56,21 +56,11 @@ public class ChatService {
 		}
 		messageSender.sendMessage(session, userMsg);
 
-		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId);
-		if (aiResponse.getMessageType() == MessageType.RECOMMENDATION) {
-			ChatMessageResponse aiMsg;
-			if (membershipType != User.MembershipLevel.GUEST) {
-				aiMsg = chatMessageService.createAIMessage(roomId, aiResponse);
-				log.info("AI 추천 메세지 생성 완료");
-			} else {
-			aiMsg = aiResponse;
-			}
-			if (aiMsg.getMessageType() == MessageType.RECOMMENDATION && aiMsg.getRecommendations() != null
-				&& !aiMsg.getRecommendations().isEmpty()) {
-				messageSender.sendMessageToRoom(roomId, aiMsg);
-			} else{
-				messageSender.sendMessageChunk(roomId, aiMsg);
-			}
+		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId, session);
+
+		if (aiResponse.getMessageType() == MessageType.RECOMMENDATION && aiResponse.getRecommendations() != null
+			&& !aiResponse.getRecommendations().isEmpty()) {
+			messageSender.sendMessageToRoom(roomId, aiResponse);
 		}
 	}
 
