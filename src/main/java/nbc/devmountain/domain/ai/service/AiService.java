@@ -49,7 +49,7 @@ public class AiService {
 		String aiResponse = response.getResults()
 			.stream()
 			.findFirst()
-			.map(result -> result.getOutput().getContent())
+			.map(result -> result.getOutput().getText())
 			.orElse("");
 
 		log.info("[AiService] 대화 분석 AI 응답 >>>\n{}", aiResponse);
@@ -90,7 +90,7 @@ public class AiService {
 			String aiResponse = response.getResults()
 				.stream()
 				.findFirst()
-				.map(result -> result.getOutput().getContent())
+				.map(result -> result.getOutput().getText())
 				.orElse("");
 
 			log.info("[AiService] 정보 분류 AI 응답 >>>\n{}", aiResponse);
@@ -158,7 +158,7 @@ public class AiService {
 		String rawAiResponse = response.getResults()
 			.stream()
 			.findFirst()
-			.map(result -> result.getOutput().getContent())
+			.map(result -> result.getOutput().getText())
 			.orElse("");
 
 		log.info("[AiService] AI 추천 응답 >>>\n{}", rawAiResponse);
