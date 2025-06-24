@@ -5,19 +5,16 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RedisVectorStoreConfig {
-	
+
 	@Bean
 	public RedisVectorStoreConfig redisVectorStoreConfig() {
 		return RedisVectorStoreConfig.builder()
-			.host("localhost")
-			.port(6379)
-			.indexName("doc_idx")
-			.prefix("doc:")
-			.dimension(1536)
-			.vectorField("embedding")
-			.textField("content")
+			.indexName("lecture_idx")
+			.prefix("lecture:")
+			.contentFieldName("content")
+			.embeddingFieldName("embedding")
+			.vectorAlgorithm(Algorithm.HNSW)
 			.distanceMetric(DistanceMetric.COSINE)
-			.algorithm(Algorithm.HNSW)
 			.initializeSchema(true)
 			.build();
 	}
