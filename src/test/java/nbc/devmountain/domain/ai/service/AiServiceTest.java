@@ -166,7 +166,7 @@ class AiServiceTest {
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
-			ChatMessageResponse response = aiService.getRecommendations(promptText, true, User.MembershipLevel.GUEST);
+			ChatMessageResponse response = aiService.getRecommendations(promptText, false, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(textResponse);
