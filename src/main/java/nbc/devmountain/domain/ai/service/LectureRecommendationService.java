@@ -10,15 +10,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.WebSocketSession;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
-import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
-import nbc.devmountain.domain.chat.service.ChatRoomService;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.search.dto.BraveSearchResponseDto;
 import nbc.devmountain.domain.search.sevice.BraveSearchService;
@@ -168,15 +165,15 @@ public class LectureRecommendationService {
 
 		StringBuilder promptText = new StringBuilder();
 		promptText.append(String.format("""
-				[수집된 사용자 정보]
-				%s
-				
-				[유사한 강의 정보]
-				{
-				    "recommendations": [
-				        %s
-				    ]
-				}""",
+            [수집된 사용자 정보]
+            %s
+            
+            [유사한 강의 정보]
+            {
+                "recommendations": [
+                    %s
+                ]
+            }""",
 			formatCollectedInfo(collectedInfo),
 			lectureInfo
 		));
@@ -188,16 +185,16 @@ public class LectureRecommendationService {
 			if (braveResults != null && !braveResults.isEmpty()) {
 				String braveInfo = braveResults.stream()
 					.map(r -> """
-						{
-						    "lectureId": null,
-						    "title": "%s",
-						    "description": "%s",
-						    "instructor": null,
-						    "level": null,
-						    "thumbnailUrl": "%s",
-						    "url": "%s"
-						}
-						""".formatted(
+                        {
+                            "lectureId": null,
+                            "title": "%s",
+                            "description": "%s",
+                            "instructor": null,
+                            "level": null,
+                            "thumbnailUrl": "%s",
+                            "url": "%s"
+                        }
+                        """.formatted(
 						r.title(), r.description(), r.thumbnail(), r.url()))
 					.collect(Collectors.joining(",\n"));
 
@@ -210,9 +207,8 @@ public class LectureRecommendationService {
 				maybeUpdateChatRoomName(chatRoomId);
 			}
 		}
-		// resetChatState(chatRoomId); 대화히스토리삭제
-		return aiService.getRecommendations(promptText.toString(), true);
 
+		return aiService.getRecommendations(promptText.toString(), true, membershipLevel);
 	}
 
 	private List<Lecture> applyPriceFilter(List<Lecture> lectures, String priceCondition) {
@@ -324,5 +320,19 @@ public class LectureRecommendationService {
 				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(), chatRoomId, summarizedName);
 			}
 		});
+	}
+
+	private boolean isReadyForRecommendation(Map<String, String> collectedInfo, User.MembershipLevel membershipLevel) {
+		// 기본 필수 정보: 관심분야, 목표, 난이도
+		boolean hasBasicInfo = collectedInfo.containsKey(AiConstants.INFO_INTEREST) &&
+			   collectedInfo.containsKey(AiConstants.INFO_GOAL) &&
+			   collectedInfo.containsKey(AiConstants.INFO_LEVEL);
+
+		// PRO 회원의 경우 가격 정보도 필수
+		if (User.MembershipLevel.PRO.equals(membershipLevel)) {
+			return hasBasicInfo && collectedInfo.containsKey(AiConstants.INFO_PRICE);
+		}
+
+		return hasBasicInfo;
 	}
 }

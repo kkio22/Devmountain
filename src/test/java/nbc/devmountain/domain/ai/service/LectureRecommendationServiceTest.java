@@ -108,7 +108,7 @@ class LectureRecommendationServiceTest {
 
 			// when
 			ChatMessageResponse response = lectureRecommendationService
-				.recommendationResponse(query, memberType, null, webSocketSession);
+				.recommendationResponse(query, memberType, null);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_NO_CHATROOM);
@@ -120,13 +120,12 @@ class LectureRecommendationServiceTest {
 		void shouldReturnErrorWhenExceptionOccurs() {
 			// given
 			String query = "자바 배우고 싶어요";
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(query),
-				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(),eq(query), any(User.MembershipLevel.class)))
 				.thenThrow(new RuntimeException("AI 서비스 에러"));
 
 			// when
 			ChatMessageResponse response = lectureRecommendationService
-				.recommendationResponse(query, memberType, chatRoomId, webSocketSession);
+				.recommendationResponse(query, memberType, chatRoomId);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_PROCESSING_FAILED);
@@ -149,22 +148,19 @@ class LectureRecommendationServiceTest {
 				.messageType(MessageType.CHAT)
 				.build();
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(query),
-				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(query),any(User.MembershipLevel.class)))
 				.thenReturn(mockResponse);
 
 			// when
 			ChatMessageResponse response = lectureRecommendationService
-				.recommendationResponse(query, memberType, chatRoomId, webSocketSession);
+				.recommendationResponse(query, memberType, chatRoomId);
 
 			// then
 			verify(aiService).analyzeConversationAndDecideNext(
 				eq("사용자: " + query + "\n"),
-				anyMap(),
+				any(),
 				eq(query),
-				eq(memberType),
-				eq(webSocketSession),
-				eq(chatRoomId)
+				eq(memberType)
 			);
 			assertThat(response.getMessage()).contains("자바와 스프링");
 			assertThat(response.getMessageType()).isEqualTo(MessageType.CHAT);
@@ -174,6 +170,7 @@ class LectureRecommendationServiceTest {
 	@Nested
 	@DisplayName("대화 진행 테스트")
 	class ConversationProgressTest {
+
 		@Test
 		@DisplayName("대화 진행 중 AI가 추가 질문 생성")
 		void shouldContinueConversationWithAIQuestions() {
@@ -193,61 +190,110 @@ class LectureRecommendationServiceTest {
 				.messageType(MessageType.CHAT)
 				.build();
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(firstQuery),
-				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery),any(User.MembershipLevel.class)))
 				.thenReturn(firstResponse);
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(secondQuery),
-				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery),any(User.MembershipLevel.class)))
 				.thenReturn(secondResponse);
 
-			//when
-			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId, webSocketSession);
-			ChatMessageResponse finalResponse = lectureRecommendationService.recommendationResponse(secondQuery,
-				memberType, chatRoomId, webSocketSession);
+			// when
+			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId);
+			ChatMessageResponse response = lectureRecommendationService
+				.recommendationResponse(secondQuery, memberType, chatRoomId);
 
-			//then
-			verify(aiService, times(2)).analyzeConversationAndDecideNext(anyString(), anyMap(), anyString(),
-				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong());
-			assertThat(finalResponse.getMessage()).isEqualTo("취업 목적이시군요! 현재 프로그래밍 경험은 어느 정도인가요?");
-			assertThat(finalResponse.getMessageType()).isEqualTo(MessageType.CHAT);
+			// then
+			verify(aiService, times(2)).analyzeConversationAndDecideNext(anyString(), any(), anyString(),any(User.MembershipLevel.class));
+			assertThat(response.getMessage()).contains("프로그래밍 경험");
+			assertThat(response.getMessageType()).isEqualTo(MessageType.CHAT);
 		}
-	}
 
-	@Nested
-	@DisplayName("추천 생성 테스트")
-	class RecommendationGenerationTest {
 		@Test
-		@DisplayName("강의 검색 결과가 없는 경우 에러 응답")
-		void shouldReturnErrorWhenNoLecturesFound() {
+		@DisplayName("충분한 정보 수집 후 추천 단계로 진행")
+		void shouldProceedToRecommendationWhenInfoCollected() {
 			// given
 			String firstQuery = "자바 배우고 싶어요";
 			String secondQuery = "취업 준비용으로요";
+			List<Lecture> mockLectures = List.of(createMockLecture());
+			List<RecommendationDto> mockRecommendations = List.of(createMockRecommendation());
 
+			// 첫 번째 대화 응답 (추가 질문)
 			ChatMessageResponse firstResponse = ChatMessageResponse.builder()
 				.message("어떤 목적으로 자바를 배우고 싶으신가요?")
 				.isAiResponse(true)
 				.messageType(MessageType.CHAT)
 				.build();
 
+			// 두 번째 대화 응답 (추천 준비 완료)
 			ChatMessageResponse readyResponse = ChatMessageResponse.builder()
 				.message(AiConstants.SUCCESS_READY_FOR_RECOMMENDATION)
 				.isAiResponse(true)
 				.messageType(MessageType.RECOMMENDATION)
 				.build();
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(firstQuery),
-				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
+			ChatMessageResponse finalResponse = ChatMessageResponse.builder()
+				.recommendations(mockRecommendations)
+				.isAiResponse(true)
+				.messageType(MessageType.RECOMMENDATION)
+				.build();
+
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery),any(User.MembershipLevel.class)))
 				.thenReturn(firstResponse);
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(secondQuery),
-				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery),any(User.MembershipLevel.class)))
 				.thenReturn(readyResponse);
-			when(cacheService.cacheSimilarLectures(anyString())).thenReturn(null);
+			when(ragService.searchSimilarLectures(anyString())).thenReturn(mockLectures);
+			when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
+			when(aiService.getRecommendations(anyString(), eq(true), eq(memberType))).thenReturn(finalResponse);
+
+			// when - 첫 번째 대화
+			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId);
+			// 두 번째 대화에서 추천 단계로 진행
+			ChatMessageResponse response = lectureRecommendationService
+				.recommendationResponse(secondQuery, memberType, chatRoomId);
+
+			// then
+			verify(ragService, times(1)).searchSimilarLectures(anyString());
+			verify(aiService, times(1)).getRecommendations(anyString(), eq(true), eq(memberType));
+			assertThat(response.getRecommendations()).isNotNull();
+			assertThat(response.getRecommendations()).hasSize(1);
+			assertThat(response.getMessageType()).isEqualTo(MessageType.RECOMMENDATION);
+		}
+	}
+
+	@Nested
+	@DisplayName("추천 생성 테스트")
+	class RecommendationGenerationTest {
+
+		@Test
+		@DisplayName("강의 검색 결과가 없는 경우 에러 응답")
+		void shouldReturnErrorWhenNoLecturesFound() {
+			// given
+			String firstQuery = "자바 배우고 싶어요";
+			String secondQuery = "취업 준비용으로요";
+			
+			// 첫 번째 대화 응답 (추가 질문)
+			ChatMessageResponse firstResponse = ChatMessageResponse.builder()
+				.message("어떤 목적으로 자바를 배우고 싶으신가요?")
+				.isAiResponse(true)
+				.messageType(MessageType.CHAT)
+				.build();
+			
+			// 두 번째 대화 응답 (추천 준비 완료)
+			ChatMessageResponse readyResponse = ChatMessageResponse.builder()
+				.message(AiConstants.SUCCESS_READY_FOR_RECOMMENDATION)
+				.isAiResponse(true)
+				.messageType(MessageType.RECOMMENDATION)
+				.build();
+
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery),any(User.MembershipLevel.class)))
+				.thenReturn(firstResponse);
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery),any(User.MembershipLevel.class)))
+				.thenReturn(readyResponse);
 			when(ragService.searchSimilarLectures(anyString())).thenReturn(Collections.emptyList());
 
-			// when
-			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId, webSocketSession);
+			// when - 첫 번째 대화
+			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId);
+			// 두 번째 대화에서 추천 단계로 진행하지만 강의가 없음
 			ChatMessageResponse response = lectureRecommendationService
-				.recommendationResponse(secondQuery, memberType, chatRoomId, webSocketSession);
+				.recommendationResponse(secondQuery, memberType, chatRoomId);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_NO_LECTURES_FOUND);
@@ -261,34 +307,33 @@ class LectureRecommendationServiceTest {
 			// given
 			String firstQuery = "자바 배우고 싶어요";
 			String secondQuery = "취업 준비용으로요";
-
+			
+			// 첫 번째 대화 응답 (추가 질문)
 			ChatMessageResponse firstResponse = ChatMessageResponse.builder()
 				.message("어떤 목적으로 자바를 배우고 싶으신가요?")
 				.isAiResponse(true)
 				.messageType(MessageType.CHAT)
 				.build();
-
+			
+			// 두 번째 대화 응답 (추천 준비 완료)
 			ChatMessageResponse readyResponse = ChatMessageResponse.builder()
 				.message(AiConstants.SUCCESS_READY_FOR_RECOMMENDATION)
 				.isAiResponse(true)
 				.messageType(MessageType.RECOMMENDATION)
 				.build();
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(firstQuery),
-				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(firstQuery),any(User.MembershipLevel.class)))
 				.thenReturn(firstResponse);
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(secondQuery),
-				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), eq(secondQuery),any(User.MembershipLevel.class)))
 				.thenReturn(readyResponse);
-			when(cacheService.cacheSimilarLectures(anyString())).thenReturn(null);
 			when(ragService.searchSimilarLectures(anyString()))
 				.thenThrow(new RuntimeException("RAG 검색 실패"));
 
-			// when
-			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId, webSocketSession);
+			// when - 첫 번째 대화
+			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId);
 			// 두 번째 대화에서 추천 단계로 진행하지만 RAG 검색 실패
 			ChatMessageResponse response = lectureRecommendationService
-				.recommendationResponse(secondQuery, memberType, chatRoomId, webSocketSession);
+				.recommendationResponse(secondQuery, memberType, chatRoomId);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_LECTURE_SEARCH_FAILED);
@@ -309,27 +354,58 @@ class LectureRecommendationServiceTest {
 			Long chatRoom2 = 2L;
 			String query1 = "자바 배우고 싶어요";
 			String query2 = "파이썬 배우고 싶어요";
-			User.MembershipLevel memberType = User.MembershipLevel.PRO;
 
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(query1), eq(memberType),
-				any(WebSocketSession.class), eq(chatRoom1)))
-				.thenReturn(ChatMessageResponse.builder().message("자바 응답").messageType(MessageType.CHAT).build());
-			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(query2), eq(memberType),
-				any(WebSocketSession.class), eq(chatRoom2)))
-				.thenReturn(ChatMessageResponse.builder().message("파이썬 응답").messageType(MessageType.CHAT).build());
+			when(aiService.analyzeConversationAndDecideNext(anyString(), any(), anyString(),any(User.MembershipLevel.class)))
+				.thenReturn(ChatMessageResponse.builder()
+					.message("응답")
+					.messageType(MessageType.CHAT)
+					.build());
 
 			// when
-			lectureRecommendationService.recommendationResponse(query1, memberType, chatRoom1, webSocketSession);
-			lectureRecommendationService.recommendationResponse(query2, memberType, chatRoom2, webSocketSession);
+			lectureRecommendationService.recommendationResponse(query1, memberType, chatRoom1);
+			lectureRecommendationService.recommendationResponse(query2, memberType, chatRoom2);
 
 			// then
 			verify(aiService).analyzeConversationAndDecideNext(
-				eq("사용자: " + query1 + "\n"), anyMap(), eq(query1), eq(memberType),
-				eq(webSocketSession), eq(chatRoom1));
+				eq("사용자: " + query1 + "\n"), any(), eq(query1),eq(memberType));
 			verify(aiService).analyzeConversationAndDecideNext(
-				eq("사용자: " + query2 + "\n"), anyMap(), eq(query2), eq(memberType),
-				eq(webSocketSession), eq(chatRoom2));
+				eq("사용자: " + query2 + "\n"), any(), eq(query2),eq(memberType));
 		}
+	}
+
+	private Lecture createMockLecture() {
+		return Lecture.builder()
+			.title("스프링 입문 강의")
+			.description("스프링 프레임워크 기초 학습")
+			.instructor("김강사")
+			.levelCode("초급")
+			.thumbnailUrl("thumbnail.jpg")
+			.build();
+	}
+
+	private RecommendationDto createMockRecommendation() {
+		return new RecommendationDto(
+			1L,
+			"thumbnail.jpg",
+			"스프링 입문 강의",
+			"스프링 프레임워크 기초 학습",
+			"김강사",
+			"초급",
+				"https://www.example.com/course/",
+			"15000",
+			"false"
+		);
+	}
+
+	private BraveSearchResponseDto mockBraveSearchResponse() {
+		BraveSearchResponseDto.Result result = new BraveSearchResponseDto.Result(
+				"AI 기초 강의",
+				"AI 입문자를 위한 강의입니다.",
+				"http:fewfewfewfewfew",
+				new BraveSearchResponseDto.Result.ThumbnailWrapper("https://imgs.search.brave.com/thumb.jpg", "https://example.com/original.jpg")
+		);
+		BraveSearchResponseDto.Web web = new BraveSearchResponseDto.Web(List.of(result));
+		return new BraveSearchResponseDto(web);
 	}
 
 	@Test
@@ -375,14 +451,10 @@ class LectureRecommendationServiceTest {
 			.messageType(MessageType.RECOMMENDATION)
 			.build();
 
-		when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(firstQuery),
-			any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
-			.thenReturn(firstResponse);
-		when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(secondQuery),
-			any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong()))
-			.thenReturn(readyResponse);
+		when(aiService.analyzeConversationAndDecideNext(anyString(),any(),eq(firstQuery),any(User.MembershipLevel.class))).thenReturn(firstResponse);
+		when(aiService.analyzeConversationAndDecideNext(anyString(),any(), eq(secondQuery), any(User.MembershipLevel.class))).thenReturn(readyResponse);
 		when(cacheService.cacheSimilarLectures(anyString())).thenReturn(cachedLectures);
-		when(aiService.getRecommendations(anyString(), eq(true))).thenReturn(finalResponse);
+		when(aiService.getRecommendations(anyString(), eq(true), eq(User.MembershipLevel.PRO))).thenReturn(finalResponse);
 		when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
 
 		// when

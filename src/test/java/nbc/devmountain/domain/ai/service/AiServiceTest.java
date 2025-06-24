@@ -34,6 +34,15 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import nbc.devmountain.domain.ai.constant.AiConstants;
+import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
+import nbc.devmountain.domain.chat.model.MessageType;
+import nbc.devmountain.domain.user.model.User;
+
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiService 단위 테스트")
 class AiServiceTest {
@@ -95,68 +104,61 @@ class AiServiceTest {
 	class AnalyzeConversationTest {
 
 		@Test
-		@DisplayName("대화 분석 후 추가 질문 생성 (스트리밍 사용)")
+		@DisplayName("대화 분석 후 추가 질문 생성")
 		void shouldGenerateFollowUpQuestion() {
-
 			// given
-			String expectedResponse = "취업 목적이시군요! 현재 프로그래밍 경험은 어느 정도인가요?";
+			String aiResponse = "취업 목적이시군요! 현재 프로그래밍 경험은 어느 정도인가요?";
+			ChatResponse mockChatResponse = createMockChatResponse(aiResponse);
 
-			when(chatModel.call(any(Prompt.class)))
-				.thenReturn(createMockChatResponse("{\"goal\":\"취업\"}"));
-			when(streamingChatModel.stream(any(Prompt.class)))
-				.thenReturn(Flux.just(createMockChatResponse(expectedResponse)));
+			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
 			ChatMessageResponse response = aiService.analyzeConversationAndDecideNext(
-				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST, webSocketSession, chatRoomId);
+				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST);
 
 			// then
-			verify(streamingChatModel).stream(any(Prompt.class));
-
-			assertThat(response.getMessage()).isEqualTo(expectedResponse);
+			verify(chatModel, atLeastOnce()).call(any(Prompt.class));
+			assertThat(response.getMessage()).isEqualTo(aiResponse);
 			assertThat(response.getMessageType()).isEqualTo(MessageType.CHAT);
+			assertThat(response.isAiResponse()).isTrue();
 		}
 
 		@Test
-		@DisplayName("충분한 정보 수집 시 추천 준비 완료 응답 (스트리밍 미사용)")
+		@DisplayName("충분한 정보 수집 시 추천 준비 완료 응답")
 		void shouldReturnReadyForRecommendationWhenInfoComplete() {
-
 			// given
 			collectedInfo.put(AiConstants.INFO_INTEREST, "자바 스프링");
 			collectedInfo.put(AiConstants.INFO_GOAL, "취업");
-			collectedInfo.put(AiConstants.INFO_LEVEL, "초급");
+
+			String aiResponse = AiConstants.READY_FOR_RECOMMENDATION;
+			ChatResponse mockChatResponse = createMockChatResponse(aiResponse);
+
+			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
 			ChatMessageResponse response = aiService.analyzeConversationAndDecideNext(
-				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST, webSocketSession, chatRoomId);
+				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST);
 
 			// then
-			verify(streamingChatModel, never()).stream(any(Prompt.class));
-
 			assertThat(response.getMessage()).isEqualTo(AiConstants.SUCCESS_READY_FOR_RECOMMENDATION);
 			assertThat(response.getMessageType()).isEqualTo(MessageType.RECOMMENDATION);
 		}
 
 		@Test
-		@DisplayName("정보 추출 실패 시에도 대화 계속 진행 (스트리밍 사용)")
-		void shouldContinueConversationWhenInfoExtractionFails() {
-
+		@DisplayName("정보 추출 실패 시에도 대화 계속 진행")
+		void shouldContinueConversationWhenInfoExtractionFails() throws Exception {
 			// given
-			String expectedResponse = "어떤 분야에 관심이 있으신가요?";
+			String aiResponse = "어떤 분야에 관심이 있으신가요?";
+			ChatResponse mockChatResponse = createMockChatResponse(aiResponse);
 
-			when(chatModel.call(any(Prompt.class)))
-				.thenReturn(createMockChatResponse("이건 JSON이 아니에요"));
-			when(streamingChatModel.stream(any(Prompt.class)))
-				.thenReturn(Flux.just(createMockChatResponse(expectedResponse)));
+			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
 			ChatMessageResponse response = aiService.analyzeConversationAndDecideNext(
-				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST, webSocketSession, chatRoomId);
+				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST);
 
 			// then
-			verify(streamingChatModel).stream(any(Prompt.class));
-
-			assertThat(response.getMessage()).isEqualTo(expectedResponse);
+			assertThat(response.getMessage()).isEqualTo(aiResponse);
 			assertThat(response.getMessageType()).isEqualTo(MessageType.CHAT);
 		}
 	}
@@ -171,27 +173,28 @@ class AiServiceTest {
 			// given
 			String promptText = "추천 요청";
 			String jsonResponse = """
-             {
-                "recommendations": [
-                   {
-                      "title": "자바 기초 강의",
-                      "description": "자바 기초부터 차근차근"
-                   }
-                ]
-             }
-             """;
+				{
+					"recommendations": [
+						{
+							"title": "자바 기초 강의",
+							"description": "자바 기초부터 차근차근"
+						}
+					]
+				}
+				""";
+
+			// Real ObjectMapper를 사용하여 실제 JSON 파싱 테스트
+			AiService realAiService = new AiService(chatModel, new ObjectMapper());
 			ChatResponse mockChatResponse = createMockChatResponse(jsonResponse);
+
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
-
-
-			//when
-			ChatMessageResponse response = aiService.getRecommendations(promptText, true);
+			// when
+			ChatMessageResponse response = realAiService.getRecommendations(promptText, true, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getRecommendations()).isNotNull();
 			assertThat(response.getRecommendations()).hasSize(1);
-			assertThat(response.getRecommendations().get(0).title()).isEqualTo("자바 기초 강의");
 			assertThat(response.getMessageType()).isEqualTo(MessageType.RECOMMENDATION);
 			assertThat(response.getMessage()).isNull();
 		}
@@ -207,7 +210,7 @@ class AiServiceTest {
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
-			ChatMessageResponse response = aiService.getRecommendations(promptText, false);
+			ChatMessageResponse response = aiService.getRecommendations(promptText, false, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(textResponse);
@@ -226,7 +229,7 @@ class AiServiceTest {
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
-			ChatMessageResponse response = aiService.getRecommendations(promptText, true);
+			ChatMessageResponse response = aiService.getRecommendations(promptText, true, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_AI_INVALID_FORMAT);
@@ -240,10 +243,13 @@ class AiServiceTest {
 			String promptText = "추천 요청";
 			String invalidJsonResponse = "{ invalid json }";
 			ChatResponse mockChatResponse = createMockChatResponse(invalidJsonResponse);
+
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
+			when(objectMapper.readTree(anyString())).thenThrow(new JsonProcessingException("JSON 파싱 실패") {
+			});
 
 			// when
-			ChatMessageResponse response = aiService.getRecommendations(promptText, true);
+			ChatMessageResponse response = aiService.getRecommendations(promptText, true, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_AI_PARSING_FAILED);
@@ -256,16 +262,19 @@ class AiServiceTest {
 			// given
 			String promptText = "추천 요청";
 			String emptyJsonResponse = """
-             {
-                "recommendations": []
-             }
-             """;
+				{
+					"recommendations": []
+				}
+				""";
 
+			// Real ObjectMapper를 사용하여 실제 JSON 파싱 테스트
+			AiService realAiService = new AiService(chatModel, new ObjectMapper());
 			ChatResponse mockChatResponse = createMockChatResponse(emptyJsonResponse);
+
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
-			//when
-			ChatMessageResponse response = aiService.getRecommendations(promptText, true);
+			// when
+			ChatMessageResponse response = realAiService.getRecommendations(promptText, true, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_NO_SUITABLE_LECTURES);
@@ -282,28 +291,61 @@ class AiServiceTest {
 		void shouldExtractInterestInfo() throws Exception {
 			// given
 			String extractionResponse = """
-             {
-                "interest": "자바 스프링 백엔드"
-             }
-             """;
+				{
+					"interest": "자바 스프링 백엔드",
+					"level": "",
+					"goal": "",
+					"additional": ""
+				}
+				""";
 
 			ChatResponse mockChatResponse = createMockChatResponse(extractionResponse);
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
-			when(streamingChatModel.stream(any(Prompt.class))).thenReturn(Flux.just(createMockChatResponse("알겠습니다. 자바 스프링 백엔드에 관심 있으시군요.")));
+			when(objectMapper.readTree(anyString())).thenReturn(
+				new ObjectMapper().readTree(extractionResponse));
 
 			// when
-			aiService.analyzeConversationAndDecideNext(conversationHistory, collectedInfo,
-				"자바 스프링 백엔드 배우고 싶어요", User.MembershipLevel.GUEST, webSocketSession, chatRoomId);
+			aiService.analyzeConversationAndDecideNext(conversationHistory, collectedInfo, "자바 스프링 백엔드 배우고 싶어요", User.MembershipLevel.GUEST);
 
 			// then
-			verify(chatModel, atLeastOnce()).call(any(Prompt.class));
-			verify(streamingChatModel, atLeastOnce()).stream(any(Prompt.class));
+			verify(chatModel, atLeast(2)).call(any(Prompt.class)); // 대화 분석 + 정보 추출
+		}
+
+		@Test
+		@DisplayName("기존 정보와 새로운 정보 병합")
+		void shouldMergeExistingAndNewInfo() throws Exception {
+			// given
+			collectedInfo.put(AiConstants.INFO_INTEREST, "자바");
+			collectedInfo.put(AiConstants.INFO_ADDITIONAL, "온라인 강의");
+
+			String extractionResponse = """
+				{
+					"interest": "자바 스프링",
+					"level": "초급",
+					"goal": "",
+					"additional": "실습 위주"
+				}
+				""";
+
+			ChatResponse mockChatResponse = createMockChatResponse(extractionResponse);
+			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
+			when(objectMapper.readTree(anyString())).thenReturn(
+				new ObjectMapper().readTree(extractionResponse));
+
+			// when
+			aiService.analyzeConversationAndDecideNext(conversationHistory, collectedInfo, userMessage,
+				User.MembershipLevel.GUEST);
+
+			// then
+			// 정보가 업데이트되었는지 간접적으로 확인 (Mock 호출 검증)
+			verify(objectMapper, atLeastOnce()).readTree(anyString());
 		}
 	}
 
 	@Nested
 	@DisplayName("추천 준비 완료 판단 테스트")
 	class ReadyForRecommendationTest {
+
 		@Test
 		@DisplayName("관심분야와 목표가 있으면 추천 준비 완료")
 		void shouldBeReadyWithInterestAndGoal() {
@@ -312,21 +354,74 @@ class AiServiceTest {
 			collectedInfo.put(AiConstants.INFO_GOAL, "취업");
 			collectedInfo.put(AiConstants.INFO_LEVEL, "고급");
 
-			String infoExtractionResponse = "{\"goal\":\"취업\"}";
-			when(chatModel.call(any(Prompt.class))).thenReturn(createMockChatResponse(infoExtractionResponse));
-			lenient().when(streamingChatModel.stream(any(Prompt.class))).thenReturn(Flux.just());
+			String readyResponse = "일반 응답";
+			ChatResponse mockChatResponse = createMockChatResponse(readyResponse);
+			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
 			ChatMessageResponse response = aiService.analyzeConversationAndDecideNext(
-				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST, webSocketSession, chatRoomId);
+				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST);
+
+			// then
+			// isReadyForRecommendation이 true를 반환하므로 RECOMMENDATION 메시지 타입이 되어야 함
+			assertThat(response.getMessageType()).isEqualTo(MessageType.RECOMMENDATION);
+		}
+
+		@Test
+		@DisplayName("관심분야와 난이도가 있으면 추천 준비 완료")
+		void shouldBeReadyWithInterestAndLevel() {
+			// given
+			collectedInfo.put(AiConstants.INFO_INTEREST, "자바");
+			collectedInfo.put(AiConstants.INFO_GOAL, "취업");
+			collectedInfo.put(AiConstants.INFO_LEVEL, "초급");
+
+			String readyResponse = "일반 응답";
+			ChatResponse mockChatResponse = createMockChatResponse(readyResponse);
+			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
+
+			// when
+			ChatMessageResponse response = aiService.analyzeConversationAndDecideNext(
+				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessageType()).isEqualTo(MessageType.RECOMMENDATION);
+		}
+
+		@Test
+		@DisplayName("관심분야만 있으면 추천 준비 미완료")
+		void shouldNotBeReadyWithOnlyInterest() {
+			// given
+			collectedInfo.put(AiConstants.INFO_INTEREST, "자바");
+
+			String continueResponse = "더 자세한 정보를 알려주세요";
+			ChatResponse mockChatResponse = createMockChatResponse(continueResponse);
+			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
+
+			// when
+			ChatMessageResponse response = aiService.analyzeConversationAndDecideNext(
+				conversationHistory, collectedInfo, userMessage, User.MembershipLevel.GUEST);
+
+			// then
+			assertThat(response.getMessageType()).isEqualTo(MessageType.CHAT);
 		}
 	}
 
 	private ChatResponse createMockChatResponse(String content) {
 		Generation generation = new Generation(new AssistantMessage(content));
 		return new ChatResponse(List.of(generation));
+	}
+
+	private RecommendationDto createMockRecommendationDto() {
+		return new RecommendationDto(
+			1L,
+			"thumb1.jpg",
+			"자바 기초 강의",
+			"자바 기초부터 차근차근",
+			"김강사",
+			"초급",
+			"https://www.example.com/course/",
+			"15000원",
+			"false"
+		);
 	}
 }

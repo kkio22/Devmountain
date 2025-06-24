@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  ngrinder:
+    container_name: arm_ngrinder
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    ports:
+      - "8080:8080"

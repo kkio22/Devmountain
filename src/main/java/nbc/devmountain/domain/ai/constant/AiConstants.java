@@ -150,5 +150,6 @@ public final class AiConstants {
 	public static final String LABEL_INTEREST = "관심 분야";
 	public static final String LABEL_LEVEL = "희망 난이도";
 	public static final String LABEL_GOAL = "학습 목표";
+	public static final String LABEL_PRICE = "희망 가격대";
 	public static final String LABEL_ADDITIONAL = "추가 정보";
 } 

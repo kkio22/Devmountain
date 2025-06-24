@@ -64,7 +64,11 @@ public class EmbeddingService {
 						기술 태그: %s
 						""".formatted(lecture.getTitle(), lecture.getInstructor(), lecture.getDescription(), tag);
 
-					Map<String, Object> metadata = Map.of("lectureId", lecture.getLectureId());
+					Map<String, Object> metadata = Map.of(
+						"lectureId", lecture.getLectureId(),
+						"payprice", lecture.isFree() ? "0" :
+							(lecture.getPayPrice() != null ? lecture.getPayPrice().toPlainString() : "0"),
+						"isFree", lecture.isFree());
 
 					Document document = new Document(UUID.randomUUID().toString(), content, metadata);
 
