@@ -42,21 +42,15 @@ public class ChatService {
 			}
 			session.getAttributes().put("guestCount", guestCount + 1);
 		}
-
-		ChatMessageResponse userMsg;
 		if (membershipType != User.MembershipLevel.GUEST) {
-			userMsg = chatMessageService.createMessage(sessionUser.getUserId(), roomId, payload);
+			ChatMessageResponse userMsg = chatMessageService.createMessage(sessionUser.getUserId(), roomId, payload);
 			log.info("회원 메세지 생성 완료");
-		} else {
-			userMsg = ChatMessageResponse.builder()
-				.message(payload)
-				.recommendations(Collections.emptyList())
-				.isAiResponse(false)
-				.build();
+			messageSender.sendMessageToRoom(roomId, userMsg);
 		}
-		messageSender.sendMessage(session, userMsg);
 
-		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId, session);
+		// AI 추천 응답 처리
+		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId,
+			session);
 
 		if (aiResponse.getMessageType() == MessageType.RECOMMENDATION && aiResponse.getRecommendations() != null
 			&& !aiResponse.getRecommendations().isEmpty()) {
