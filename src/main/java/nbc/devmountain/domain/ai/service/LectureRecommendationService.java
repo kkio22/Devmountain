@@ -203,7 +203,7 @@ public class LectureRecommendationService {
 			}
 		}
 
-		return aiService.getRecommendations(promptText.toString(), true);
+		return aiService.getRecommendations(promptText.toString(), true, membershipLevel);
 	}
 
 	private List<Lecture> applyPriceFilter(List<Lecture> lectures, String priceCondition) {
