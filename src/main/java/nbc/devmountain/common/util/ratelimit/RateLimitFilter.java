@@ -28,6 +28,9 @@ import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
 import io.lettuce.core.api.StatefulRedisConnection;
 import lombok.extern.slf4j.Slf4j;
 
+import nbc.devmountain.common.util.security.CustomUserPrincipal;
+import nbc.devmountain.domain.user.model.User;
+
 @Component
 @Slf4j
 public class RateLimitFilter implements Filter {
@@ -35,8 +38,8 @@ public class RateLimitFilter implements Filter {
 	// Redis 기반의 ProxyManager를 통해 분산 환경에서도 Bucket을 공유할 수 있도록 설정
 	private final ProxyManager<String> proxyManager;
 	private final BucketConfiguration config;
-	// private final BucketConfiguration guestConfig;
-	// private final BucketConfiguration authenticatedConfig;
+	private final BucketConfiguration freeConfig;
+	private final BucketConfiguration proConfig;
 
 	// 제한에서 제외할 경로들
 	private final List<String> excludedPaths = Arrays.asList(
@@ -49,24 +52,21 @@ public class RateLimitFilter implements Filter {
 		this.proxyManager = LettuceBasedProxyManager
 			.builderFor(redisConnection)
 			// 만료 조건 및 전략 설정
-			// fixedTimeToLive: 고정된 시간 이후 만료(현재 설정: 5분)
-			.withExpirationStrategy(ExpirationAfterWriteStrategy.fixedTimeToLive(Duration.ofMinutes(5)))
+			// fixedTimeToLive: 고정된 시간 이후 만료(현재 설정: 2시간)
+			.withExpirationStrategy(ExpirationAfterWriteStrategy.fixedTimeToLive(Duration.ofHours(2)))
 			.build();
 
-		// 비회원 요청 제한 설정 (1분마다 3개 토큰)
-		// this.guestConfig = BucketConfiguration.builder()
-		// 	.addLimit(Bandwidth.classic(2, Refill.intervally(2, Duration.ofMinutes(1))))
-		// 	.build();
-
-		// 인증된 사용자 요청 제한 설정 (1분마다 10개 토큰)
-		// this.authenticatedConfig = BucketConfiguration.builder()
-		// 	.addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofMinutes(1))))
-		// 	.build();
-		// 요청 제한 설정
-		this.config = BucketConfiguration.builder()
-			// intervally: 전체 기간이 경과할 때까지 기다린 후 전체 토큰을 재생성(현재 설정: 1분마다 10개 토큰)
-			.addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofMinutes(1))))
+		// Free: 1시간 10개
+		this.freeConfig = BucketConfiguration.builder()
+		    // intervally: 전체 기간이 경과할 때까지 기다린 후 전체 토큰을 재생성(현재 설정: 1분마다 10개 토큰)
+			.addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofHours(1))))
 			.build();
+		// Pro: 1시간 20개
+		this.proConfig = BucketConfiguration.builder()
+			.addLimit(Bandwidth.classic(20, Refill.intervally(20, Duration.ofHours(1))))
+			.build();
+		// 기존 config는 free로 둡니다(호환성)
+		this.config = freeConfig;
 	}
 
 	// IP별로 요청 수 제한 처리
@@ -93,19 +93,19 @@ public class RateLimitFilter implements Filter {
 
 		String ipKey = request.getRemoteAddr(); // 클라이언트 IP를 key로 사용
 
-		// 인증 상태 확인
-		// Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-		// boolean isAuthenticated = authentication != null &&
-		// 	authentication.isAuthenticated() &&
-		// 	!"anonymousUser".equals(authentication.getPrincipal());
-		//
-		// // 인증 상태에 따라 다른 설정
-		// BucketConfiguration config = isAuthenticated ? authenticatedConfig : guestConfig;
-
-		// 동일한 구성의 버킷을 생성하기 위한 Supplier 정의
-		Supplier<BucketConfiguration> configSupplier = () -> config;
-
-		// 해당 IP에 대한 Bucket을 Redis에서 가져오거나 새로 생성
+		// 인증된 사용자의 멤버십 등급 확인
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		BucketConfiguration configToUse = freeConfig;
+		if (authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof CustomUserPrincipal userPrincipal) {
+			User.MembershipLevel level = userPrincipal.getMembershipLevel();
+			if (level == User.MembershipLevel.PRO) {
+				configToUse = proConfig;
+			} else {
+				configToUse = freeConfig;
+			}
+		}
+        // 해당 IP에 대한 Bucket을 Redis에서 가져오거나 새로 생성
+		Supplier<BucketConfiguration> configSupplier = () -> configToUse;
 		Bucket bucket = proxyManager.builder().build(ipKey, configSupplier);
 
 		if (bucket.tryConsume(1)) {
@@ -117,8 +117,6 @@ public class RateLimitFilter implements Filter {
 			res.setStatus(429);
 			res.getWriter().write("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
 			log.warn("Rate limit exceeded for IP: {} - Chat message", ipKey);
-
-			// log.warn("Rate limit exceeded for IP: {} (Authenticated: {})", ipKey, isAuthenticated);
 		}
 	}
 
