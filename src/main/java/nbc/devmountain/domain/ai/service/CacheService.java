@@ -8,6 +8,8 @@ import java.util.Map;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.RedisVectorStore;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -27,71 +29,32 @@ public class CacheService {
 	private final RedisTemplate<String, Object> redisTemplate;
 	@Qualifier("redisObjectMapper")
 	private final ObjectMapper redisObjectMapper;
-	@Qualifier("redisVectorStore")
-	private final VectorStore redisVectorStore;
+	private final RedisVectorStore redisVectorStore;
 	private static final String QUERY_EMBEDDING_KEY = "queryEmbedding";
 	private static final String LECTURE_CACHE_PREFIX = "lecture: ";
 
 	//새로운 질문과 비슷한 강의가 레디스에 없어서 저장 로직
 	public void storeVector(String searchQuery, List<Lecture> similarLecture) {
-		Document document = new Document(searchQuery)
-			.withMetadata(Map.of("cacheKey", LECTURE_CACHE_PREFIX + searchQuery));
-		redisVectorStore.add(List.of(document));
-		redisTemplate.opsForValue().set(LECTURE_CACHE_PREFIX + searchQuery, similarLecture, Duration.ofDays(1));
+		List<Document> document = List.of(new Document(searchQuery));
+		redisVectorStore.add(document); // RedisVectorStore에 들어온 질문 임베딩해서 redis stack에 저장 => 유사도 비교를 위해 작성
+		redisTemplate.opsForValue().set(LECTURE_CACHE_PREFIX + searchQuery, similarLecture, Duration.ofDays(1)); // 일반 redis에 들어온 query를 기준으로 강의 리스트 저장 => 질문으로 서로가 엮여있기는 하는데 저장되는 곳이 다름
 		log.info("강의가 Redis에 저장되었습니다");
 
 	}
 
 	//새로 들어온 질문 임베딩해서 레디스에 있는지 비교하는 로직
-	public List<Lecture> cacheSimilarLectures(String searchQuery) {
-		float[] currentEmbedding = embeddingModel.embed(searchQuery);
+	public List<Lecture> search(String searchQuery) {
 
-		Map<Object, Object> allEmbedding = redisTemplate.opsForHash().entries(QUERY_EMBEDDING_KEY);
+		/*
+		들어온 질문을 가지고 임베딩해서 redis stack에 저장된 임베딩된 데이터를 가지고, 유사도 0.9인 친구 중 top 1개를 가지고 나옴
+		 */
 
-		for (Map.Entry<Object, Object> embedding : allEmbedding.entrySet()) {
-			String pastQuery = embedding.getKey().toString();
+		List<Document> result = redisVectorStore.similaritySearch(
+			SearchRequest.query(searchQuery)
+			.withTopK(1)
+			.withSimilarityThreshold(0.9)); // 그리고 레디스 스택 안의 벡터 인덱스에서 검색
 
-			Object cacheLecture = redisTemplate.opsForValue().get(LECTURE_CACHE_PREFIX + pastQuery);
 
-			if (cacheLecture instanceof List<?> cachedList && !cachedList.isEmpty()) {
-
-				float[] pastEmbedding = (float[])embedding.getValue();
-
-				double similarity = cosineSimilarity(currentEmbedding, pastEmbedding);
-				if (similarity > 0.9) {
-					log.info("강의 유사도: {}, 강의 유사도 질문 {}", similarity, pastQuery);
-
-					return cachedList.stream()
-						.map(linkedHashMap -> mapToLecture((LinkedHashMap<String, ?>)linkedHashMap))
-						.toList();
-
-				}
-			}
-
-		}
-
-		return List.of();
 
 	}
-
-	private Lecture mapToLecture(LinkedHashMap<String, ?> linkedHashMap) {
-
-		return redisObjectMapper.convertValue(linkedHashMap, Lecture.class);
-
-	}
-
-	private double cosineSimilarity(float[] currentEmbedding, float[] pastEmbedding) {
-		double dot = 0.0, normA = 0.0, normB = 0.0;
-
-		for (int i = 0; i < currentEmbedding.length; i++) {
-			dot += currentEmbedding[i] * pastEmbedding[i];
-			normA += Math.pow(currentEmbedding[i], 2);
-			normB += Math.pow(pastEmbedding[i], 2);
-
-		}
-
-		return dot / (Math.sqrt(normA) * (Math.sqrt(normB)));
-
-	}
-
 }

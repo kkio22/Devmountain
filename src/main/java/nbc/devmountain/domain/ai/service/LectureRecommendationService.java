@@ -129,7 +129,7 @@ public class LectureRecommendationService {
 			}
 
 			//cache에 강의 없을 때 저장
-			cacheService.saveLecture(searchQuery, similarLectures);
+			cacheService.storeVector(searchQuery, similarLectures);
 			return respondWithLectures(similarLectures, collectedInfo, searchQuery, membershipLevel);
 
 		} catch (Exception e) {
