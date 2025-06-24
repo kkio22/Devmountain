@@ -5,7 +5,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.DocumentEmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -24,16 +27,19 @@ public class CacheService {
 	private final RedisTemplate<String, Object> redisTemplate;
 	@Qualifier("redisObjectMapper")
 	private final ObjectMapper redisObjectMapper;
-	private final EmbeddingModel embeddingModel;
+	@Qualifier("redisVectorStore")
+	private final VectorStore redisVectorStore;
 	private static final String QUERY_EMBEDDING_KEY = "queryEmbedding";
 	private static final String LECTURE_CACHE_PREFIX = "lecture: ";
 
 	//새로운 질문과 비슷한 강의가 레디스에 없어서 저장 로직
-	public void saveLecture(String searchQuery, List<Lecture> similarLecture) {
-		float[] embedding = embeddingModel.embed(searchQuery);
-		redisTemplate.opsForHash().put(QUERY_EMBEDDING_KEY, searchQuery, embedding);
+	public void storeVector(String searchQuery, List<Lecture> similarLecture) {
+		Document document = new Document(searchQuery)
+			.withMetadata(Map.of("cacheKey", LECTURE_CACHE_PREFIX + searchQuery));
+		redisVectorStore.add(List.of(document));
 		redisTemplate.opsForValue().set(LECTURE_CACHE_PREFIX + searchQuery, similarLecture, Duration.ofDays(1));
 		log.info("강의가 Redis에 저장되었습니다");
+
 	}
 
 	//새로 들어온 질문 임베딩해서 레디스에 있는지 비교하는 로직

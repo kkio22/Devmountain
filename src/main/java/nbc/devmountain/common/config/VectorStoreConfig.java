@@ -2,6 +2,7 @@ package nbc.devmountain.common.config;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.PgVectorStore;
+import org.springframework.ai.vectorstore.RedisVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 
 import org.springframework.context.annotation.Bean;
@@ -26,4 +27,11 @@ public class VectorStoreConfig {
 		JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
 		return new PgVectorStore(jdbcTemplate, embeddingModel, 1536);
 	}
+
+	@Bean(name = "redisVectorStore")
+	public VectorStore RedisVectorStore(RedisVectorStoreConfig redisVectorStoreConfig, EmbeddingModel embeddingModel) {
+
+		return new RedisVectorStore(redisVectorStoreConfig, embeddingModel);
+	}
+
 }

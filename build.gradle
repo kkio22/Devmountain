@@ -82,6 +82,8 @@ dependencies {
     //redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-redis'
+    implementation 'org.springframework.ai:spring-ai-redis-store'
 
     
 }
