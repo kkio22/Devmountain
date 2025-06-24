@@ -42,3 +42,5 @@ bin/
 
 src/main/resources/application*.yml
 monitoring/grafana-volume/*
+src/main/resources/mcp/tools/youtube-mcp.yaml
+src/main/resources/mcp/tools/mcp-servers-config.json
