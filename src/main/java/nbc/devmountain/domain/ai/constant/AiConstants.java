@@ -10,6 +10,7 @@ public final class AiConstants {
 	public static final String INFO_INTEREST = "interest";
 	public static final String INFO_LEVEL = "level";
 	public static final String INFO_GOAL = "goal";
+	public static final String INFO_PRICE = "price";
 	public static final String INFO_ADDITIONAL = "additional";
 
 	// 난이도 레벨
@@ -24,17 +25,18 @@ public final class AiConstants {
 	public static final String CONVERSATION_ANALYSIS_PROMPT = """
 		너는 강의 추천을 위해 사용자와 자연스러운 대화를 나누는 교육 큐레이터 AI야.
 		
-		목표: 다음 4가지 정보를 자연스럽게 수집해야 해:
-		1. interest (관심 분야/기술 스택)
-		2. level (난이도: 초급/중급/고급)
-		3. goal (학습 목표/목적)
-		4. additional (추가 선호사항이나 특별 요구사항)
+		[회원 정보]
+		 회원 등급: %s  // "PRO", "FREE", "GUEST" 중 하나
 		
-		현재 수집된 정보와 대화 히스토리를 바탕으로:
-		- 아직 수집되지 않은 정보가 있다면, 자연스럽게 질문하여 정보를 얻어내
-		- 모든 정보가 충분히 수집되었다면 "READY_FOR_RECOMMENDATION"으로 응답해
-		- 대화는 친근하고 자연스럽게 진행해야 해
-		- 질문은 직접적이지 않고 대화하듯이 자연스럽게 해야 해
+		 목표: 다음 정보를 자연스럽게 수집해야 해:
+		 - PRO 회원의 경우: 관심 분야(interest), 난이도(level), 목표(goal), 희망 가격대(price), 추가 정보(additional)
+		 - 일반/게스트 회원의 경우: 관심 분야(interest), 난이도(level), 목표(goal), 추가 정보(additional)
+		
+		 현재 수집된 정보와 대화 히스토리를 바탕으로:
+		 - PRO 회원이라면 반드시 가격대 정보도 확인한 후 "READY_FOR_RECOMMENDATION" 으로 응답해야 해
+		 - 일반/게스트 회원은 기존처럼 진행
+		 - 질문은 자연스럽게 대화하듯 진행할 것
+		 - PRO 회원에게 가격 정보가 없으면 "어떤 가격대의 강의를 원하시나요? 예: 15000원 이하, 30000원 이상 등"이라고 물어봐
 		
 		응답 형식:
 		- 추가 질문이 필요한 경우: 자연스러운 대화 메시지
@@ -46,19 +48,20 @@ public final class AiConstants {
 	public static final String INFO_CLASSIFICATION_PROMPT = """
 		너는 사용자의 메시지를 분석해서 강의 추천에 필요한 정보를 추출하는 AI야.
 		
-		다음 4가지 카테고리 중 해당하는 것들을 JSON 형식으로 추출해줘:
+		다음 5가지 카테고리 중 해당하는 것들을 JSON 형식으로 추출해줘:
 		1. interest: 관심 분야나 기술 스택 (예: Java, Spring, React, 프론트엔드, 백엔드 등)
 		2. level: 난이도 관련 정보 (초급, 중급, 고급, 입문, 기초, 심화 등)
 		3. goal: 학습 목표나 목적 (취업, 이직, 실무, 프로젝트, 포트폴리오 등)
-		4. additional: 기타 추가 정보 (시간, 예산, 온라인/오프라인, 실습/이론 등)
+		4. price : 희망 가격대 ("30000 이하" , "5만원 이상", "무료", "상관없음" 등)
+		5. additional: 기타 추가 정보 (시간, 예산, 온라인/오프라인, 실습/이론 등)
 		
-		응답 형식: {"interest": "값", "level": "값", "goal": "값", "additional": "값"}
+		응답 형식: {"interest": "값", "level": "값", "goal": "값","price": "값" ,"additional": "값"}
 		- 해당하지 않는 카테고리는 빈 문자열("")로 반환
 		- 값이 있는 경우에만 실제 값을 반환
 		
 		예시:
 		사용자: "자바 스프링 배워서 백엔드 개발자로 취업하고 싶어요"
-		응답: {"interest": "자바 스프링 백엔드", "level": "", "goal": "백엔드 개발자 취업", "additional": ""}
+		응답: {"interest": "자바 스프링 백엔드", "level": "", "goal": "백엔드 개발자 취업",price : "15000 이상", "additional": ""}
 		""";
 
 	public static final String RECOMMENDATION_PROMPT = """
@@ -97,7 +100,9 @@ public final class AiConstants {
 		         "instructor": "Hong",
 		         "level": "초급",
 		         "thumbnailUrl": "https://cdn.inflearn.com/...",
-		         "url": "https://www.inflearn.com/..."
+		         "url": "https://www.inflearn.com/...",
+		         "payPrice" : "30000",
+		         "isFree" : "false"
 		       },
 		       {
 		         "lectureId": null,
@@ -106,7 +111,9 @@ public final class AiConstants {
 		         "instructor": "온라인 강의",
 		         "level": "초급",
 		         "thumbnailUrl": "null",
-		         "url": "https://realzero0.github.io/study/2021/12/02/Lets_Start_Webflux.html"
+		         "url": "https://realzero0.github.io/study/2021/12/02/Lets_Start_Webflux.html",
+		         "payPrice" : "0",
+		         "isFree" : "true"
 		       }
 		     ]
 		   }
@@ -137,5 +144,6 @@ public final class AiConstants {
 	public static final String LABEL_INTEREST = "관심 분야";
 	public static final String LABEL_LEVEL = "희망 난이도";
 	public static final String LABEL_GOAL = "학습 목표";
+	public static final String LABEL_PRICE = "희망 가격대";
 	public static final String LABEL_ADDITIONAL = "추가 정보";
 } 

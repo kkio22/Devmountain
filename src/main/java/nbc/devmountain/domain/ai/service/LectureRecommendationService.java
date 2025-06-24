@@ -1,9 +1,12 @@
 package nbc.devmountain.domain.ai.service;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -64,12 +67,12 @@ public class LectureRecommendationService {
 
 		// 첫 번째 메시지인 경우
 		if (history.toString().trim().equals("사용자: " + userMessage)) {
-			return handleFirstConversation(userMessage, chatRoomId);
+			return handleFirstConversation(userMessage, chatRoomId, membershipLevel);
 		}
 
 		// AI에게 대화 분석 및 다음 단계 결정 요청
 		ChatMessageResponse analysisResponse = aiService.analyzeConversationAndDecideNext(history.toString(), info,
-			userMessage);
+			userMessage, membershipLevel);
 
 		// AI 응답을 히스토리에 추가
 		if (analysisResponse.getMessage() != null) {
@@ -85,11 +88,11 @@ public class LectureRecommendationService {
 		return analysisResponse;
 	}
 
-	private ChatMessageResponse handleFirstConversation(String userMessage, Long chatRoomId) {
+	private ChatMessageResponse handleFirstConversation(String userMessage, Long chatRoomId, User.MembershipLevel membershipLevel) {
 		// 첫 대화에서도 AI가 자연스럽게 응답하도록 처리
 		Map<String, String> emptyInfo = new HashMap<>();
 		ChatMessageResponse response = aiService.analyzeConversationAndDecideNext("사용자: " + userMessage + "\n",
-			emptyInfo, userMessage);
+			emptyInfo, userMessage, membershipLevel);
 
 		// AI 응답을 히스토리에 추가
 		if (response.getMessage() != null) {
@@ -113,6 +116,12 @@ public class LectureRecommendationService {
 			}
 
 			List<Lecture> similarLectures = ragService.searchSimilarLectures(searchQuery);
+
+			// 유료회원(Pro 회원) 가격 필터
+			if (User.MembershipLevel.PRO.equals(membershipLevel)) {
+				String priceCondition = collectedInfo.getOrDefault(AiConstants.INFO_PRICE, " ").trim();
+				similarLectures = applyPriceFilter(similarLectures, priceCondition);
+			}
 
 			if (similarLectures.isEmpty()) {
 				resetChatState(chatRoomId);
@@ -140,13 +149,17 @@ public class LectureRecommendationService {
                     "instructor": "%s",
                     "level": "%s",
                     "thumbnailUrl": "%s",
-                    "url": "https://www.inflearn.com/search?s=%s"
+                    "url": "https://www.inflearn.com/search?s=%s",
+                    "payPrice" : "%s",
+                    "isFree" : "%s"
                 }
                 """.formatted(
-				l.getLectureId(), l.getTitle(), l.getDescription(), l.getInstructor(),
-				l.getLevelCode(), l.getThumbnailUrl(), l.getTitle())
-			)
-			.collect(Collectors.joining(",\n"));
+					l.getLectureId(), l.getTitle(), l.getDescription(), l.getInstructor(),
+					l.getLevelCode(), l.getThumbnailUrl(), l.getTitle(),
+					l.isFree() ? "0" : (l.getPayPrice() != null ? l.getPayPrice().toPlainString() : "0"),
+					l.isFree() ? "true" : "false")
+				)
+				.collect(Collectors.joining(",\n"));
 
 		StringBuilder promptText = new StringBuilder();
 		promptText.append(String.format("""
@@ -191,6 +204,50 @@ public class LectureRecommendationService {
 		}
 
 		return aiService.getRecommendations(promptText.toString(), true, membershipLevel);
+	}
+
+	private List<Lecture> applyPriceFilter(List<Lecture> lectures, String priceCondition) {
+		if (priceCondition.isBlank()) {
+			log.info("가격 필터 없음 - 전체 강의 사용");
+			return lectures;
+		}
+
+		 Integer minPrice = null;
+		 Integer maxPrice = null;
+
+		Pattern p = Pattern.compile("(\\d + )(만원)?\\s*(이하||이상)?");
+		Matcher m = p.matcher(priceCondition);
+
+		if (m.find()) {
+			int price = Integer.parseInt(m.group(1)) * 10000;
+			String condition = m.group(3);
+
+			if ("이하".equals(condition)){
+				maxPrice = price;
+			} else if ("이상".equals(condition)) {
+				minPrice = price;
+			} else {
+				maxPrice = price;
+			}
+		}
+
+		final Integer finalMinPrice = minPrice;
+		final Integer finalMaxPrice = maxPrice;
+
+		log.info("적용할 가격 필터 - minPrice: {} , maxPrice: {}",finalMinPrice,finalMaxPrice);
+
+		return lectures.stream()
+			.filter(l -> {
+			BigDecimal lecturePrice = l.isFree() ? BigDecimal.ZERO : l.getPayPrice();
+			if (finalMinPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMinPrice)) < 0){
+				return false;
+			}
+			if (finalMaxPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMaxPrice)) > 0) {
+				return false;
+			}
+			return true;
+		})
+			.collect(Collectors.toList());
 	}
 
 	private String buildSearchQuery(Map<String, String> info) {
@@ -247,5 +304,19 @@ public class LectureRecommendationService {
 			.isAiResponse(true)
 			.messageType(MessageType.ERROR)
 			.build();
+	}
+
+	private boolean isReadyForRecommendation(Map<String, String> collectedInfo, User.MembershipLevel membershipLevel) {
+		// 기본 필수 정보: 관심분야, 목표, 난이도
+		boolean hasBasicInfo = collectedInfo.containsKey(AiConstants.INFO_INTEREST) &&
+			   collectedInfo.containsKey(AiConstants.INFO_GOAL) &&
+			   collectedInfo.containsKey(AiConstants.INFO_LEVEL);
+
+		// PRO 회원의 경우 가격 정보도 필수
+		if (User.MembershipLevel.PRO.equals(membershipLevel)) {
+			return hasBasicInfo && collectedInfo.containsKey(AiConstants.INFO_PRICE);
+		}
+
+		return hasBasicInfo;
 	}
 }

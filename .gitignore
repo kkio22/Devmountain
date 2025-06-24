@@ -44,3 +44,12 @@ src/main/resources/application*.yml
 monitoring/grafana-volume/*
 src/main/resources/mcp/tools/youtube-mcp.yaml
 src/main/resources/mcp/tools/mcp-servers-config.json
+
+### nGrinder ###
+# nGrinder 바이너리 파일들 (용량이 크므로 직접 다운로드 필요)
+performance/*.war
+performance/*.tar
+*.war
+*.tar
+ngrinder-controller-*.war
+ngrinder-agent-*.tar

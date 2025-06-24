@@ -10,5 +10,7 @@ public record RecommendationDto(
 	String description,
 	String instructor,
 	String level,
-	String url
+	String url,
+	String payPrice,
+	String isFree
 ) {}
