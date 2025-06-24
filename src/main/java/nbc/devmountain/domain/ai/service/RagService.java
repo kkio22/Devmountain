@@ -32,9 +32,11 @@ public class RagService {
 	 */
 	public List<Lecture> searchSimilarLectures(String query) {
 		try {
-			SearchRequest searchRequest = SearchRequest.query(query)
-				.withTopK(3)
-				.withSimilarityThreshold(0.7);
+			SearchRequest searchRequest = SearchRequest.builder()
+					.query(query)
+					.topK(3)
+					.similarityThreshold(0.7)
+					.build();
 
 			List<Document> similarDocuments = vectorStore.similaritySearch(searchRequest);
 			log.info("검색 쿼리: {}", query);

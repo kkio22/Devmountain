@@ -23,7 +23,6 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
@@ -147,7 +146,7 @@ class AiServiceTest {
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
-			ChatMessageResponse response = realAiService.getRecommendations(promptText, true);
+			ChatMessageResponse response = realAiService.getRecommendations(promptText, true, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getRecommendations()).isNotNull();
@@ -167,7 +166,7 @@ class AiServiceTest {
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
-			ChatMessageResponse response = aiService.getRecommendations(promptText, false);
+			ChatMessageResponse response = aiService.getRecommendations(promptText, false, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(textResponse);
@@ -186,7 +185,7 @@ class AiServiceTest {
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
-			ChatMessageResponse response = aiService.getRecommendations(promptText, true);
+			ChatMessageResponse response = aiService.getRecommendations(promptText, true, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_AI_INVALID_FORMAT);
@@ -206,7 +205,7 @@ class AiServiceTest {
 			});
 
 			// when
-			ChatMessageResponse response = aiService.getRecommendations(promptText, true);
+			ChatMessageResponse response = aiService.getRecommendations(promptText, true, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_AI_PARSING_FAILED);
@@ -231,7 +230,7 @@ class AiServiceTest {
 			when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
 
 			// when
-			ChatMessageResponse response = realAiService.getRecommendations(promptText, true);
+			ChatMessageResponse response = realAiService.getRecommendations(promptText, true, User.MembershipLevel.GUEST);
 
 			// then
 			assertThat(response.getMessage()).isEqualTo(AiConstants.ERROR_NO_SUITABLE_LECTURES);

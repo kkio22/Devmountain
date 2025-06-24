@@ -25,7 +25,7 @@ repositories {
 }
 
 ext {
-    springAiVersion = "1.0.0-M4"
+    springAiVersion = "1.0.0-M6"
 }
 
 dependencyManagement {
@@ -75,9 +75,10 @@ dependencies {
     //monitoring
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    
+
     implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
     implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-mcp-client-spring-boot-starter'
 
     //redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
