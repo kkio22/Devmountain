@@ -422,7 +422,7 @@ class LectureRecommendationServiceTest {
 
 		when(aiService.analyzeConversationAndDecideNext(anyString(),any(),eq(firstQuery),any(User.MembershipLevel.class))).thenReturn(firstResponse);
 		when(aiService.analyzeConversationAndDecideNext(anyString(),any(), eq(secondQuery), any(User.MembershipLevel.class))).thenReturn(readyResponse);
-		when(cacheService.cacheSimilarLectures(anyString())).thenReturn(cachedLectures);
+		when(cacheService.search(anyString())).thenReturn(cachedLectures);
 		when(aiService.getRecommendations(anyString(), eq(true), eq(User.MembershipLevel.PRO))).thenReturn(finalResponse);
 		when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
 
@@ -431,7 +431,7 @@ class LectureRecommendationServiceTest {
 		ChatMessageResponse response = lectureRecommendationService.recommendationResponse(secondQuery, memberType, chatRoomId);
 
 		// then
-		verify(cacheService, times(1)).cacheSimilarLectures(anyString());
+		verify(cacheService, times(1)).search(anyString());
 		verify(ragService, never()).searchSimilarLectures(anyString()); // 캐시가 있으므로 RAG 미호출
 		assertThat(response.getRecommendations()).isNotNull();
 	}
