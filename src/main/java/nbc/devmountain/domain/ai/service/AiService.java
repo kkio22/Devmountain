@@ -9,6 +9,8 @@ import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import nbc.devmountain.domain.user.model.User;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -54,7 +56,7 @@ public class AiService {
 		String aiResponse = response.getResults()
 			.stream()
 			.findFirst()
-			.map(result -> result.getOutput().getContent())
+			.map(result -> result.getOutput().getText())
 			.orElse("");
 
 		log.info("[AiService] 대화 분석 AI 응답 >>>\n{}", aiResponse);
@@ -95,7 +97,7 @@ public class AiService {
 			String aiResponse = response.getResults()
 				.stream()
 				.findFirst()
-				.map(result -> result.getOutput().getContent())
+				.map(result -> result.getOutput().getText())
 				.orElse("");
 
 			log.info("[AiService] 정보 분류 AI 응답 >>>\n{}", aiResponse);
@@ -163,17 +165,33 @@ public class AiService {
 		return formatted.toString();
 	}
 
-	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalRecommendation) {
+	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalRecommendation, User.MembershipLevel membershipLevel) {
 		SystemMessage systemMessage = new SystemMessage(AiConstants.RECOMMENDATION_PROMPT);
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 		log.info("[AiService] 추천 프롬프트 전송 >>>\n{}", promptText);
 
-		ChatResponse response = chatModel.call(prompt);
-		String rawAiResponse = response.getResults()
-			.stream()
-			.findFirst()
-			.map(result -> result.getOutput().getContent())
-			.orElse("");
+		String rawAiResponse;
+
+		if (!User.MembershipLevel.GUEST.equals(membershipLevel)) {
+			log.info("[AiService] 회원 유저 추천 호출");
+			// PRO 유저: Tool을 활용한 ChatClient 호출
+
+			rawAiResponse = ChatClient.create(chatModel)
+					.prompt(prompt)
+					.tools("videos_searchVideos")
+					.call()
+					.content();
+			log.info("[AiService] ai 응답값 >>>\n{}",rawAiResponse );
+		} else {
+			log.info("[AiService] 게스트 추천 호출");
+			// GUEST 유저: 기존 ChatModel 호출 방식
+			ChatResponse response = chatModel.call(prompt);
+			rawAiResponse = response.getResults()
+				.stream()
+				.findFirst()
+				.map(result -> result.getOutput().getText())
+				.orElse("");
+		}
 
 		log.info("[AiService] AI 추천 응답 >>>\n{}", rawAiResponse);
 		if (!isFinalRecommendation) {
