@@ -37,7 +37,9 @@ public class CacheService {
 	public void storeVector(String searchQuery, List<Lecture> similarLecture) {
 		List<Document> document = List.of(new Document(searchQuery));
 		redisVectorStore.add(document); // RedisVectorStore에 들어온 질문 임베딩해서 redis stack에 저장 => 유사도 비교를 위해 작성
-		redisTemplate.opsForValue().set(LECTURE_CACHE_PREFIX + searchQuery, similarLecture, Duration.ofDays(1)); // 일반 redis에 들어온 query를 기준으로 강의 리스트 저장 => 질문으로 서로가 엮여있기는 하는데 저장되는 곳이 다름
+		redisTemplate.opsForValue()
+			.set(LECTURE_CACHE_PREFIX + searchQuery, similarLecture,
+				Duration.ofDays(1)); // 일반 redis에 들어온 query를 기준으로 강의 리스트 저장 => 질문으로 서로가 엮여있기는 하는데 저장되는 곳이 다름
 		log.info("강의가 Redis에 저장되었습니다");
 
 	}
@@ -49,12 +51,30 @@ public class CacheService {
 		들어온 질문을 가지고 임베딩해서 redis stack에 저장된 임베딩된 데이터를 가지고, 유사도 0.9인 친구 중 top 1개를 가지고 나옴
 		 */
 
-		List<Document> result = redisVectorStore.similaritySearch(
+		List<Document> results = redisVectorStore.similaritySearch(
 			SearchRequest.query(searchQuery)
-			.withTopK(1)
-			.withSimilarityThreshold(0.9)); // 그리고 레디스 스택 안의 벡터 인덱스에서 검색
+				.withTopK(3)
+				.withSimilarityThreshold(0.9)); // 그리고 레디스 스택 안의 벡터 인덱스에서 검색 -> 1개 나옴
 
+		for(Document document : results) {
+			String pastQuery = document.getContent(); // 과거 질문 (문자열)
 
+			Object cached = redisTemplate.opsForValue().get(LECTURE_CACHE_PREFIX + pastQuery);
+
+			if (cached instanceof List<?> cachedList && !cachedList.isEmpty()) {
+				return cachedList.stream()
+					.map(linkedHashMap -> mapToLecture((LinkedHashMap<String, ?>)linkedHashMap))
+					.toList();
+			}
+		}
+
+		return List.of();
+	}
+
+	private Lecture mapToLecture(LinkedHashMap<String, ?> linkedHashMap) {
+
+		return redisObjectMapper.convertValue(linkedHashMap, Lecture.class);
 
 	}
 }
+

@@ -109,7 +109,7 @@ public class LectureRecommendationService {
 			String searchQuery = buildSearchQuery(collectedInfo);
 
 			//cache에 저장된 정보가 있는지 확인
-			List<Lecture> cachedLecture = cacheService.cacheSimilarLectures(searchQuery);
+			List<Lecture> cachedLecture = cacheService.search(searchQuery);
 
 			if ( cachedLecture != null && !cachedLecture.isEmpty()) {
 				return respondWithLectures(cachedLecture, collectedInfo, searchQuery, membershipLevel);
