@@ -30,7 +30,6 @@ public class CacheService {
 	@Qualifier("redisObjectMapper")
 	private final ObjectMapper redisObjectMapper;
 	private final RedisVectorStore redisVectorStore;
-	private static final String QUERY_EMBEDDING_KEY = "queryEmbedding";
 	private static final String LECTURE_CACHE_PREFIX = "lecture: ";
 
 	//새로운 질문과 비슷한 강의가 레디스에 없어서 저장 로직
@@ -48,22 +47,26 @@ public class CacheService {
 	public List<Lecture> search(String searchQuery) {
 
 		/*
-		들어온 질문을 가지고 임베딩해서 redis stack에 저장된 임베딩된 데이터를 가지고, 유사도 0.9인 친구 중 top 1개를 가지고 나옴
+		들어온 질문을 가지고 임베딩해서 redis stack에 저장된 임베딩된 데이터를 가지고, 유사도 0.02인 친구 중 top 1개를 가지고 나옴
 		 */
 
 		List<Document> results = redisVectorStore.similaritySearch(
 			SearchRequest.query(searchQuery)
-				.withTopK(3)
-				.withSimilarityThreshold(0.9)); // 그리고 레디스 스택 안의 벡터 인덱스에서 검색 -> 1개 나옴
+				.withSimilarityThreshold(0.95) // 작을 수록 좋은거라고 함 근데 지금 0.05도 같이 나오는 중임 필터링이 안 되는 중
+				.withTopK(1)); // 그리고 레디스 스택 안의 벡터 인덱스에서 검색 -> 1개 나옴
+
+		log.info("유사한 질문 갯수: {}", results.size());
 
 		for(Document document : results) {
 			String pastQuery = document.getContent(); // 과거 질문 (문자열)
 
 			Object cached = redisTemplate.opsForValue().get(LECTURE_CACHE_PREFIX + pastQuery);
 
+			log.info("강의 유사도 질문 {}", pastQuery);
+
 			if (cached instanceof List<?> cachedList && !cachedList.isEmpty()) {
 				return cachedList.stream()
-					.map(linkedHashMap -> mapToLecture((LinkedHashMap<String, ?>)linkedHashMap))
+					.map(linkedHashMap -> mapToLecture((LinkedHashMap<String, ?>)linkedHashMap)) // 코드
 					.toList();
 			}
 		}
