@@ -3,14 +3,10 @@ package nbc.devmountain.domain.ai.service;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.ai.document.Document;
-import org.springframework.ai.embedding.DocumentEmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.RedisVectorStore;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -51,14 +47,16 @@ public class CacheService {
 		 */
 
 		List<Document> results = redisVectorStore.similaritySearch(
-			SearchRequest.query(searchQuery)
-				.withSimilarityThreshold(0.95) // 작을 수록 좋은거라고 함 근데 지금 0.05도 같이 나오는 중임 필터링이 안 되는 중
-				.withTopK(1)); // 그리고 레디스 스택 안의 벡터 인덱스에서 검색 -> 1개 나옴
+			SearchRequest.builder()
+				.query(searchQuery)
+				.similarityThreshold(0.95) // 작을 수록 좋은거라고 함 근데 지금 0.05도 같이 나오는 중임 필터링이 안 되는 중
+				.topK(1) // 그리고 레디스 스택 안의 벡터 인덱스에서 검색 -> 1개 나옴
+				.build());
 
 		log.info("유사한 질문 갯수: {}", results.size());
 
 		for(Document document : results) {
-			String pastQuery = document.getContent(); // 과거 질문 (문자열)
+			String pastQuery = document.getText(); // 과거 질문 (문자열)
 
 			Object cached = redisTemplate.opsForValue().get(LECTURE_CACHE_PREFIX + pastQuery);
 

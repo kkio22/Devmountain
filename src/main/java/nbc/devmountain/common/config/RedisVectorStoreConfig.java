@@ -1,7 +1,7 @@
 package nbc.devmountain.common.config;
 
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.RedisVectorStore;
+import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,11 +21,13 @@ public class RedisVectorStoreConfig {
 
 	@Bean
 	public RedisVectorStore redisVectorStore(JedisPooled jedisPooled, EmbeddingModel embeddingModel) {
-		RedisVectorStore.RedisVectorStoreConfig config = RedisVectorStore.RedisVectorStoreConfig.builder()
-			.withIndexName("query_idx")
-			.withPrefix("query")
+
+		return RedisVectorStore.builder(jedisPooled, embeddingModel)
+			.initializeSchema(true)
+			.indexName("query_idx")
+			.prefix("query")
 			.build();
-		return new RedisVectorStore(config, embeddingModel, jedisPooled, true);
 
 	}
+
 }
