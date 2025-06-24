@@ -227,7 +227,7 @@ class LectureRecommendationServiceTest {
 				.thenReturn(readyResponse);
 			when(ragService.searchSimilarLectures(anyString())).thenReturn(mockLectures);
 			when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
-			when(aiService.getRecommendations(anyString(), eq(true))).thenReturn(finalResponse);
+			when(aiService.getRecommendations(anyString(), eq(true), User.MembershipLevel.GUEST)).thenReturn(finalResponse);
 
 			// when - 첫 번째 대화
 			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId);
@@ -237,7 +237,7 @@ class LectureRecommendationServiceTest {
 
 			// then
 			verify(ragService, times(1)).searchSimilarLectures(anyString());
-			verify(aiService, times(1)).getRecommendations(anyString(), eq(true));
+			verify(aiService, times(1)).getRecommendations(anyString(), eq(true), User.MembershipLevel.GUEST);
 			assertThat(response.getRecommendations()).isNotNull();
 			assertThat(response.getRecommendations()).hasSize(1);
 			assertThat(response.getMessageType()).isEqualTo(MessageType.RECOMMENDATION);
@@ -423,7 +423,7 @@ class LectureRecommendationServiceTest {
 		when(aiService.analyzeConversationAndDecideNext(anyString(),any(),eq(firstQuery),any(User.MembershipLevel.class))).thenReturn(firstResponse);
 		when(aiService.analyzeConversationAndDecideNext(anyString(),any(), eq(secondQuery), any(User.MembershipLevel.class))).thenReturn(readyResponse);
 		when(cacheService.cacheSimilarLectures(anyString())).thenReturn(cachedLectures);
-		when(aiService.getRecommendations(anyString(), eq(true))).thenReturn(finalResponse);
+		when(aiService.getRecommendations(anyString(), eq(true), User.MembershipLevel.GUEST)).thenReturn(finalResponse);
 		when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
 
 		// when
