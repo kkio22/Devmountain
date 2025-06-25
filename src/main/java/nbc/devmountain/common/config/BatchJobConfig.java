@@ -82,6 +82,11 @@ public class BatchJobConfig {
 
 	@Bean
 	@StepScope
+	/*
+	Step이 실행될 때마다 Bean을 새로 생성하도록 해줘서, 실행 시점에 동적인 값을 주입받을 수 있게 해.
+	기본적으로 Spring Bean은 Singleton이지만, @StepScope를 사용하면 매번 새로운 인스턴스를 생성해서 JobParameter 등 변화에 대응할 수 있어.
+	즉, 실행마다 달라지는 데이터를 안전하게 사용하려면 필요하다.
+	 */
 	public InflearnApiReader inflearnApiReader(LectureClient lectureClient) {
 		return new InflearnApiReader(lectureClient);
 	}
