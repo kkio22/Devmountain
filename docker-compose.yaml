@@ -39,6 +39,14 @@ services:
       REDIS_STACK_PASSWORD: ${REDIS_STACK_PASSWORD}
     networks:
       - devmountain-net
+
+  redis-rate-limit:
+    image: redis:7
+    container_name: redis-rate-limit
+    ports:
+      - "${REDIS_RATE_LIMIT_PORT}:6379"
+    networks:
+      - devmountain-net
       
   app:
     build:
