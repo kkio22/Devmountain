@@ -111,6 +111,7 @@ public class RateLimitFilter implements Filter {
 		Supplier<BucketConfiguration> configSupplier = () -> finalConfigToUse;
 		Bucket bucket = proxyManager.builder().build(ipKey, configSupplier);
 
+		// 확인용 로그
 		log.info("RateLimitFilter: ipKey={}, uri={}, method={}, tokens left={}", ipKey, requestURI, method, bucket.getAvailableTokens());
 
 		if (bucket.tryConsume(1)) {
