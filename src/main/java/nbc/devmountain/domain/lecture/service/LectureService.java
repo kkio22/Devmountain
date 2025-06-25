@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class LectureService {
 	private final LectureSkillTagRepository lectureSkillTagRepository;
 	private final RagService ragService;
 
+	@Scheduled(cron = "* * 2 * * *")
 	public void getLecture() {
 
 		InflearnResponse firstPage = lectureClient.getLecture(1);

@@ -85,6 +85,8 @@ dependencies {
     //redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
+    implementation 'redis.clients:jedis:5.1.0'
 
     // Bucket4j + Redis
     implementation 'com.bucket4j:bucket4j-core:8.9.0'

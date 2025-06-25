@@ -4,5 +4,8 @@ public enum MessageType {
 	CHAT,
 	RECOMMENDATION,
 	ERROR,
-	WELCOME
-}
+	WELCOME,
+	TYPING_START,
+	TYPING_CHUNK,
+	TYPING_END
+	}

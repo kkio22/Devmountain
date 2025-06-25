@@ -1,14 +1,13 @@
 package nbc.devmountain.common.config;
 
+import javax.sql.DataSource;
+
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import javax.sql.DataSource;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,4 +28,5 @@ public class VectorStoreConfig {
 				.initializeSchema(true)
 				.build();
 	}
+
 }

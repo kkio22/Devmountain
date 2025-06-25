@@ -20,6 +20,7 @@ import nbc.devmountain.common.util.security.CustomUserPrincipal;
 import nbc.devmountain.domain.chat.dto.ChatRoomRequest;
 import nbc.devmountain.domain.chat.dto.ChatRoomDetailResponse;
 import nbc.devmountain.domain.chat.dto.ChatRoomResponse;
+import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.service.ChatRoomService;
 
 @RestController
@@ -34,8 +35,7 @@ public class ChatRoomController {
 		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
 		@RequestBody ChatRoomRequest request) {
 
-		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(customUserPrincipal.getUserId(),
-			request.chatroomName());
+		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(customUserPrincipal.getUserId());
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 생성 성공", HttpStatus.CREATED.value(), chatRoom));
 	}
@@ -65,6 +65,7 @@ public class ChatRoomController {
 		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
 		@RequestBody ChatRoomRequest request) {
 
+		ChatRoom chatRoom = chatRoomService.getChatRoomOrThrow(chatroomId);
 		ChatRoomResponse response = chatRoomService.updateChatRoomName(customUserPrincipal.getUserId(), chatroomId,
 			request.chatroomName());
 		return ResponseEntity.ok(
