@@ -1,9 +1,20 @@
+# DevMountain Docker Compose Configuration (Development)
+# 
+# 개발용 구성: Redis, PostgreSQL, Spring Boot App만 포함
+# 성능 테스트가 필요한 경우: docker-compose.performance.yaml 사용
+#
+# 사용법:
+# - 개발: docker-compose up
+# - 성능 테스트: docker-compose -f docker-compose.performance.yaml up
+
 services:
   redis:
     image: redis:7.2
     container_name: devmountain-redis
     ports:
       - "${REDIS_PORT}:6379"
+    networks:
+      - devmountain-net
 
   postgres:
     image: ankane/pgvector:latest
@@ -15,7 +26,28 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - devmountain-postgres-volume:/var/lib/postgresql/data
+    networks:
+      - devmountain-net
 
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: devmountain-redis-stack
+    ports:
+      - "${REDIS_STACK_PORT}:6379"
+      - "${REDIS_INSIGHT_PORT}:8001"
+    environment:
+      REDIS_STACK_PASSWORD: ${REDIS_STACK_PASSWORD}
+    networks:
+      - devmountain-net
+
+  redis-rate-limit:
+    image: redis:7
+    container_name: redis-rate-limit
+    ports:
+      - "${REDIS_RATE_LIMIT_PORT}:6379"
+    networks:
+      - devmountain-net
+      
   app:
     build:
       context: .
@@ -32,6 +64,13 @@ services:
     depends_on:
       - redis
       - postgres
+    networks:
+      - devmountain-net
 
 volumes:
   devmountain-postgres-volume:
+
+networks:
+  devmountain-net:
+    name: devmountain-net
+    driver: bridge

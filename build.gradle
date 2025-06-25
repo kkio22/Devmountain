@@ -2,9 +2,8 @@ plugins {
     id 'java-library'
     id 'org.springframework.boot' version "${springBootVersion}"
     id 'io.spring.dependency-management' version "${springDependencyManagementVersion}"
-}
-ext {
-    springAiVersion = "1.0.0"
+//    id 'org.springframework.boot' version '3.2.5'
+//    id 'io.spring.dependency-management' version '1.1.4'
 }
 
 group = "${projectGroup}"
@@ -24,8 +23,18 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
 }
 
+ext {
+    springAiVersion = "1.0.0-M6"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
+}
 
 dependencies {
     // Spring Web + Validation
@@ -63,24 +72,32 @@ dependencies {
     //PostgreSQL + pgvector
     runtimeOnly 'org.postgresql:postgresql'
     testImplementation 'org.testcontainers:postgresql'
-    implementation 'org.springframework.ai:spring-ai-starter-vector-store-pgvector'
+    implementation("org.hibernate.orm:hibernate-vector:6.4.0.Final")
 
-    //Spring AI
-    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+    //monitoring
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-pgvector-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-mcp-client-spring-boot-starter'
+
+    //redis
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
+    implementation 'redis.clients:jedis:5.1.0'
+
+    // Bucket4j + Redis
+    implementation 'com.bucket4j:bucket4j-core:8.9.0'
+    implementation 'com.bucket4j:bucket4j-redis:8.9.0'
 
 }
-
-
 
 bootJar {
     enabled = true
     archiveFileName = 'app.jar' // Dockerfile에서 COPY app.jar 와 일치하게
     mainClass = 'nbc.devmountain.MountainApplication'
-}
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
-    }
 }
 
 tasks.named('test') {

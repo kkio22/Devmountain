@@ -3,11 +3,23 @@ package nbc.devmountain.domain.lecture.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import jakarta.persistence.*;
-import lombok.*;
-import nbc.devmountain.common.config.EmbeddingConverter;
-
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "lecture")
@@ -31,23 +43,34 @@ public class Lecture {
 	private int likeCount;
 	private double star;
 	private String levelCode;
+	//@JsonProperty("discount")
 	private boolean isDiscount;
 	private BigDecimal payPrice;
 	private BigDecimal regularPrice;
+	//@JsonProperty("free")
 	private boolean isFree;
 	private BigDecimal discountRate;
 	@Column(nullable = false)
 	private LocalDateTime crawledAt;
 
-	@Convert(converter = EmbeddingConverter.class)
-	@Column(columnDefinition = "TEXT")
-	private float[] lectureEmbedding;
-
+	@JsonCreator
 	@Builder
-	public Lecture(int itemId, String thumbnailUrl, String title, String instructor, String description,
-		int reviewCount,
-		int studentCount, int likeCount, double star, String levelCode, boolean isDiscount, BigDecimal payPrice,
-		BigDecimal regularPrice, boolean isFree, BigDecimal discountRate, LocalDateTime crawledAt) {
+	public Lecture(@JsonProperty("itemId") int itemId,
+		@JsonProperty("thumbnailUrl") String thumbnailUrl,
+		@JsonProperty("title") String title,
+		@JsonProperty("instructor") String instructor,
+		@JsonProperty("description") String description,
+		@JsonProperty("reviewCount") int reviewCount,
+		@JsonProperty("studentCount") int studentCount,
+		@JsonProperty("likeCount") int likeCount,
+		@JsonProperty("star") double star,
+		@JsonProperty("levelCode") String levelCode,
+		@JsonProperty("discount") boolean isDiscount,
+		@JsonProperty("payPrice") BigDecimal payPrice,
+		@JsonProperty("regularPrice") BigDecimal regularPrice,
+		@JsonProperty("free") boolean isFree,
+		@JsonProperty("discountRate") BigDecimal discountRate,
+		@JsonProperty("crawledAt") LocalDateTime crawledAt) {
 		this.itemId = itemId;
 		this.thumbnailUrl = thumbnailUrl;
 		this.title = title;
@@ -65,10 +88,6 @@ public class Lecture {
 		this.discountRate = discountRate;
 		this.crawledAt = crawledAt;
 
-	}
-
-	public void setLectureEmbedding(float[] lectureEmbedding) {
-		this.lectureEmbedding = lectureEmbedding;
 	}
 
 }

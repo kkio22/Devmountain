@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/prometheus/prometheus.yml:ro
+    ports:
+      - "${PROMETHEUS_PORT}:9090"
+    command:
+      - "--web.enable-lifecycle"
+    restart: always
+    networks:
+      - devmonntain-net
+    user: root
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    volumes:
+      - ./monitoring/grafana-volume:/var/lib/grafana
+    restart: always
+    networks:
+      - devmonntain-net
+    ports:
+      - "${GRAFANA_PORT}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    user: root
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    restart: always
+    ports:
+      - "${EXPORTER_PORT}:9100"
+    networks:
+      - devmonntain-net
+
+networks:
+  devmonntain-net:
+    external: true

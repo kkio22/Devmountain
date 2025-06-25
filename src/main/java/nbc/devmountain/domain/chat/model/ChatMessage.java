@@ -31,7 +31,11 @@ public class ChatMessage {
 	@JoinColumn(name = "user_id",nullable = true)
 	private User user;
 
+	@Column(columnDefinition = "TEXT")
 	private String message;
+
+	@Enumerated(EnumType.STRING)
+	private MessageType messageType;
 
 	private Boolean isAiResponse;
 

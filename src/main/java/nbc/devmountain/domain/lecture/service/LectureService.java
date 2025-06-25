@@ -8,10 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nbc.devmountain.domain.ai.service.RagService;
 import nbc.devmountain.domain.lecture.client.LectureClient;
 import nbc.devmountain.domain.lecture.dto.InflearnResponse;
 import nbc.devmountain.domain.lecture.dto.Item;
@@ -31,7 +33,9 @@ public class LectureService {
 	private final LectureRepository lectureRepository;
 	private final SkillTagRepository skillTagRepository;
 	private final LectureSkillTagRepository lectureSkillTagRepository;
+	private final RagService ragService;
 
+	@Scheduled(cron = "* * 2 * * *")
 	public void getLecture() {
 
 		InflearnResponse firstPage = lectureClient.getLecture(1);
@@ -97,10 +101,9 @@ public class LectureService {
 				}
 			}
 		}
-
 		lectureSkillTagRepository.saveAll(lectureSkillTags);
-
 	}
+
 
 	private SkillTag findOrCreateSkillTag(String title) {
 		return skillTagRepository.findByTitle(title)
@@ -108,7 +111,6 @@ public class LectureService {
 	}
 
 }
-
 
 
 

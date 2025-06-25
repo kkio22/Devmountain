@@ -13,17 +13,20 @@ import java.time.LocalDateTime;
 @Table(name = "Recommendation")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 @EntityListeners(AuditingEntityListener.class)
 public class Recommendation {
     @Id
-    private String recommendId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long recommendId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "char_id")
+    @JoinColumn(name = "chat_id")
     private ChatMessage chatMessage;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "user_id")
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)

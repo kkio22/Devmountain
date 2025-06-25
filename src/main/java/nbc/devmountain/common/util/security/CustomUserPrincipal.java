@@ -52,6 +52,10 @@ public class CustomUserPrincipal implements UserDetails, OAuth2User {
 		return user.getUserId();
 	}
 
+	public User.MembershipLevel getMembershipLevel() {
+		return user.getMembershipLevel();
+	}
+
 	@Override
 	public boolean isAccountNonExpired() {
 		return true;
