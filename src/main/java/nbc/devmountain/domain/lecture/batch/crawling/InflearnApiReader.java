@@ -3,12 +3,10 @@ package nbc.devmountain.domain.lecture.batch.crawling;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemReader;
 
-import io.lettuce.core.dynamic.batch.BatchException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.lecture.client.LectureClient;
 import nbc.devmountain.domain.lecture.dto.InflearnResponse;
-import nbc.devmountain.domain.lecture.exception.BatchExceptionCode;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -17,12 +15,12 @@ public class InflearnApiReader implements ItemReader<InflearnResponse> {
 
 	private final LectureClient lectureClient;
 	private int currentPage = 1;
-	private int totalPage = 0;
+	private int totalPage = -1;
 
 	@Override
 	public InflearnResponse read() {
 
-		if (totalPage != 0 && currentPage > totalPage) {
+		if (totalPage != -1 && currentPage > totalPage) {
 			return null;
 		}
 
@@ -37,10 +35,12 @@ public class InflearnApiReader implements ItemReader<InflearnResponse> {
 
 			currentPage++;
 			return inflearnResponse;
+
 		}catch (Exception e){
 			log.error("크롤링 중 예외 발생: {}", e.getMessage());
-			throw new BatchException(BatchExceptionCode.LECTURE_API_FAILED);
+			throw new RuntimeException("강의 크롤링에서 에러가 발생했습니다.");
 		}
+
 
 	}
 }
