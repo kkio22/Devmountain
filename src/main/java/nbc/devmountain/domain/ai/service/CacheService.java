@@ -43,13 +43,13 @@ public class CacheService {
 	public List<Lecture> search(String searchQuery) {
 
 		/*
-		들어온 질문을 가지고 임베딩해서 redis stack에 저장된 임베딩된 데이터를 가지고, 유사도 0.02인 친구 중 top 1개를 가지고 나옴
+		들어온 질문을 가지고 임베딩해서 redis stack에 저장된 임베딩된 데이터를 가지고, 유사도 가까운 것 top 1개를 가지고 나옴
 		 */
 
 		List<Document> results = redisVectorStore.similaritySearch(
 			SearchRequest.builder()
 				.query(searchQuery)
-				.similarityThreshold(0.95) // 작을 수록 좋은거라고 함 근데 지금 0.05도 같이 나오는 중임 필터링이 안 되는 중
+				.similarityThreshold(0.98) // 이거 계속 한번 해봐야 함
 				.topK(1) // 그리고 레디스 스택 안의 벡터 인덱스에서 검색 -> 1개 나옴
 				.build());
 
