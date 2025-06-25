@@ -2,6 +2,7 @@ package nbc.devmountain.common.config;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,9 +15,18 @@ import redis.clients.jedis.JedisPooled;
 @RequiredArgsConstructor
 public class RedisVectorStoreConfig {
 
+	@Value("${spring.redis.vectorstore.host}")
+	private String host;
+
+	@Value("${spring.redis.vectorstore.port}")
+	private int port;
+
+	@Value("${spring.redis.vectorstore.password}")
+	private String password;
+
 	@Bean
 	public JedisPooled jedisPooled() {
-		return new JedisPooled("localhost", 6380, "default", "mypassword");
+		return new JedisPooled(host, port, "default", password);
 	}
 
 	@Bean
