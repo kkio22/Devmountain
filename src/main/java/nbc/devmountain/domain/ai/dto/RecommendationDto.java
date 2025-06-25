@@ -12,5 +12,6 @@ public record RecommendationDto(
 	String level,
 	String url,
 	String payPrice,
-	String isFree
+	String isFree,
+	String type
 ) {}
