@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +15,7 @@ import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.lecture.model.SkillTag;
 import nbc.devmountain.domain.lecture.repository.SkillTagRepository;
 
-@Component
+
 @Slf4j
 @RequiredArgsConstructor
 @StepScope
