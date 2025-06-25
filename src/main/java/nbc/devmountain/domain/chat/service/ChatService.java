@@ -1,20 +1,19 @@
-package nbc.devmountain.domain.ai.service;
+package nbc.devmountain.domain.chat.service;
 
 import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.socket.WebSocketSession;
 
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.SessionUser;
+import nbc.devmountain.domain.ai.service.LectureRecommendationService;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 
 import nbc.devmountain.domain.chat.model.MessageType;
-import nbc.devmountain.domain.chat.service.ChatMessageService;
 import nbc.devmountain.domain.chat.websocket.WebSocketMessageSender;
 import nbc.devmountain.domain.user.model.User;
 
@@ -26,7 +25,7 @@ public class ChatService {
 	private final LectureRecommendationService recommendationService;
 	private final WebSocketMessageSender messageSender;
 
-	public ChatMessageResponse handleMessage(WebSocketSession session, Long roomId, String payload) {
+	public void handleMessage(WebSocketSession session, Long roomId, String payload) {
 		SessionUser sessionUser = (SessionUser)session.getAttributes().get("user");
 		User.MembershipLevel membershipType = (User.MembershipLevel)session.getAttributes().get("membershipType");
 
@@ -38,37 +37,25 @@ public class ChatService {
 					.isAiResponse(true)
 					.messageType(MessageType.ERROR)
 					.build();
-				messageSender.sendMessageToRoom(roomId, limitMsg);
-				return limitMsg;
+				messageSender.sendMessage(session, limitMsg);
+				return;
 			}
 			session.getAttributes().put("guestCount", guestCount + 1);
 		}
-
-		ChatMessageResponse userMsg;
 		if (membershipType != User.MembershipLevel.GUEST) {
-			userMsg = chatMessageService.createMessage(sessionUser.getUserId(), roomId, payload);
+			ChatMessageResponse userMsg = chatMessageService.createMessage(sessionUser.getUserId(), roomId, payload);
 			log.info("회원 메세지 생성 완료");
-		} else {
-			userMsg = ChatMessageResponse.builder()
-				.message(payload)
-				.recommendations(Collections.emptyList())
-				.isAiResponse(false)
-				.messageType(MessageType.CHAT)
-				.build();
+			messageSender.sendMessageToRoom(roomId, userMsg);
 		}
-		messageSender.sendMessageToRoom(roomId, userMsg);
 
+		// AI 추천 응답 처리
+		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId,
+			session);
 
-		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId);
-		ChatMessageResponse aiMsg;
-		if (membershipType != User.MembershipLevel.GUEST) {
-			aiMsg = chatMessageService.createAIMessage(roomId, aiResponse);
-			log.info("AI 메세지 생성 완료");
-		} else {
-			aiMsg = aiResponse;
+		if (aiResponse.getMessageType() == MessageType.RECOMMENDATION && aiResponse.getRecommendations() != null
+			&& !aiResponse.getRecommendations().isEmpty()) {
+			messageSender.sendMessageToRoom(roomId, aiResponse);
 		}
-		messageSender.sendMessageToRoom(roomId, aiMsg);
-		return aiMsg;
 	}
 
 	public List<ChatMessageResponse> getChatHistory(Long userId, Long roomId) {
