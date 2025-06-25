@@ -3,6 +3,7 @@ package nbc.devmountain.domain.ai.service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,8 +16,11 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Service;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,7 +30,9 @@ import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
-import nbc.devmountain.domain.user.model.User;
+import nbc.devmountain.domain.chat.service.ChatMessageService;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 @AllArgsConstructor
@@ -34,55 +40,145 @@ import nbc.devmountain.domain.user.model.User;
 public class AiService {
 	private final ChatModel chatModel;
 	private final ObjectMapper objectMapper;
+	private final StreamingChatModel streamingChatModel;
+	private final ChatMessageService chatMessageService;
 
 	public ChatMessageResponse analyzeConversationAndDecideNext(
 		String conversationHistory,
 		Map<String, String> collectedInfo,
 		String latestUserMessage,
-		User.MembershipLevel membershipLevel) {
-		SystemMessage systemMessage = new SystemMessage(AiConstants.CONVERSATION_ANALYSIS_PROMPT);
+		User.MembershipLevel membershipLevel,
+		WebSocketSession session,
+		Long chatRoomId) {
 
-		String promptText = String.format(
-			"현재 대화 히스토리:\n%s\n\n현재 수집된 정보:\n%s\n\n최신 사용자 메시지: %s",
-			conversationHistory,
-			formatCollectedInfo(collectedInfo),
-			latestUserMessage
-		);
-
-		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
-		log.info("[AiService] 대화 분석 프롬프트 전송 >>>\n{}", promptText);
-
-		ChatResponse response = chatModel.call(prompt);
-		String aiResponse = response.getResults()
-			.stream()
-			.findFirst()
-			.map(result -> result.getOutput().getText())
-			.orElse("");
-
-		log.info("[AiService] 대화 분석 AI 응답 >>>\n{}", aiResponse);
-
-		// AI 기반 정보 추출 및 업데이트
+		//AI 기반 정보 추출 및 업데이트
 		extractAndUpdateInfoByAI(collectedInfo, latestUserMessage);
 
-		// 추천 준비 완료 확인
-		if (aiResponse.contains(AiConstants.READY_FOR_RECOMMENDATION) || isReadyForRecommendation(collectedInfo, membershipLevel)) {
+		//수집된 정보를 바탕으로 추천 준비 여부 확인
+		if (isReadyForRecommendation(collectedInfo, membershipLevel)) {
 			return ChatMessageResponse.builder()
 				.message(AiConstants.SUCCESS_READY_FOR_RECOMMENDATION)
 				.isAiResponse(true)
 				.messageType(MessageType.RECOMMENDATION)
 				.build();
 		}
+		// 추천 준비가 안됐으면 일반 대화 스트리밍 처리
+		// 프롬프트 생성
+		SystemMessage systemMessage = new SystemMessage(AiConstants.CONVERSATION_ANALYSIS_PROMPT);
+		String promptText = String.format(
+			"현재 대화 히스토리:\n%s\n\n현재 수집된 정보:\n%s\n\n최신 사용자 메시지: %s",
+			conversationHistory,
+			formatCollectedInfo(collectedInfo),
+			latestUserMessage
+		);
+		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
+		log.info("[AiService] 대화 스트리밍 프롬프트 전송 >>>\n{}", promptText);
 
-		return ChatMessageResponse.builder()
-			.message(aiResponse.replace(AiConstants.READY_FOR_RECOMMENDATION, "").trim())
-			.isAiResponse(true)
-			.messageType(MessageType.CHAT)
-			.build();
+		// 스트리밍 메소드 호출
+		return streamChatResponse(prompt, session, chatRoomId, membershipLevel);
+	}
+
+	private ChatMessageResponse streamChatResponse(Prompt prompt, WebSocketSession session, Long chatRoomId,
+		User.MembershipLevel membershipLevel) {
+		final StringBuilder fullMessage = new StringBuilder();
+
+		try {
+			Flux<String> contentStream = Optional.ofNullable(streamingChatModel.stream(prompt))
+				.orElse(Flux.empty())
+				.map(chatResponse -> {
+					// ChatResponse 에서 텍스트 컨텐츠 추출
+					if (chatResponse != null && chatResponse.getResult() != null
+						&& chatResponse.getResult().getOutput() != null) {
+						String content = chatResponse.getResult().getOutput().getText();
+						return content != null ? content : "";
+					}
+					return "";
+				})
+				.filter(chunk -> !chunk.isBlank());
+
+			contentStream
+				.doOnNext(chunk -> {
+					// 각 청크 클라이언트에 실시간 전송
+					try {
+						fullMessage.append(chunk);
+						boolean isFirstChunk = fullMessage.length() == chunk.length();
+						ChatMessageResponse message = ChatMessageResponse.builder()
+							.message(chunk)
+							.isAiResponse(true)
+							.messageType(MessageType.CHAT)
+							.isFirst(isFirstChunk)
+							.isLast(false)
+							.build();
+
+						String json = objectMapper.writeValueAsString(message);
+						if (json != null && !json.trim().isEmpty()) { // null 체크
+							session.sendMessage(new TextMessage(json));
+						}
+					} catch (Exception e) {
+						log.warn("[AiService] 메시지 청크 전송 실패", e);
+					}
+				})
+				.publishOn(Schedulers.boundedElastic()) // DB 저장 등 블로킹 작업 스레드 전환
+				.doOnComplete(() -> {
+					// 스트리밍 완료 후 처리
+					try {
+						// 마지막 메세지
+						ChatMessageResponse lastMessage = ChatMessageResponse.builder()
+							.message("")
+							.isAiResponse(true)
+							.messageType(MessageType.CHAT)
+							.isFirst(false)
+							.isLast(true)
+							.build();
+
+						String lastJson = objectMapper.writeValueAsString(lastMessage);
+						if (lastJson != null && !lastJson.trim().isEmpty()) { // null 체크
+							session.sendMessage(new TextMessage(lastJson));
+						}
+
+						// 로그인한 회원, DB에 전체 메시지 저장
+						if (chatRoomId != null && membershipLevel != User.MembershipLevel.GUEST) {
+							ChatMessageResponse fullResponse = ChatMessageResponse.builder()
+								.message(fullMessage.toString())
+								.isAiResponse(true)
+								.messageType(MessageType.CHAT)
+								.build();
+							chatMessageService.createAIMessage(chatRoomId, fullResponse);
+						} else {
+							log.info("비회원 또는 roomId 없음: AI 메시지 저장 생략");
+						}
+					} catch (Exception e) {
+						log.warn("[AiService] 마지막 메시지 전송/저장 실패", e);
+					}
+				})
+				.doOnError(e -> log.error("[AiService] 스트리밍 중 오류 발생", e))
+				.blockLast();// 스트림이 완전히 끝날 때까지 현재 스레드를 차단하고 대기
+
+			// 스트리밍 완료 후 AI 응답 검증
+			String aiResponse = fullMessage.toString();
+			if (aiResponse.contains(AiConstants.READY_FOR_RECOMMENDATION)) {
+				return ChatMessageResponse.builder()
+					.message(AiConstants.SUCCESS_READY_FOR_RECOMMENDATION)
+					.isAiResponse(true)
+					.messageType(MessageType.RECOMMENDATION)
+					.build();
+			}
+
+			return ChatMessageResponse.builder()
+				.message(fullMessage.toString())
+				.isAiResponse(true)
+				.messageType(MessageType.CHAT)
+				.build();
+
+		} catch (Exception e) {
+			log.error("[AiService] 스트리밍 처리 중 심각한 오류 발생", e);
+			throw new RuntimeException("AI 응답 처리 중 실패했습니다.", e);
+		}
 	}
 
 	private void extractAndUpdateInfoByAI(Map<String, String> collectedInfo, String userMessage) {
 		SystemMessage systemMessage = new SystemMessage(AiConstants.INFO_CLASSIFICATION_PROMPT);
-		
+
 		String promptText = String.format(
 			"사용자 메시지: %s\n\n현재 수집된 정보:\n%s",
 			userMessage,
@@ -94,11 +190,7 @@ public class AiService {
 
 		try {
 			ChatResponse response = chatModel.call(prompt);
-			String aiResponse = response.getResults()
-				.stream()
-				.findFirst()
-				.map(result -> result.getOutput().getText())
-				.orElse("");
+			String aiResponse = response.getResult().getOutput().getText();
 
 			log.info("[AiService] 정보 분류 AI 응답 >>>\n{}", aiResponse);
 
@@ -106,14 +198,14 @@ public class AiService {
 			String jsonString = extractJsonString(aiResponse);
 			if (!jsonString.isEmpty()) {
 				JsonNode jsonNode = objectMapper.readTree(jsonString);
-				
+
 				// 각 정보 업데이트 (빈 값이 아닌 경우에만)
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_INTEREST);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_LEVEL);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_GOAL);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_PRICE);
 				updateInfoIfNotEmpty(collectedInfo, jsonNode, AiConstants.INFO_ADDITIONAL);
-				
+
 				log.info("[AiService] 정보 업데이트 완료: {}", collectedInfo);
 			}
 		} catch (Exception e) {
@@ -125,7 +217,7 @@ public class AiService {
 		JsonNode valueNode = jsonNode.get(key);
 		if (valueNode != null && !valueNode.asText().trim().isEmpty()) {
 			String newValue = valueNode.asText().trim();
-			
+
 			// 기존 값이 있는 경우 추가 정보는 합치고, 다른 정보는 더 구체적인 것으로 업데이트
 			if (AiConstants.INFO_ADDITIONAL.equals(key) && collectedInfo.containsKey(key)) {
 				String existingValue = collectedInfo.get(key);
@@ -138,15 +230,15 @@ public class AiService {
 
 	private boolean isReadyForRecommendation(Map<String, String> collectedInfo, User.MembershipLevel membershipLevel) {
 		// 기본 필수 정보: 관심분야, 목표, 난이도
-		boolean hasBasicInfo = collectedInfo.containsKey(AiConstants.INFO_INTEREST) && 
-			   collectedInfo.containsKey(AiConstants.INFO_GOAL) && 
-			   collectedInfo.containsKey(AiConstants.INFO_LEVEL);
-		
+		boolean hasBasicInfo = collectedInfo.containsKey(AiConstants.INFO_INTEREST) &&
+			collectedInfo.containsKey(AiConstants.INFO_GOAL) &&
+			collectedInfo.containsKey(AiConstants.INFO_LEVEL);
+
 		// PRO 회원의 경우 가격 정보도 필수
 		if (User.MembershipLevel.PRO.equals(membershipLevel)) {
 			return hasBasicInfo && collectedInfo.containsKey(AiConstants.INFO_PRICE);
 		}
-		
+
 		return hasBasicInfo;
 	}
 
@@ -165,7 +257,8 @@ public class AiService {
 		return formatted.toString();
 	}
 
-	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalRecommendation, User.MembershipLevel membershipLevel) {
+	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalRecommendation,
+		User.MembershipLevel membershipLevel) {
 		SystemMessage systemMessage = new SystemMessage(AiConstants.RECOMMENDATION_PROMPT);
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 		log.info("[AiService] 추천 프롬프트 전송 >>>\n{}", promptText);
@@ -177,20 +270,16 @@ public class AiService {
 			// PRO 유저: Tool을 활용한 ChatClient 호출
 
 			rawAiResponse = ChatClient.create(chatModel)
-					.prompt(prompt)
-					.tools("videos_searchVideos")
-					.call()
-					.content();
-			log.info("[AiService] ai 응답값 >>>\n{}",rawAiResponse );
+				.prompt(prompt)
+				.tools("videos_searchVideos")
+				.call()
+				.content();
+			log.info("[AiService] ai 응답값 >>>\n{}", rawAiResponse);
 		} else {
 			log.info("[AiService] 게스트 추천 호출");
 			// GUEST 유저: 기존 ChatModel 호출 방식
 			ChatResponse response = chatModel.call(prompt);
-			rawAiResponse = response.getResults()
-				.stream()
-				.findFirst()
-				.map(result -> result.getOutput().getText())
-				.orElse("");
+			rawAiResponse = response.getResult().getOutput().getText();
 		}
 
 		log.info("[AiService] AI 추천 응답 >>>\n{}", rawAiResponse);
@@ -269,5 +358,11 @@ public class AiService {
 			.isAiResponse(true)
 			.messageType(MessageType.ERROR)
 			.build();
+	}
+
+	//강의 추천정보 요약
+	public String summarizeChatRoomName(String chatHistory) {
+		String prompt = AiConstants.SUMMARIZATION_CHATROOM_PROMPT + "\n\n[대화 내용]\n" + chatHistory;
+		return chatModel.call(prompt);
 	}
 }

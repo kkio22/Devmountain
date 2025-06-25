@@ -29,6 +29,8 @@ public class ChatMessageResponse {
 	private final MessageType messageType;
 	private final LocalDateTime createdAt;
 	private final LocalDateTime updatedAt;
+	private final boolean isFirst;
+	private final boolean isLast;
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 
