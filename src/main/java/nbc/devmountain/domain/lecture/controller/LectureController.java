@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.response.ApiResponse;
-import nbc.devmountain.domain.lecture.service.EmbeddingService;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,8 +19,8 @@ import nbc.devmountain.domain.lecture.service.EmbeddingService;
 public class LectureController {
 
 	private final Job lectureCrawlingJob;
-	private final EmbeddingService embeddingService;
 	private final JobLauncher jobLauncher;
+	private final Job lectureEmbeddingJob;
 
 	@GetMapping("inflearn")
 	public ResponseEntity<ApiResponse<Void>> getLecture() {
@@ -39,8 +38,16 @@ public class LectureController {
 
 	@PostMapping("embedding")
 	public ResponseEntity<ApiResponse<Void>> embedLecture() {
-		embeddingService.embedLecture();
-		return ResponseEntity.ok(ApiResponse.success("임베딩에 성공했습니다", 200));
+		try {
+			JobParameters jobParameters = new JobParametersBuilder()
+				.addLong("time", System.currentTimeMillis())
+				.toJobParameters();
+
+			jobLauncher.run(lectureEmbeddingJob, jobParameters);
+			return ResponseEntity.ok(ApiResponse.success("데이터를 임베딩에 성공했습니다.", 200));
+		}catch (Exception e){
+			return ResponseEntity.ok(ApiResponse.error("데이터 임베딩에 실패했습니다", 404));
+		}
 	}
 
 }

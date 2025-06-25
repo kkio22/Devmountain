@@ -15,7 +15,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
-import io.lettuce.core.dynamic.batch.BatchException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.lecture.batch.crawling.InflearnApiProcessor;
@@ -31,7 +30,7 @@ import nbc.devmountain.domain.lecture.repository.SkillTagRepository;
 @Configuration
 @RequiredArgsConstructor
 @Slf4j
-public class BatchJobConfig {
+public class InflearnBatchJobConfig {
 	/*
 	batch 실행 순서와 로직 흐름 정의
 	 */

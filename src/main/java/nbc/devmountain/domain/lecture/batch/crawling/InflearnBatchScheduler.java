@@ -10,7 +10,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nbc.devmountain.common.config.BatchJobConfig;
+import nbc.devmountain.common.config.InflearnBatchJobConfig;
 
 @Slf4j
 @Component
@@ -18,7 +18,7 @@ import nbc.devmountain.common.config.BatchJobConfig;
 public class InflearnBatchScheduler {
 
 	private final JobLauncher jobLauncher;
-	private final BatchJobConfig batchJobConfig;
+	private final InflearnBatchJobConfig batchJobConfig;
 	private final JobRepository jobRepository;
 	private final PlatformTransactionManager transactionManager;
 
