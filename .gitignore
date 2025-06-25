@@ -54,4 +54,4 @@ performance/*.tar
 ngrinder-controller-*.war
 ngrinder-agent-*.tar
 
-!mcp-dist/
+mcp-dist
