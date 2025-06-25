@@ -61,9 +61,9 @@ public class BatchJobConfig {
 			.writer(inflearnApiWriter) // Lecture 엔티티에 저장
 			.faultTolerant()
 			.retryLimit(3)
-			.retry(BatchException.class)
+			.retry(Exception.class)
 			.skipLimit(10)
-			.skip(BatchException.class)
+			.skip(Exception.class)
 			.build();
 
 	}
