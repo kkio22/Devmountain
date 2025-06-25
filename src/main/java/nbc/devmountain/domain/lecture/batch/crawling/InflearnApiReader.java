@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.lecture.client.LectureClient;
 import nbc.devmountain.domain.lecture.dto.InflearnResponse;
+import nbc.devmountain.domain.lecture.exception.BatchExceptionCode;
 
 @Slf4j
 @RequiredArgsConstructor
