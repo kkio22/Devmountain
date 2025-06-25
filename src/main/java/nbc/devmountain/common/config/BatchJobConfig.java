@@ -4,11 +4,31 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import io.lettuce.core.dynamic.batch.BatchException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import nbc.devmountain.domain.lecture.batch.crawling.InflearnApiProcessor;
+import nbc.devmountain.domain.lecture.batch.crawling.InflearnApiReader;
+import nbc.devmountain.domain.lecture.batch.crawling.InflearnApiWriter;
+import nbc.devmountain.domain.lecture.client.LectureClient;
+import nbc.devmountain.domain.lecture.dto.InflearnResponse;
+import nbc.devmountain.domain.lecture.dto.LectureWithSkillTag;
+import nbc.devmountain.domain.lecture.repository.LectureRepository;
+import nbc.devmountain.domain.lecture.repository.LectureSkillTagRepository;
+import nbc.devmountain.domain.lecture.repository.SkillTagRepository;
 
 @Configuration
-@EnableBatchProcessing
 @RequiredArgsConstructor
 @Slf4j
 public class BatchJobConfig {

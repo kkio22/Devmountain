@@ -1,5 +1,8 @@
 package nbc.devmountain.domain.lecture.batch.crawling;
 
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.item.ItemReader;
+
 import io.lettuce.core.dynamic.batch.BatchException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

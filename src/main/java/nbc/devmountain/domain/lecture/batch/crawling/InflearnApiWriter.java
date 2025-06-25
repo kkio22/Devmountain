@@ -2,6 +2,9 @@ package nbc.devmountain.domain.lecture.batch.crawling;
 
 import java.util.List;
 
+import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.item.Chunk;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
