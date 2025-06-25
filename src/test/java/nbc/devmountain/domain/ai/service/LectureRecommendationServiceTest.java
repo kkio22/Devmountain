@@ -351,7 +351,7 @@ class LectureRecommendationServiceTest {
 			any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong())).thenReturn(firstResponse);
 		when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(secondQuery),
 			any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong())).thenReturn(readyResponse);
-		when(cacheService.cacheSimilarLectures(anyString())).thenReturn(cachedLectures);
+		when(cacheService.search(anyString())).thenReturn(cachedLectures);
 		when(aiService.getRecommendations(anyString(), eq(true), eq(User.MembershipLevel.PRO))).thenReturn(
 			finalResponse);
 		when(braveSearchService.search(anyString())).thenReturn(mockBraveSearchResponse());
@@ -360,7 +360,7 @@ class LectureRecommendationServiceTest {
 		ChatMessageResponse response = lectureRecommendationService.recommendationResponse(secondQuery, memberType,
 			chatRoomId, session);
 
-		verify(cacheService, times(1)).cacheSimilarLectures(anyString());
+		verify(cacheService, times(1)).search(anyString());
 		verify(ragService, never()).searchSimilarLectures(anyString());
 		assertThat(response.getRecommendations()).isNotNull();
 	}

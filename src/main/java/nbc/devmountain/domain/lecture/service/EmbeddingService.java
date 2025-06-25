@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class EmbeddingService {
 	private final VectorStore vectorStore;
 	private final JdbcTemplate jdbcTemplate;
 
+	@Scheduled (cron = "* * 3 * * *")
 	public void embedLecture() {
 		// 벡터스토어 초기화
 		clearVectorStore();

@@ -46,10 +46,12 @@ public class LectureRecommendationService {
 			log.warn("빈 쿼리 수신: chatRoomId={}", chatRoomId);
 			return createErrorResponse(AiConstants.ERROR_EMPTY_QUERY);
 		}
+
 		if (chatRoomId == null) {
 			log.error("chatRoomId가 null 입니다.");
 			return createErrorResponse(AiConstants.ERROR_NO_CHATROOM);
 		}
+
 		try {
 			return processConversation(query, chatRoomId, membershipLevel, session);
 		} catch (Exception e) {
@@ -113,7 +115,7 @@ public class LectureRecommendationService {
 			String searchQuery = buildSearchQuery(collectedInfo);
 
 			//cache에 저장된 정보가 있는지 확인
-			List<Lecture> cachedLecture = cacheService.cacheSimilarLectures(searchQuery);
+			List<Lecture> cachedLecture = cacheService.search(searchQuery);
 
 			if (cachedLecture != null && !cachedLecture.isEmpty()) {
 				return respondWithLectures(cachedLecture, collectedInfo, searchQuery, membershipLevel,chatRoomId);
@@ -133,7 +135,7 @@ public class LectureRecommendationService {
 			}
 
 			//cache에 강의 없을 때 저장
-			cacheService.saveLecture(searchQuery, similarLectures);
+			cacheService.storeVector(searchQuery, similarLectures);
 			return respondWithLectures(similarLectures, collectedInfo, searchQuery, membershipLevel,chatRoomId);
 
 		} catch (Exception e) {

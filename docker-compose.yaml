@@ -28,6 +28,17 @@ services:
       - devmountain-postgres-volume:/var/lib/postgresql/data
     networks:
       - devmountain-net
+
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: devmountain-redis-stack
+    ports:
+      - "${REDIS_STACK_PORT}:6379"
+      - "${REDIS_INSIGHT_PORT}:8001"
+    environment:
+      REDIS_STACK_PASSWORD: ${REDIS_STACK_PASSWORD}
+    networks:
+      - devmountain-net
       
   app:
     build:
