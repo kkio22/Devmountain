@@ -17,7 +17,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
@@ -31,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.common.util.security.CustomUserPrincipal;
 import nbc.devmountain.domain.user.model.User;
 
-@Component
 @Slf4j
 public class RateLimitFilter implements Filter {
 
@@ -49,25 +47,28 @@ public class RateLimitFilter implements Filter {
 
 	// 생성자: Redis 연결을 기반으로 ProxyManager를 생성하고 TTL 설정
 	public RateLimitFilter(StatefulRedisConnection<String, byte[]> redisConnection) {
-		this.proxyManager = LettuceBasedProxyManager
-			.builderFor(redisConnection)
-			// 만료 조건 및 전략 설정
-			// fixedTimeToLive: 고정된 시간 이후 만료(현재 설정: 2시간)
-			.withExpirationStrategy(ExpirationAfterWriteStrategy.fixedTimeToLive(Duration.ofHours(2)))
-			.build();
+			this(
+				LettuceBasedProxyManager
+					.builderFor(redisConnection)
+					.withExpirationStrategy(ExpirationAfterWriteStrategy.fixedTimeToLive(Duration.ofHours(2)))
+					.build()
+			);
+		}
 
-		// Free: 1시간 10개
-		this.freeConfig = BucketConfiguration.builder()
-		    // intervally: 전체 기간이 경과할 때까지 기다린 후 전체 토큰을 재생성(현재 설정: 1분마다 10개 토큰)
-			.addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofHours(1))))
-			.build();
-		// Pro: 1시간 20개
-		this.proConfig = BucketConfiguration.builder()
-			.addLimit(Bandwidth.classic(20, Refill.intervally(20, Duration.ofHours(1))))
-			.build();
-		// 기존 config는 free로 둡니다(호환성)
-		this.config = freeConfig;
-	}
+	// 생성자: ProxyManager를 직접 주입받는 생성자
+	public RateLimitFilter(ProxyManager<String> proxyManager) {
+			this.proxyManager = proxyManager;
+			// Free: 1시간 10개
+			this.freeConfig = BucketConfiguration.builder()
+				// intervally: 전체 기간이 경과할 때까지 기다린 후 전체 토큰을 재생성(현재 설정: 1시간마다 10개 토큰)
+				.addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofHours(1))))
+				.build();
+			// Pro: 1시간 20개
+			this.proConfig = BucketConfiguration.builder()
+				.addLimit(Bandwidth.classic(20, Refill.intervally(20, Duration.ofHours(1))))
+				.build();
+			this.config = freeConfig;
+		}
 
 	// IP별로 요청 수 제한 처리
 	@Override
@@ -75,7 +76,7 @@ public class RateLimitFilter implements Filter {
 		throws IOException, ServletException {
 
 		// HTTP 요청/응답 객체로 캐스팅
-		HttpServletRequest request = (HttpServletRequest) servletRequest;
+		HttpServletRequest request = (HttpServletRequest)servletRequest;
 		String requestURI = request.getRequestURI();
 		String method = request.getMethod();
 
@@ -96,7 +97,8 @@ public class RateLimitFilter implements Filter {
 		// 인증된 사용자의 멤버십 등급 확인
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		BucketConfiguration configToUse = freeConfig;
-		if (authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof CustomUserPrincipal userPrincipal) {
+		if (authentication != null && authentication.isAuthenticated()
+			&& authentication.getPrincipal() instanceof CustomUserPrincipal userPrincipal) {
 			User.MembershipLevel level = userPrincipal.getMembershipLevel();
 			if (level == User.MembershipLevel.PRO) {
 				configToUse = proConfig;
@@ -104,17 +106,22 @@ public class RateLimitFilter implements Filter {
 				configToUse = freeConfig;
 			}
 		}
-        // 해당 IP에 대한 Bucket을 Redis에서 가져오거나 새로 생성
-		Supplier<BucketConfiguration> configSupplier = () -> configToUse;
+		// 해당 IP에 대한 Bucket을 Redis에서 가져오거나 새로 생성
+		final BucketConfiguration finalConfigToUse = configToUse;
+		Supplier<BucketConfiguration> configSupplier = () -> finalConfigToUse;
 		Bucket bucket = proxyManager.builder().build(ipKey, configSupplier);
+
+		log.info("RateLimitFilter: ipKey={}, uri={}, method={}, tokens left={}", ipKey, requestURI, method, bucket.getAvailableTokens());
 
 		if (bucket.tryConsume(1)) {
 			// 요청 허용된 경우 필터 체인을 통해 다음 필터로 요청 전달
 			filterChain.doFilter(servletRequest, servletResponse);
 		} else {
 			// 요청 제한 초과 시 429 Too Many Requests 응답 전송
-			HttpServletResponse res = (HttpServletResponse) servletResponse;
+			HttpServletResponse res = (HttpServletResponse)servletResponse;
 			res.setStatus(429);
+			// 1시간 이후 재시도 요청
+			res.setHeader("Retry-After", "3600");
 			res.getWriter().write("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
 			log.warn("Rate limit exceeded for IP: {} - Chat message", ipKey);
 		}

@@ -12,18 +12,6 @@ import io.lettuce.core.codec.StringCodec;
 @Configuration
 public class RedisRateLimitConfig {
 
-	// @Value("${spring.data.redis.port}")
-	// private int port;
-	// @Value("${spring.data.redis.host}")
-	// private String host;
-	//
-	// private RedisClient redisClient() {
-	// 	return RedisClient.create(RedisURI.builder()
-	// 		.withHost(host)
-	// 		.withPort(port)
-	// 		.build());
-	// }
-
 	@Bean
 	public RedisClient redisClient() {
 		// Redis와 연결을 위한 Lettuce 생성
