@@ -28,7 +28,7 @@ public class EmbeddingProcessor implements ItemProcessor<Lecture, Document> {
 		강의 한개를 document로 해서 그걸 모아서 writer에 500개의 document를 보냄
 		 */
 		try {
-			String tag = lectureSkillTagRepository.findByLecture(lecture).stream()
+			String tag = lectureSkillTagRepository.findByLectureWithSkillTag(lecture).stream()
 				.map(LectureSkillTag::getSkillTag)
 				.map(SkillTag::getTitle)
 				.collect(Collectors.joining(","));
