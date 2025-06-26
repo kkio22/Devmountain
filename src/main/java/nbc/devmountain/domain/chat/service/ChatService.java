@@ -31,9 +31,9 @@ public class ChatService {
 
 		if (membershipType == User.MembershipLevel.GUEST) {
 			Integer guestCount = (Integer)session.getAttributes().getOrDefault("guestCount", 0);
-			if (guestCount >= 5) {
+			if (guestCount >= 10) {
 				ChatMessageResponse limitMsg = ChatMessageResponse.builder()
-					.message("비회원은 최대 5개의 메세지만 보낼 수 있습니다. 더 이용하려면 로그인을 해주세요.")
+					.message("비회원은 최대 10개의 메세지만 보낼 수 있습니다. 더 이용하려면 로그인을 해주세요.")
 					.isAiResponse(true)
 					.messageType(MessageType.ERROR)
 					.build();
@@ -52,9 +52,15 @@ public class ChatService {
 		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId,
 			session);
 
-		if (aiResponse.getMessageType() == MessageType.RECOMMENDATION && aiResponse.getRecommendations() != null
-			&& !aiResponse.getRecommendations().isEmpty()) {
-			messageSender.sendMessageToRoom(roomId, aiResponse);
+		if (aiResponse.getMessageType() == MessageType.RECOMMENDATION) {
+			ChatMessageResponse aiMsg;
+			if (membershipType != User.MembershipLevel.GUEST) {
+				aiMsg = chatMessageService.createAIMessage(roomId, aiResponse);
+				log.info("AI 추천 메시지 생성 완료");
+			} else {
+				aiMsg = aiResponse;
+			}
+			messageSender.sendMessageToRoom(roomId, aiMsg);
 		}
 	}
 
