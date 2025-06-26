@@ -16,6 +16,9 @@ import nbc.devmountain.domain.lecture.model.Lecture;
 public class EmbeddingProcessor implements ItemProcessor<List<Lecture>, VectorStore> {
 	@Override
 	public VectorStore process(List<Lecture> item) throws Exception {
+		/*
+		가져온 강의 데이터 500개를 가공해서 document 형태로 writer에 보내야 함
+		 */
 		return
 	}
 }

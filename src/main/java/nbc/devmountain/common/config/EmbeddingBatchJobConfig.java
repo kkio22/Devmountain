@@ -15,7 +15,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nbc.devmountain.domain.lecture.batch.embedding.EmbeddingProcessor;
 import nbc.devmountain.domain.lecture.batch.embedding.EmbeddingReader;
+import nbc.devmountain.domain.lecture.batch.embedding.EmbeddingWriter;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.lecture.repository.LectureRepository;
 
@@ -26,6 +28,8 @@ public class EmbeddingBatchJobConfig {
 
 	private final JobRepository jobRepository;
 	private final EmbeddingReader embeddingReader;
+	private final EmbeddingProcessor embeddingProcessor;
+	private final EmbeddingWriter embeddingWriter;
 
 	@Bean
 	public Job lectureEmbeddingJob(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
@@ -38,10 +42,10 @@ public class EmbeddingBatchJobConfig {
 	@Bean
 	public Step saveEmbeddingLectureStep(PlatformTransactionManager transactionManager) {
 		return new StepBuilder("saveEmbeddingLectureStep", jobRepository)
-			.<List<Lecture>, VectorStore>chunk(500, transactionManager)
+			.<Lecture, VectorStore>chunk(500, transactionManager)
 			.reader(embeddingReader)
-			.processor()
-			.writer()
+			.processor(embeddingProcessor)
+			.writer(embeddingWriter)
 			.faultTolerant()
 			.retryLimit(3)
 			.retry(Exception.class)
@@ -62,5 +66,7 @@ public class EmbeddingBatchJobConfig {
 	public EmbeddingReader embeddingReader(LectureRepository lectureRepository){
 		return new EmbeddingReader(lectureRepository);
 	}
+
+
 
 }

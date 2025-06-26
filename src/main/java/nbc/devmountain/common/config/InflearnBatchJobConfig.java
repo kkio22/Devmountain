@@ -54,7 +54,7 @@ public class InflearnBatchJobConfig {
 	@Bean
 	public Step saveCrawledLectureStep(PlatformTransactionManager transactionManager) {
 		return new StepBuilder("saveCrawledLectureStep", jobRepository)
-			.<InflearnResponse, List<LectureWithSkillTag>>chunk(1, transactionManager)
+			.<InflearnResponse, List<LectureWithSkillTag>>chunk(10, transactionManager)
 			.reader(inflearnApiReader) //외부 API 호출해서 InflearnResponse 읽기
 			.processor(inflearnApiProcessor) // InfleanRepository -> Lecture로 변환
 			.writer(inflearnApiWriter) // Lecture 엔티티에 저장
