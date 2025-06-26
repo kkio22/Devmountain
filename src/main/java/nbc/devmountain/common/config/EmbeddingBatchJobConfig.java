@@ -51,11 +51,6 @@ public class EmbeddingBatchJobConfig {
 			.reader(embeddingReader)
 			.processor(embeddingProcessor)
 			.writer(embeddingWriter)
-			.faultTolerant()
-			.retryLimit(3)
-			.retry(Exception.class)
-			.skipLimit(3)
-			.skip(Exception.class)
 			.build();
 
 	}

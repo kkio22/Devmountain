@@ -46,6 +46,7 @@ public class EmbeddingReader implements ItemReader<Lecture> {
 			Page<Lecture> lecturePage = lectureRepository.findAll(pageRequest); //500개 가지고 나옴
 
 			lectureList = lecturePage.getContent(); //그걸 list에 당음
+			currentIndex = 0;
 
 			if (lectureList.isEmpty()) { // 더이상 없으면 step 종료
 				return null;

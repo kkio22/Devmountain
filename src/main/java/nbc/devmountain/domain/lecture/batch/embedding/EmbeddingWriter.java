@@ -1,5 +1,6 @@
 package nbc.devmountain.domain.lecture.batch.embedding;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.ai.document.Document;
@@ -21,12 +22,14 @@ public class EmbeddingWriter implements ItemWriter<Document> {
 	public void write(Chunk<? extends Document> documents) throws Exception {
 
 	/*
-	chunk<Document> document 형태 즉 List<Documnet> document이고 document 500개가 한번에 들어온 것임
+	chunk<List<? extends Document>> document 형태 즉 List<Documnet> document이고 document 500개가 한번에 들어온 것임
 	 */
 
-		log.info("들어온 강의 개수: {}", documents.size());
+		List<? extends Document> items = documents.getItems();
 
-		vectorStore.add((List<Document>)documents);
+		log.info("들어온 강의 개수: {}", items.size());
+
+		vectorStore.add(new ArrayList<>(items));
 
 		log.info("임베딩 완료");
 	}
