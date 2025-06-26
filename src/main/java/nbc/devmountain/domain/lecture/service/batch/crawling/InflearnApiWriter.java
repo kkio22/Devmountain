@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.lecture.batch.crawling;
+package nbc.devmountain.domain.lecture.service.batch.crawling;
 
 import java.util.List;
 

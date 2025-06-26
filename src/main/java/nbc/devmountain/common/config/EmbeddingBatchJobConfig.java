@@ -1,7 +1,5 @@
 package nbc.devmountain.common.config;
 
-import java.util.List;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.batch.core.Job;
@@ -18,9 +16,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nbc.devmountain.domain.lecture.batch.embedding.EmbeddingProcessor;
-import nbc.devmountain.domain.lecture.batch.embedding.EmbeddingReader;
-import nbc.devmountain.domain.lecture.batch.embedding.EmbeddingWriter;
+import nbc.devmountain.domain.lecture.service.batch.embedding.EmbeddingProcessor;
+import nbc.devmountain.domain.lecture.service.batch.embedding.EmbeddingReader;
+import nbc.devmountain.domain.lecture.service.batch.embedding.EmbeddingWriter;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.lecture.repository.LectureRepository;
 import nbc.devmountain.domain.lecture.repository.LectureSkillTagRepository;

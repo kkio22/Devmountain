@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.lecture.batch.embedding;
+package nbc.devmountain.domain.lecture.service.batch.embedding;
 
 import java.util.Map;
 import java.util.UUID;

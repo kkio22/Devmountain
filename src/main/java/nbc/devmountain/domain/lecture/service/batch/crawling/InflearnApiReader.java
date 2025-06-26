@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.lecture.batch.crawling;
+package nbc.devmountain.domain.lecture.service.batch.crawling;
 
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemReader;
