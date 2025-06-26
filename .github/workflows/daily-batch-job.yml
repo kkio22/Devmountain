@@ -1,0 +1,85 @@
+name: daily-batch-job
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 매일 자정(UTC) = 한국 시간 오전 9시
+  workflow_dispatch:     # 수동 실행 버튼 활성화
+
+jobs:
+  run-batch-jobs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 강의 크롤링 Job 실행
+        run: |
+          curl -X GET http://localhost:8080/lectures/inflearn 
+
+      - name: 임베딩 Job 실행
+        run: |
+          curl -X POST http://localhost:8080/lectures/embedding
+
+      - name: Notify Slack on Success
+        if: success()
+        id: slack-success
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "channel": "채널 ID",
+              "attachments": [
+                {
+                  "color": "#36a64f", # 성공시 연두색
+                  "title": "${{ github.repository }}", # 제목은 깃헙 레포지토리
+                  "title_link": "https://github.com/${{github.repository}}", # 제목 클릭시 레포지토리로 이동
+                  "text": "배치 스케줄링 성공",
+                  "fields": [
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Tag",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    }
+                  ]      
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify Slack on Failure
+        if: failure() # 이 step은 job이 실패한 경우에만 실행됩니다.
+        id: slack-failure
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "channel": "채널 ID",
+              "attachments": [
+                {
+                  "color": "#ff0000", # 실패시 빨간색
+                  "title": "${{ github.repository }}", # 제목은 깃헙 레포지토리
+                  "title_link": "https://github.com/${{github.repository}}", # 제목 클릭시 레포지토리로 이동
+                  "text": "배치 스케줄링 실패",
+                  "fields": [
+                    {
+                      "title": "Repository",
+                      "value": "${{ github.repository }}",
+                      "short": true
+                    },
+                    {
+                      "title": "Tag",
+                      "value": "${{ github.ref_name }}",
+                      "short": true
+                    }
+                  ]      
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }} //아직 설정 안 함
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
