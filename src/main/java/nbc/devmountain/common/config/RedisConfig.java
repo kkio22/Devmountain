@@ -11,13 +11,14 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 
 @Configuration
 public class RedisConfig {
 
 	@Bean
-	public RedisConnectionFactory redisConnectionFactory() {
-		return new LettuceConnectionFactory();
+	public RedisConnectionFactory redisConnectionFactory(RedisProperties redisProperties) {
+		return new LettuceConnectionFactory(redisProperties.getHost(), redisProperties.getPort());
 	}
 
 
