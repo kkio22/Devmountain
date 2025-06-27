@@ -13,5 +13,6 @@ public record RecommendationDto(
 	String url,
 	String payPrice,
 	String isFree,
-	String type
+	String type,
+	Float score
 ) {}
