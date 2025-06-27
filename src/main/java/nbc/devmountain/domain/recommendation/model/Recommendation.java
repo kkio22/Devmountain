@@ -35,7 +35,21 @@ public class Recommendation {
 
     private Float score;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LectureType type;
+
+    @Column(columnDefinition = "TEXT")
+    private String externalLectureJson;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
+
+
+    public enum LectureType {
+        VECTOR, // 내부 DB 강의
+        YOUTUBE,// 유튜브 강의
+        BRAVE//브레이브서치 강의
+    }
 }
