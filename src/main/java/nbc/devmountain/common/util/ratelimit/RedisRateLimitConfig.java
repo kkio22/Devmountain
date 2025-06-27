@@ -1,5 +1,7 @@
 package nbc.devmountain.common.util.ratelimit;
 
+import lombok.RequiredArgsConstructor;
+import nbc.devmountain.common.config.RedisRateLimitProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -9,13 +11,17 @@ import io.lettuce.core.codec.ByteArrayCodec;
 import io.lettuce.core.codec.RedisCodec;
 import io.lettuce.core.codec.StringCodec;
 
+@RequiredArgsConstructor
 @Configuration
 public class RedisRateLimitConfig {
 
+	private final RedisRateLimitProperties properties;
+
 	@Bean
 	public RedisClient redisClient() {
-		// Redis와 연결을 위한 Lettuce 생성
-		return RedisClient.create("redis://localhost:6379");
+		String url = String.format("redis://%s:%d", properties.getHost(), properties.getPort());
+		System.out.println(url);
+		return RedisClient.create(url);
 	}
 
 	@Bean
