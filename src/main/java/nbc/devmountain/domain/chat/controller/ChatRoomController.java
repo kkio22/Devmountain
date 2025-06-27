@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import lombok.RequiredArgsConstructor;
+import nbc.devmountain.common.monitering.CustomMetrics;
 import nbc.devmountain.common.response.ApiResponse;
 import nbc.devmountain.common.util.security.CustomUserPrincipal;
 import nbc.devmountain.domain.chat.dto.ChatRoomRequest;
@@ -29,6 +30,7 @@ import nbc.devmountain.domain.chat.service.ChatRoomService;
 public class ChatRoomController {
 
 	private final ChatRoomService chatRoomService;
+	private final CustomMetrics customMetrics;
 
 	@PostMapping
 	public ResponseEntity<ApiResponse<ChatRoomResponse>> createChatRoom(
@@ -36,6 +38,7 @@ public class ChatRoomController {
 		@RequestBody ChatRoomRequest request) {
 
 		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(customUserPrincipal.getUserId());
+		customMetrics.incrementChatroomCount(); // 모니터링(채팅방 수 체크)
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방 생성 성공", HttpStatus.CREATED.value(), chatRoom));
 	}
@@ -78,6 +81,7 @@ public class ChatRoomController {
 		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal) {
 
 		chatRoomService.deleteChatRoom(customUserPrincipal.getUserId(), chatroomId);
+		customMetrics.decrementChatroomCount(); // 모니터링(채팅방 수 체크)
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "채팅방이 삭제되었습니다.", HttpStatus.OK.value(), null)
 		);

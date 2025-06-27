@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import nbc.devmountain.common.monitering.CustomMetrics;
 import nbc.devmountain.domain.user.model.User;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -42,6 +43,7 @@ public class AiService {
 	private final ObjectMapper objectMapper;
 	private final StreamingChatModel streamingChatModel;
 	private final ChatMessageService chatMessageService;
+	private final CustomMetrics customMetrics;
 
 	public ChatMessageResponse analyzeConversationAndDecideNext(
 		String conversationHistory,
@@ -50,6 +52,8 @@ public class AiService {
 		User.MembershipLevel membershipLevel,
 		WebSocketSession session,
 		Long chatRoomId) {
+
+		customMetrics.incrementAiRequest(); // 모니터링(ai 요청수 체크)
 
 		//AI 기반 정보 추출 및 업데이트
 		extractAndUpdateInfoByAI(collectedInfo, latestUserMessage);
@@ -113,6 +117,7 @@ public class AiService {
 						String json = objectMapper.writeValueAsString(message);
 						if (json != null && !json.trim().isEmpty()) { // null 체크
 							session.sendMessage(new TextMessage(json));
+							customMetrics.incrementAiRequest(); // 모니터링(ai 요청수 체크)
 						}
 					} catch (Exception e) {
 						log.warn("[AiService] 메시지 청크 전송 실패", e);
@@ -259,6 +264,7 @@ public class AiService {
 
 	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalRecommendation,
 		User.MembershipLevel membershipLevel) {
+		customMetrics.incrementAiRequest(); // 모니터링(ai 요청수 체크)
 		SystemMessage systemMessage = new SystemMessage(AiConstants.RECOMMENDATION_PROMPT);
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 		log.info("[AiService] 추천 프롬프트 전송 >>>\n{}", promptText);
