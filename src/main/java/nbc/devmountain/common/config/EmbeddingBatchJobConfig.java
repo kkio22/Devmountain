@@ -16,6 +16,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nbc.devmountain.domain.lecture.service.batch.embedding.EmbeddingJobResultListener;
 import nbc.devmountain.domain.lecture.service.batch.embedding.EmbeddingProcessor;
 import nbc.devmountain.domain.lecture.service.batch.embedding.EmbeddingReader;
 import nbc.devmountain.domain.lecture.service.batch.embedding.EmbeddingWriter;
@@ -33,12 +34,14 @@ public class EmbeddingBatchJobConfig {
 	private final EmbeddingProcessor embeddingProcessor;
 	private final EmbeddingWriter embeddingWriter;
 	private final JdbcTemplate jdbcTemplate;
+	private final EmbeddingJobResultListener embeddingJobResultListener;
 
 	@Bean
 	public Job lectureEmbeddingJob(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
 		return new JobBuilder("lectureEmbeddingJob", jobRepository)
 			.start(clearVectorStore(transactionManager))
 			.next(saveEmbeddingLectureStep(transactionManager))
+			.listener(embeddingJobResultListener)
 			.build();
 	}
 
