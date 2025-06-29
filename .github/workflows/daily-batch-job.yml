@@ -2,7 +2,7 @@ name: daily-batch-job
 
 on:
   schedule:
-    - cron: '0 1 * * *'  # 매일 자정(UTC) = 한국 시간 오전 9시
+    - cron: '15 11 * * *'  # 매일 자정(UTC) = 한국 시간 오전 9시
   workflow_dispatch:     # 수동 실행 버튼 활성화
 
 jobs:
@@ -17,6 +17,19 @@ jobs:
       - name: 임베딩 Job 실행
         run: |
           curl -X POST ${{ secrets.EMBEDDING_URL }}
+
+      - name: 배치 결과 조회 (inflearn)
+        id: crawling-result
+        run: |
+          result=$(curl -s ${{ secrets.INFLEARN_RESULT_URL }})
+          echo "crawling_result=$result" >> $GITHUB_OUTPUT
+
+
+      - name: 배치 결과 조회 (embedding)
+        id: embedding-result
+        run: |
+          result=$(curl -s ${{ secrets.EMBEDDING_RESULT_URL }})
+          echo "embedding_result=$result" >> $GITHUB_OUTPUT
 
       - name: Notify Slack on Success
         if: success()
@@ -38,6 +51,15 @@ jobs:
                     text: "*Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
                   - type: mrkdwn
                     text: "*Tag:*\n${{ github.ref_name }}"
+              - type: divider
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Inflearn 크롤링 결과:*\n```\n${{ steps.crawling-result.outputs.crawling_result }}\n```"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*임베딩 결과:*\n```\n${{ steps.embedding-result.outputs.embedding_result }}\n```"
               - type: context
                 elements:
                   - type: mrkdwn
