@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import nbc.devmountain.domain.chat.model.ChatRoom;
@@ -24,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.socket.WebSocketSession;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.lecture.model.Lecture;
@@ -390,7 +389,7 @@ class LectureRecommendationServiceTest {
 
 	private RecommendationDto createMockRecommendation() {
 		return new RecommendationDto(1L, "thumbnail.jpg", "스프링 입문 강의", "스프링 프레임워크 기초 학습", "김강사", "초급",
-			"https://www.example.com/course/", "15000", "false", "VECTOR");
+			"https://www.example.com/course/", "15000", "false", "VECTOR",0.5f);
 	}
 
 	private BraveSearchResponseDto mockBraveSearchResponse() {

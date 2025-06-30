@@ -109,6 +109,7 @@ public final class AiConstants {
 		         "payPrice" : "30000",
 		         "isFree" : "false",
 		         "type": "VECTOR",
+		         "score" : "score"
 		       },
 		       {
 		         "lectureId": null,

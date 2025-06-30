@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.chat.service.ChatMessageService;
@@ -70,10 +70,11 @@ public class AiService {
 		// 프롬프트 생성
 		SystemMessage systemMessage = new SystemMessage(AiConstants.CONVERSATION_ANALYSIS_PROMPT);
 		String promptText = String.format(
-			"현재 대화 히스토리:\n%s\n\n현재 수집된 정보:\n%s\n\n최신 사용자 메시지: %s",
+			"현재 대화 히스토리:\n%s\n\n현재 수집된 정보:\n%s\n\n최신 사용자 메시지: %s, 사용자 등급:%s",
 			conversationHistory,
 			formatCollectedInfo(collectedInfo),
-			latestUserMessage
+			latestUserMessage,
+			membershipLevel
 		);
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 		log.info("[AiService] 대화 스트리밍 프롬프트 전송 >>>\n{}", promptText);
