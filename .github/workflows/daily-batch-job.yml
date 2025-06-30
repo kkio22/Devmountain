@@ -22,14 +22,21 @@ jobs:
         id: crawling-result
         run: |
           result=$(curl -s ${{ secrets.INFLEARN_RESULT_URL }})
-          echo "crawling_result=$result" >> $GITHUB_OUTPUT
-
+          {
+            echo "crawling_result<<EOF"
+            echo "$result"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: 배치 결과 조회 (embedding)
         id: embedding-result
         run: |
           result=$(curl -s ${{ secrets.EMBEDDING_RESULT_URL }})
-          echo "embedding_result=$result" >> $GITHUB_OUTPUT
+          {
+            echo "embedding_result<<EOF"
+            echo "$result"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Notify Slack on Success
         if: success()
