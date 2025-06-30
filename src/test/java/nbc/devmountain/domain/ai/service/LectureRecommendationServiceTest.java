@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import nbc.devmountain.domain.chat.model.ChatRoom;
@@ -24,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.socket.WebSocketSession;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.lecture.model.Lecture;

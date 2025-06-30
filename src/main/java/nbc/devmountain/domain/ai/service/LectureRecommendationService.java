@@ -15,7 +15,7 @@ import org.springframework.web.socket.WebSocketSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;

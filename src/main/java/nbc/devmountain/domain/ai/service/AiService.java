@@ -28,7 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.chat.service.ChatMessageService;
