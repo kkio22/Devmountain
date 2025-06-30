@@ -26,6 +26,7 @@ import nbc.devmountain.domain.lecture.dto.LectureWithSkillTag;
 import nbc.devmountain.domain.lecture.repository.LectureRepository;
 import nbc.devmountain.domain.lecture.repository.LectureSkillTagRepository;
 import nbc.devmountain.domain.lecture.repository.SkillTagRepository;
+import nbc.devmountain.domain.lecture.service.batch.crawling.InflearnJobResultListener;
 
 @Configuration
 @RequiredArgsConstructor
@@ -39,6 +40,7 @@ public class InflearnBatchJobConfig {
 	private final InflearnApiReader inflearnApiReader;
 	private final InflearnApiProcessor inflearnApiProcessor;
 	private final InflearnApiWriter inflearnApiWriter;
+	private final InflearnJobResultListener inflearnJobResultListener;
 
 	/*
 	이 메서드의 반환 객체를 spring bean으로 등록한다는 의미
@@ -48,6 +50,7 @@ public class InflearnBatchJobConfig {
 		return new JobBuilder("lectureCrawlingJob", jobRepository)
 			.start(saveCrawledLectureStep(transactionManager))
 			.next(deleteOldLectureStep(transactionManager))
+			.listener(inflearnJobResultListener)
 			.build();
 	}
 

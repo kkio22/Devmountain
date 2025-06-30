@@ -93,6 +93,7 @@ public class InflearnApiWriter implements ItemWriter<List<LectureWithSkillTag>> 
 
 			lectureSkillTagRepository.saveAll(lectureSkillTags);
 		}
+		log.info("크롤링 완료");
 	}
 }
 

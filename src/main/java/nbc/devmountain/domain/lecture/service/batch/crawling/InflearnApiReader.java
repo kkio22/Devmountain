@@ -33,7 +33,7 @@ public class InflearnApiReader implements ItemReader<InflearnResponse> {
 		try {
 
 			InflearnResponse inflearnResponse = lectureClient.getLecture(currentPage);
-			log.info("현재 페이지: {}", currentPage);
+
 
 			if (totalPage == -1) {
 				totalPage = inflearnResponse.data().totalPage();

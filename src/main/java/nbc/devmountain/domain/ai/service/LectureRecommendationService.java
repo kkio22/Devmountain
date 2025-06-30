@@ -15,7 +15,6 @@ import org.springframework.web.socket.WebSocketSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
@@ -40,6 +39,10 @@ public class LectureRecommendationService {
 	private final Map<Long, StringBuilder> conversationHistory = new ConcurrentHashMap<>();
 	// 수집된 정보 저장 (chatRoomId -> 수집된 정보)
 	private final Map<Long, Map<String, String>> collectedInfo = new ConcurrentHashMap<>();
+	// 추천 완료 상태 추적 (chatRoomId -> 추천 완료 여부)
+	private final Map<Long, Boolean> recommendationCompleted = new ConcurrentHashMap<>();
+	// 마지막 추천 정보 저장 (chatRoomId -> 마지막 추천 조건)
+	private final Map<Long, String> lastRecommendationCriteria = new ConcurrentHashMap<>();
 
 	public ChatMessageResponse recommendationResponse(String query, User.MembershipLevel membershipLevel,
 		Long chatRoomId, WebSocketSession session) {
@@ -76,6 +79,13 @@ public class LectureRecommendationService {
 			return handleFirstConversation(userMessage, chatRoomId, membershipLevel, session);
 		}
 
+		// 추천 완료 후 대화인지 확인
+		Boolean isRecommendationCompleted = recommendationCompleted.get(chatRoomId);
+		if (Boolean.TRUE.equals(isRecommendationCompleted)) {
+			return handlePostRecommendationConversation(userMessage, chatRoomId, membershipLevel, session, history,
+				info);
+		}
+
 		// AI에게 대화 분석 및 다음 단계 결정 요청
 		ChatMessageResponse analysisResponse = aiService.analyzeConversationAndDecideNext(history.toString(), info,
 			userMessage, membershipLevel, session, chatRoomId);
@@ -109,6 +119,20 @@ public class LectureRecommendationService {
 		return response;
 	}
 
+	private ChatMessageResponse handlePostRecommendationConversation(String userMessage, Long chatRoomId,
+		User.MembershipLevel membershipLevel, WebSocketSession session, StringBuilder history,
+		Map<String, String> info) {
+		// AI 기반 재추천 판단
+		if (aiService.isRerecommendationByAI(userMessage)) {
+			log.info("AI가 재추천 요청으로 판단: chatRoomId={}, message={}", chatRoomId, userMessage);
+			recommendationCompleted.put(chatRoomId, false);
+			aiService.extractAndUpdateInfoByAI(info, userMessage);
+			return generateFinalRecommendation(info, chatRoomId, membershipLevel);
+		}
+		// 일반적인 대화 처리
+		return aiService.handlePostRecommendationConversation(userMessage, membershipLevel, session, chatRoomId);
+	}
+
 	private ChatMessageResponse generateFinalRecommendation(Map<String, String> collectedInfo, Long chatRoomId,
 		User.MembershipLevel membershipLevel) {
 		try {
@@ -119,7 +143,7 @@ public class LectureRecommendationService {
 			List<Lecture> cachedLecture = cacheService.search(searchQuery);
 
 			if (cachedLecture != null && !cachedLecture.isEmpty()) {
-				return respondWithLectures(cachedLecture, collectedInfo, searchQuery, membershipLevel,chatRoomId);
+				return respondWithLectures(cachedLecture, collectedInfo, searchQuery, membershipLevel, chatRoomId);
 			}
 
 			List<Lecture> similarLectures = ragService.searchSimilarLectures(searchQuery);
@@ -137,7 +161,14 @@ public class LectureRecommendationService {
 
 			//cache에 강의 없을 때 저장
 			cacheService.storeVector(searchQuery, similarLectures);
-			return respondWithLectures(similarLectures, collectedInfo, searchQuery, membershipLevel,chatRoomId);
+			ChatMessageResponse response = respondWithLectures(similarLectures, collectedInfo, searchQuery,
+				membershipLevel, chatRoomId);
+
+			// 추천 완료 상태 설정
+			recommendationCompleted.put(chatRoomId, true);
+			lastRecommendationCriteria.put(chatRoomId, formatCollectedInfo(collectedInfo));
+
+			return response;
 
 		} catch (Exception e) {
 			log.error("강의 검색 중 오류 발생: chatRoomId={}, error={}", chatRoomId, e.getMessage(), e);
@@ -200,7 +231,33 @@ public class LectureRecommendationService {
 
 		// AI에게 추천 메시지 생성 요청 (score 정보 포함된 recommendations 전달)
 		String promptText = buildRecommendationPrompt(collectedInfo, recommendations);
-		return aiService.getRecommendations(promptText, true, membershipLevel);
+
+
+		ChatMessageResponse recommendationResponse = aiService.getRecommendations(promptText.toString(), true,
+			membershipLevel);
+
+		// 추천 완료 후 followup 메시지 추가
+		if (recommendationResponse.getMessageType() == MessageType.RECOMMENDATION) {
+			String followupMessage = String.format(AiConstants.RECOMMENDATION_FOLLOWUP,
+				collectedInfo.getOrDefault(AiConstants.INFO_INTEREST, "요청하신 조건"));
+
+			// followup 메시지를 대화 히스토리에 추가
+			StringBuilder history = conversationHistory.get(chatRoomId);
+			if (history != null) {
+				history.append("AI: ").append(followupMessage).append("\n");
+			}
+
+			// followup 메시지를 recommendationResponse에 포함하여 반환
+			// 메시지 필드에 followup 메시지를 포함
+			recommendationResponse = ChatMessageResponse.builder()
+				.message(followupMessage)
+				.recommendations(recommendationResponse.getRecommendations())
+				.isAiResponse(true)
+				.messageType(MessageType.RECOMMENDATION)
+				.build();
+		}
+
+		return recommendationResponse;
 	}
 
 	//문자열 포맷팅
@@ -240,6 +297,9 @@ public class LectureRecommendationService {
 			formatCollectedInfo(collectedInfo),
 			lectureInfo
 		);
+
+
+
 	}
 
 	private List<Lecture> applyPriceFilter(List<Lecture> lectures, String priceCondition) {
@@ -248,8 +308,8 @@ public class LectureRecommendationService {
 			return lectures;
 		}
 
-		 Integer minPrice = null;
-		 Integer maxPrice = null;
+		Integer minPrice = null;
+		Integer maxPrice = null;
 
 		Pattern p = Pattern.compile("(\\d + )(만원)?\\s*(이하||이상)?");
 		Matcher m = p.matcher(priceCondition);
@@ -258,7 +318,7 @@ public class LectureRecommendationService {
 			int price = Integer.parseInt(m.group(1)) * 10000;
 			String condition = m.group(3);
 
-			if ("이하".equals(condition)){
+			if ("이하".equals(condition)) {
 				maxPrice = price;
 			} else if ("이상".equals(condition)) {
 				minPrice = price;
@@ -270,19 +330,19 @@ public class LectureRecommendationService {
 		final Integer finalMinPrice = minPrice;
 		final Integer finalMaxPrice = maxPrice;
 
-		log.info("적용할 가격 필터 - minPrice: {} , maxPrice: {}",finalMinPrice,finalMaxPrice);
+		log.info("적용할 가격 필터 - minPrice: {} , maxPrice: {}", finalMinPrice, finalMaxPrice);
 
 		return lectures.stream()
 			.filter(l -> {
-			BigDecimal lecturePrice = l.isFree() ? BigDecimal.ZERO : l.getPayPrice();
-			if (finalMinPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMinPrice)) < 0){
-				return false;
-			}
-			if (finalMaxPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMaxPrice)) > 0) {
-				return false;
-			}
-			return true;
-		})
+				BigDecimal lecturePrice = l.isFree() ? BigDecimal.ZERO : l.getPayPrice();
+				if (finalMinPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMinPrice)) < 0) {
+					return false;
+				}
+				if (finalMaxPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMaxPrice)) > 0) {
+					return false;
+				}
+				return true;
+			})
 			.collect(Collectors.toList());
 	}
 
@@ -332,6 +392,8 @@ public class LectureRecommendationService {
 	private void resetChatState(Long chatRoomId) {
 		conversationHistory.remove(chatRoomId);
 		collectedInfo.remove(chatRoomId);
+		recommendationCompleted.remove(chatRoomId);
+		lastRecommendationCriteria.remove(chatRoomId);
 	}
 
 	private ChatMessageResponse createErrorResponse(String errorMessage) {
@@ -356,8 +418,8 @@ public class LectureRecommendationService {
 	private boolean isReadyForRecommendation(Map<String, String> collectedInfo, User.MembershipLevel membershipLevel) {
 		// 기본 필수 정보: 관심분야, 목표, 난이도
 		boolean hasBasicInfo = collectedInfo.containsKey(AiConstants.INFO_INTEREST) &&
-			   collectedInfo.containsKey(AiConstants.INFO_GOAL) &&
-			   collectedInfo.containsKey(AiConstants.INFO_LEVEL);
+			collectedInfo.containsKey(AiConstants.INFO_GOAL) &&
+			collectedInfo.containsKey(AiConstants.INFO_LEVEL);
 
 		// PRO 회원의 경우 가격 정보도 필수
 		if (User.MembershipLevel.PRO.equals(membershipLevel)) {

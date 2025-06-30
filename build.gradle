@@ -88,6 +88,7 @@ dependencies {
 
     //batch
     implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'org.flywaydb:flyway-core:9.22.3'
 
 
     // Bucket4j + Redis

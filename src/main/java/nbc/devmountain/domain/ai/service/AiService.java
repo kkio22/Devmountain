@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import nbc.devmountain.common.monitering.CustomMetrics;
 import nbc.devmountain.domain.user.model.User;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -42,6 +43,7 @@ public class AiService {
 	private final ObjectMapper objectMapper;
 	private final StreamingChatModel streamingChatModel;
 	private final ChatMessageService chatMessageService;
+	private final CustomMetrics customMetrics;
 
 	public ChatMessageResponse analyzeConversationAndDecideNext(
 		String conversationHistory,
@@ -50,6 +52,8 @@ public class AiService {
 		User.MembershipLevel membershipLevel,
 		WebSocketSession session,
 		Long chatRoomId) {
+
+		customMetrics.incrementAiRequest(); // 모니터링(ai 요청수 체크)
 
 		//AI 기반 정보 추출 및 업데이트
 		extractAndUpdateInfoByAI(collectedInfo, latestUserMessage);
@@ -113,6 +117,7 @@ public class AiService {
 						String json = objectMapper.writeValueAsString(message);
 						if (json != null && !json.trim().isEmpty()) { // null 체크
 							session.sendMessage(new TextMessage(json));
+							customMetrics.incrementAiRequest(); // 모니터링(ai 요청수 체크)
 						}
 					} catch (Exception e) {
 						log.warn("[AiService] 메시지 청크 전송 실패", e);
@@ -176,7 +181,7 @@ public class AiService {
 		}
 	}
 
-	private void extractAndUpdateInfoByAI(Map<String, String> collectedInfo, String userMessage) {
+	public void extractAndUpdateInfoByAI(Map<String, String> collectedInfo, String userMessage) {
 		SystemMessage systemMessage = new SystemMessage(AiConstants.INFO_CLASSIFICATION_PROMPT);
 
 		String promptText = String.format(
@@ -259,6 +264,7 @@ public class AiService {
 
 	public ChatMessageResponse getRecommendations(String promptText, boolean isFinalRecommendation,
 		User.MembershipLevel membershipLevel) {
+		customMetrics.incrementAiRequest(); // 모니터링(ai 요청수 체크)
 		SystemMessage systemMessage = new SystemMessage(AiConstants.RECOMMENDATION_PROMPT);
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 		log.info("[AiService] 추천 프롬프트 전송 >>>\n{}", promptText);
@@ -364,5 +370,36 @@ public class AiService {
 	public String summarizeChatRoomName(String chatHistory) {
 		String prompt = AiConstants.SUMMARIZATION_CHATROOM_PROMPT + "\n\n[대화 내용]\n" + chatHistory;
 		return chatModel.call(prompt);
+	}
+
+	public ChatMessageResponse handlePostRecommendationConversation(String userMessage, User.MembershipLevel membershipLevel,
+		WebSocketSession session, Long chatRoomId) {
+		
+		SystemMessage systemMessage = new SystemMessage(AiConstants.POST_RECOMMENDATION_CONVERSATION_PROMPT);
+		String promptText = String.format(
+			"사용자 메시지: %s\n\n회원 등급: %s",
+			userMessage,
+			membershipLevel
+		);
+		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
+		log.info("[AiService] 추천 완료 후 대화 프롬프트 전송 >>>\n{}", promptText);
+
+		// 스트리밍 메소드 호출
+		return streamChatResponse(prompt, session, chatRoomId, membershipLevel);
+	}
+
+
+
+	public boolean isRerecommendationByAI(String userMessage) {
+		SystemMessage systemMessage = new SystemMessage(AiConstants.RERECOMMENDATION_DETECT_PROMPT);
+		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage("Q: '" + userMessage + "'\nA:")));
+		try {
+			ChatResponse response = chatModel.call(prompt);
+			String aiAnswer = response.getResult().getOutput().getText().trim();
+			return aiAnswer.equalsIgnoreCase("YES");
+		} catch (Exception e) {
+			log.warn("[AiService] 재추천 판단 AI 호출 실패: {}", e.getMessage());
+			return false;
+		}
 	}
 }
