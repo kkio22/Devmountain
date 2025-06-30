@@ -13,9 +13,9 @@ import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("batches/result")
+@RequestMapping("/batches/result")
 public class JobResultController {
-	@GetMapping("inflearn")
+	@GetMapping("/inflearn")
 	public ResponseEntity<String> CrawlingResult() throws IOException {
 		//해당 파일을 참조하는 경로 객체를 만듬
 		Path path = Path.of("inflearn-batch-result.txt");
@@ -30,7 +30,7 @@ public class JobResultController {
 
 	}
 
-	@GetMapping("embedding")
+	@GetMapping("/embedding")
 	public ResponseEntity<String> EmbeddingResult() throws IOException {
 		//해당 파일을 참조하는 경로 객체를 만듬
 		Path path = Path.of("embedding-batch-result.txt");
