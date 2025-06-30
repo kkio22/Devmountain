@@ -70,10 +70,11 @@ public class AiService {
 		// 프롬프트 생성
 		SystemMessage systemMessage = new SystemMessage(AiConstants.CONVERSATION_ANALYSIS_PROMPT);
 		String promptText = String.format(
-			"현재 대화 히스토리:\n%s\n\n현재 수집된 정보:\n%s\n\n최신 사용자 메시지: %s",
+			"현재 대화 히스토리:\n%s\n\n현재 수집된 정보:\n%s\n\n최신 사용자 메시지: %s, 사용자 등급:%s",
 			conversationHistory,
 			formatCollectedInfo(collectedInfo),
-			latestUserMessage
+			latestUserMessage,
+			membershipLevel
 		);
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 		log.info("[AiService] 대화 스트리밍 프롬프트 전송 >>>\n{}", promptText);

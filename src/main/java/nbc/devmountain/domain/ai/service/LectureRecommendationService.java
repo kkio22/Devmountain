@@ -15,6 +15,7 @@ import org.springframework.web.socket.WebSocketSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.constant.AiConstants;
+import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
@@ -232,7 +233,6 @@ public class LectureRecommendationService {
 		// AI에게 추천 메시지 생성 요청 (score 정보 포함된 recommendations 전달)
 		String promptText = buildRecommendationPrompt(collectedInfo, recommendations);
 
-
 		ChatMessageResponse recommendationResponse = aiService.getRecommendations(promptText.toString(), true,
 			membershipLevel);
 
@@ -256,7 +256,6 @@ public class LectureRecommendationService {
 				.messageType(MessageType.RECOMMENDATION)
 				.build();
 		}
-
 		return recommendationResponse;
 	}
 
@@ -297,9 +296,6 @@ public class LectureRecommendationService {
 			formatCollectedInfo(collectedInfo),
 			lectureInfo
 		);
-
-
-
 	}
 
 	private List<Lecture> applyPriceFilter(List<Lecture> lectures, String priceCondition) {
@@ -413,19 +409,5 @@ public class LectureRecommendationService {
 				chatRoomService.updateChatRoomName(chatRoom.getUser().getUserId(), chatRoomId, summarizedName);
 			}
 		});
-	}
-
-	private boolean isReadyForRecommendation(Map<String, String> collectedInfo, User.MembershipLevel membershipLevel) {
-		// 기본 필수 정보: 관심분야, 목표, 난이도
-		boolean hasBasicInfo = collectedInfo.containsKey(AiConstants.INFO_INTEREST) &&
-			collectedInfo.containsKey(AiConstants.INFO_GOAL) &&
-			collectedInfo.containsKey(AiConstants.INFO_LEVEL);
-
-		// PRO 회원의 경우 가격 정보도 필수
-		if (User.MembershipLevel.PRO.equals(membershipLevel)) {
-			return hasBasicInfo && collectedInfo.containsKey(AiConstants.INFO_PRICE);
-		}
-
-		return hasBasicInfo;
 	}
 }
