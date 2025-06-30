@@ -7,8 +7,9 @@ import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.user.model.User;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 @Entity
 @Table(name = "Recommendation")
 @Getter
@@ -33,14 +34,12 @@ public class Recommendation {
     @JoinColumn(name = "lecture_id")
     private Lecture lecture;
 
+    @JsonProperty("score")
     private Float score;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LectureType type;
-
-    @Column(columnDefinition = "TEXT")
-    private String externalLectureJson;
 
     @CreatedDate
     @Column(updatable = false)

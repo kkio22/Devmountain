@@ -365,7 +365,8 @@ class AiServiceTest {
 			"https://www.example.com/course/",
 			"15000원",
 			"false",
-				"VECTOR"
+			"VECTOR",
+			0.5F
 		);
 	}
 }

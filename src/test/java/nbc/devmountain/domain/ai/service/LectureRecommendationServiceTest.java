@@ -390,7 +390,7 @@ class LectureRecommendationServiceTest {
 
 	private RecommendationDto createMockRecommendation() {
 		return new RecommendationDto(1L, "thumbnail.jpg", "스프링 입문 강의", "스프링 프레임워크 기초 학습", "김강사", "초급",
-			"https://www.example.com/course/", "15000", "false", "VECTOR");
+			"https://www.example.com/course/", "15000", "false", "VECTOR",0.5f);
 	}
 
 	private BraveSearchResponseDto mockBraveSearchResponse() {
