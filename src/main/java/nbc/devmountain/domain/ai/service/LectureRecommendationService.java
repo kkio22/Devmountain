@@ -15,6 +15,7 @@ import org.springframework.web.socket.WebSocketSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.constant.AiConstants;
+import nbc.devmountain.domain.ai.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
@@ -147,29 +148,86 @@ public class LectureRecommendationService {
 
 	private ChatMessageResponse respondWithLectures(List<Lecture> lectureList, Map<String, String> collectedInfo,
 		String searchQuery, User.MembershipLevel membershipLevel,Long chatRoomId) {
-		String lectureInfo = lectureList.stream()
-			.map(l -> """
+
+		// 각 강의에 대해 유사도 점수 계산하여 RecommendationDto 생성
+		List<RecommendationDto> recommendations = lectureList.stream()
+			.map(l -> {
+				Float score = (float) ragService.calculateSimilarityWithLectureId(searchQuery, l.getLectureId());
+				return new RecommendationDto(
+					l.getLectureId(),
+					l.getThumbnailUrl(),
+					l.getTitle(),
+					l.getDescription(),
+					l.getInstructor(),
+					l.getLevelCode(),
+					"https://www.inflearn.com/search?s=" + l.getTitle(),
+					l.isFree() ? "0" : (l.getPayPrice() != null ? l.getPayPrice().toPlainString() : "0"),
+					l.isFree() ? "true" : "false",
+					"VECTOR",
+					score
+				);
+			})
+			.collect(Collectors.toList());
+
+		// Brave 검색 결과 추가 (회원)
+		if (!User.MembershipLevel.GUEST.equals(membershipLevel)) {
+			BraveSearchResponseDto braveResponse = braveSearchService.search(searchQuery);
+			log.info("Brave API 요청 쿼리: {}", searchQuery);
+			List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
+			if (braveResults != null && !braveResults.isEmpty()) {
+				List<RecommendationDto> braveRecommendations = braveResults.stream()
+					.map(r -> new RecommendationDto(  //BraveSearch : title,description,url,thumbnailWrapper
+						null,  //lectureId
+						r.thumbnail(), // thumbnailUrl
+						r.title(),     // title
+						r.description(), // description
+						null,          // instructor
+						null,          // level
+						r.url(),       // url
+						null,          // payPrice
+						null,          // isFree
+						"BRAVE",       // type
+						null       	   // score
+					))
+					.toList();
+
+				recommendations.addAll(braveRecommendations);
+			}
+			if (chatRoomId != null) {
+				maybeUpdateChatRoomName(chatRoomId);
+			}
+		}
+
+		// AI에게 추천 메시지 생성 요청 (score 정보 포함된 recommendations 전달)
+		String promptText = buildRecommendationPrompt(collectedInfo, recommendations);
+		return aiService.getRecommendations(promptText, true, membershipLevel);
+	}
+
+	//문자열 포맷팅
+	private String buildRecommendationPrompt(Map<String, String> collectedInfo, List<RecommendationDto> recommendations) {
+		String lectureInfo = recommendations.stream()
+			.map(rec -> String.format("""
                 {
-                    "lectureId": "%d",
+                    "lectureId": "%s",
+                    "thumbnailUrl": "%s",
                     "title": "%s",
                     "description": "%s",
                     "instructor": "%s",
                     "level": "%s",
-                    "thumbnailUrl": "%s",
-                    "url": "https://www.inflearn.com/search?s=%s",
-                    "payPrice" : "%s",
-                    "isFree" : "%s"
-                }
-                """.formatted(
-					l.getLectureId(), l.getTitle(), l.getDescription(), l.getInstructor(),
-					l.getLevelCode(), l.getThumbnailUrl(), l.getTitle(),
-					l.isFree() ? "0" : (l.getPayPrice() != null ? l.getPayPrice().toPlainString() : "0"),
-					l.isFree() ? "true" : "false")
-				)
-				.collect(Collectors.joining(",\n"));
+                    "url": "%s",
+                    "payPrice": "%s",
+                    "isFree": "%s",
+                    "type": "%s",
+                    "score": %s
+                }""",
+				rec.lectureId(), rec.thumbnailUrl(), rec.title(),
+				rec.description(), rec.instructor(), rec.level(),
+				rec.url(), rec.payPrice(), rec.isFree(),
+				rec.type(), rec.score() != null ? rec.score().toString() : "null"
+			))
+			.collect(Collectors.joining(",\n"));
 
-		StringBuilder promptText = new StringBuilder();
-		promptText.append(String.format("""
+		return String.format("""
             [수집된 사용자 정보]
             %s
             
@@ -181,39 +239,7 @@ public class LectureRecommendationService {
             }""",
 			formatCollectedInfo(collectedInfo),
 			lectureInfo
-		));
-
-		if (!User.MembershipLevel.GUEST.equals(membershipLevel)) {
-			BraveSearchResponseDto braveResponse = braveSearchService.search(searchQuery);
-			log.info("Brave API 요청 쿼리: {}", searchQuery);
-			List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
-			if (braveResults != null && !braveResults.isEmpty()) {
-				String braveInfo = braveResults.stream()
-					.map(r -> """
-                        {
-                            "lectureId": null,
-                            "title": "%s",
-                            "description": "%s",
-                            "instructor": null,
-                            "level": null,
-                            "thumbnailUrl": "%s",
-                            "url": "%s"
-                        }
-                        """.formatted(
-						r.title(), r.description(), r.thumbnail(), r.url()))
-					.collect(Collectors.joining(",\n"));
-
-				promptText.append("\n\n[브레이브 검색 결과]\n")
-					.append("{\n    \"recommendations\": [\n")
-					.append(braveInfo)
-					.append("\n    ]\n}");
-			}
-			if (chatRoomId != null) {
-				maybeUpdateChatRoomName(chatRoomId);
-			}
-		}
-
-		return aiService.getRecommendations(promptText.toString(), true, membershipLevel);
+		);
 	}
 
 	private List<Lecture> applyPriceFilter(List<Lecture> lectures, String priceCondition) {
