@@ -15,14 +15,14 @@ import nbc.devmountain.common.response.ApiResponse;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("lectures")
+@RequestMapping("/lectures")
 public class LectureController {
 
 	private final Job lectureCrawlingJob;
 	private final JobLauncher jobLauncher;
 	private final Job lectureEmbeddingJob;
 
-	@GetMapping("inflearn")
+	@GetMapping("/inflearn")
 	public ResponseEntity<ApiResponse<Void>> getLecture() {
 		try {
 			JobParameters jobParameters = new JobParametersBuilder()
@@ -36,7 +36,7 @@ public class LectureController {
 		}
 	}
 
-	@PostMapping("embedding")
+	@PostMapping("/embedding")
 	public ResponseEntity<ApiResponse<Void>> embedLecture() {
 		try {
 			JobParameters jobParameters = new JobParametersBuilder()
