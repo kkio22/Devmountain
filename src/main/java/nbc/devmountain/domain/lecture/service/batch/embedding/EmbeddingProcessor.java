@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-
 import org.springframework.ai.document.Document;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemProcessor;
@@ -22,6 +21,7 @@ import nbc.devmountain.domain.lecture.repository.LectureSkillTagRepository;
 public class EmbeddingProcessor implements ItemProcessor<Lecture, Document> {
 
 	private final LectureSkillTagRepository lectureSkillTagRepository;
+
 	@Override
 	public Document process(Lecture lecture) throws Exception {
 		/*
@@ -48,10 +48,8 @@ public class EmbeddingProcessor implements ItemProcessor<Lecture, Document> {
 
 			Document document = new Document(UUID.randomUUID().toString(), content, metadata);
 
-			log.info("강의 document로 매핑 완료: {}", document.getId());
-
 			return document;
-		}catch (Exception e){
+		} catch (Exception e) {
 			log.error("임베딩 실패 (lectureId: {}): {}", lecture.getLectureId(), e.getMessage());
 			return null;
 		}
