@@ -73,4 +73,6 @@ public class InflearnJobResultListener implements JobExecutionListener {
 	public void beforeJob(JobExecution jobExecution) {
 		// 배치 Job 시작 전 동작
 	}
+
 }
+
