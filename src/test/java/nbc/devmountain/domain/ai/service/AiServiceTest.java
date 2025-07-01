@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.user.model.User;
@@ -369,7 +368,8 @@ class AiServiceTest {
 			"https://www.example.com/course/",
 			"15000원",
 			"false",
-				"VECTOR"
+			"VECTOR",
+			0.5F
 		);
 	}
 }
