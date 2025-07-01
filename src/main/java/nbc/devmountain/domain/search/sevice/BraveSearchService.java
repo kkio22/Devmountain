@@ -20,7 +20,7 @@ public class BraveSearchService {
     public BraveSearchResponseDto search(String query) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Accept", "application/json");
-        headers.set("X-Subscription-Token", braveSearchProperties.getKey());
+        headers.set("X-Subscription-Token", braveSearchProperties.getNextKey());
 
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
         String url = braveSearchProperties.getUrl() + "?q=" + query;
