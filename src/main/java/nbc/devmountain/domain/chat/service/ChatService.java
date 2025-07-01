@@ -62,18 +62,18 @@ public class ChatService {
 				aiMsg = aiResponse;
 			}
 			messageSender.sendMessageToRoom(roomId, aiMsg);
-
-		} else if (aiResponse.getMessageType() == MessageType.CHAT) {
+/*		} else if (aiResponse.getMessageType() == MessageType.CHAT) {
 			// 일반 대화 메시지 처리
 			if (membershipType != User.MembershipLevel.GUEST) {
 				ChatMessageResponse aiMsg = chatMessageService.createAIMessage(roomId, aiResponse);
 				messageSender.sendMessageToRoom(roomId, aiMsg);
 			} else {
 				messageSender.sendMessageToRoom(roomId, aiResponse);
-			}
+			}*/
 		}
 	}
 
+/*
 	private void sendFollowupMessage(Long roomId, User.MembershipLevel membershipType, String followupMessage) {
 		try {
 			// followup 메시지 생성
@@ -96,6 +96,7 @@ public class ChatService {
 			log.error("Followup 메시지 전송 실패: roomId={}, error={}", roomId, e.getMessage(), e);
 		}
 	}
+*/
 
 	public List<ChatMessageResponse> getChatHistory(Long userId, Long roomId) {
 		return chatMessageService.getMessages(userId, roomId);

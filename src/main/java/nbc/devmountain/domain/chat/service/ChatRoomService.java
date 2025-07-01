@@ -10,7 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.chat.model.ChatRoom;
-import nbc.devmountain.domain.chat.RoomType;
+import nbc.devmountain.domain.chat.model.RoomType;
 import nbc.devmountain.domain.chat.dto.ChatRoomDetailResponse;
 import nbc.devmountain.domain.chat.dto.ChatRoomResponse;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
