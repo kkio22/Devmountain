@@ -47,7 +47,7 @@ public class InflearnJobResultListener implements JobExecutionListener {
 				String formatEndTime = endTime.format(dateTimeFormatter);
 
 				String summary = String.format(
-					"Step 이름: %s\n Job 시작 시간: %s\n 인프런에서 가져온 강의 수: %d\n DB에 저장한 강의 수: %d\n Job 종료 시간: %s\n", stepName,
+					"Step 이름: %s\n Job 시작 시간: %s\n 인프런에서 가져온 페이지 수: %d\n DB에 저장한 페이지 수: %d\n Job 종료 시간: %s\n", stepName,
 					formatStartTime, reader, writer, formatEndTime);
 
 				stringBuilder.append(summary);
