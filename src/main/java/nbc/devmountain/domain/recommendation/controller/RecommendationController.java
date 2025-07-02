@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.response.ApiResponse;
 import nbc.devmountain.common.util.security.CustomUserPrincipal;
-import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationHistory;
 import nbc.devmountain.domain.recommendation.service.RecommendationService;
 
 @RestController
@@ -26,11 +26,11 @@ public class RecommendationController {
 	private final RecommendationService recommendationService;
 
 	@GetMapping("/history")
-	public ResponseEntity<ApiResponse<List<RecommendationDto>>> getRecommendationHistory(
+	public ResponseEntity<ApiResponse<List<RecommendationHistory>>> getRecommendationHistory(
 		@AuthenticationPrincipal CustomUserPrincipal loginUser,
 		@PageableDefault(size = 10) Pageable pageable
 	) {
-		Page<RecommendationDto> page = recommendationService.getRecommendationByUserId(loginUser.getUserId(), pageable);
+		Page<RecommendationHistory> page = recommendationService.getRecommendationByUserId(loginUser.getUserId(), pageable);
 		return ResponseEntity.ok(
 			ApiResponse.of(true, "강의 추천 기록 조회", HttpStatus.OK.value(), page.getContent()));
 	}

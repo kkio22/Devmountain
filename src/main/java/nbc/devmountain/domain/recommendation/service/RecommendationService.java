@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationHistory;
+import nbc.devmountain.domain.recommendation.model.Recommendation;
 import nbc.devmountain.domain.recommendation.repository.RecommendationRepository;
 
 @Service
@@ -16,8 +18,18 @@ public class RecommendationService {
 
 	private final RecommendationRepository recommendationRepository;
 
-	public Page<RecommendationDto> getRecommendationByUserId(Long userId, Pageable pageable) {
-		return recommendationRepository.findByUserUserIdOrderByCreatedAtDesc(userId, pageable)
-			.map(RecommendationDto::from);
+	@Transactional(readOnly = true)
+	public Page<RecommendationHistory> getRecommendationByUserId(Long userId, Pageable pageable) {
+		Page<Recommendation> page = recommendationRepository.findByUserUserIdOrderByCreatedAtDesc(userId, pageable);
+
+		return page.map(this::toDto);
+	}
+
+	private RecommendationHistory toDto(Recommendation rec) {
+		return switch (rec.getType()) {
+			case VECTOR -> RecommendationHistory.fromLecture(rec);
+			case YOUTUBE -> RecommendationHistory.fromYoutube(rec);
+			case BRAVE -> RecommendationHistory.fromWebSearch(rec);
+		};
 	}
 }
