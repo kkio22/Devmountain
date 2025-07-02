@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.lecture.model.Lecture;
@@ -26,6 +27,7 @@ public class CacheService {
 	@Qualifier("redisObjectMapper")
 	private final ObjectMapper redisObjectMapper;
 	private final RedisVectorStore redisVectorStore;
+	private final MeterRegistry meterRegistry;
 	private static final String LECTURE_CACHE_PREFIX = "lecture: ";
 
 	//새로운 질문과 비슷한 강의가 레디스에 없어서 저장 로직
@@ -62,13 +64,18 @@ public class CacheService {
 
 			log.info("강의 유사도 질문 {}", pastQuery);
 
+			meterRegistry.counter("redis.cache.hit.count", "source", "cache", "result", "hit").increment();
+
 			if (cached instanceof List<?> cachedList && !cachedList.isEmpty()) {
-				return cachedList.stream()
-					.map(linkedHashMap -> mapToLecture((LinkedHashMap<String, ?>)linkedHashMap)) // 코드
-					.toList();
+				return meterRegistry.timer("recommendation.response.time", "source", "cache")
+					.record(() -> cachedList.stream()
+					.map(linkedHashMap -> mapToLecture((LinkedHashMap<String, ?>)linkedHashMap))
+					.toList());
 			}
 		}
 
+
+		meterRegistry.counter("redis.cache.miss.count", "source", "cache", "result", "miss").increment();
 		return List.of();
 	}
 

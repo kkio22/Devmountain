@@ -9,6 +9,7 @@ import org.springframework.web.socket.WebSocketSession;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.slf4j.Slf4j;
+
 import nbc.devmountain.common.util.security.SessionUser;
 import nbc.devmountain.domain.ai.service.LectureRecommendationService;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
@@ -31,9 +32,9 @@ public class ChatService {
 
 		if (membershipType == User.MembershipLevel.GUEST) {
 			Integer guestCount = (Integer)session.getAttributes().getOrDefault("guestCount", 0);
-			if (guestCount >= 5) {
+			if (guestCount >= 10) {
 				ChatMessageResponse limitMsg = ChatMessageResponse.builder()
-					.message("비회원은 최대 5개의 메세지만 보낼 수 있습니다. 더 이용하려면 로그인을 해주세요.")
+					.message("비회원은 최대 10개의 메세지만 보낼 수 있습니다. 더 이용하려면 로그인을 해주세요.")
 					.isAiResponse(true)
 					.messageType(MessageType.ERROR)
 					.build();
@@ -52,9 +53,47 @@ public class ChatService {
 		ChatMessageResponse aiResponse = recommendationService.recommendationResponse(payload, membershipType, roomId,
 			session);
 
-		if (aiResponse.getMessageType() == MessageType.RECOMMENDATION && aiResponse.getRecommendations() != null
-			&& !aiResponse.getRecommendations().isEmpty()) {
-			messageSender.sendMessageToRoom(roomId, aiResponse);
+		if (aiResponse.getMessageType() == MessageType.RECOMMENDATION) {
+			ChatMessageResponse aiMsg;
+			if (membershipType != User.MembershipLevel.GUEST) {
+				aiMsg = chatMessageService.createAIMessage(roomId, aiResponse);
+				log.info("AI 추천 메시지 생성 완료");
+			} else {
+				aiMsg = aiResponse;
+			}
+			messageSender.sendMessageToRoom(roomId, aiMsg);
+
+		} else if (aiResponse.getMessageType() == MessageType.CHAT) {
+			// 일반 대화 메시지 처리
+			if (membershipType != User.MembershipLevel.GUEST) {
+				ChatMessageResponse aiMsg = chatMessageService.createAIMessage(roomId, aiResponse);
+				messageSender.sendMessageToRoom(roomId, aiMsg);
+			} else {
+				messageSender.sendMessageToRoom(roomId, aiResponse);
+			}
+		}
+	}
+
+	private void sendFollowupMessage(Long roomId, User.MembershipLevel membershipType, String followupMessage) {
+		try {
+			// followup 메시지 생성
+			ChatMessageResponse followupResponse = ChatMessageResponse.builder()
+				.message(followupMessage)
+				.isAiResponse(true)
+				.messageType(MessageType.CHAT)
+				.build();
+
+			// 회원인 경우 DB에 저장
+			if (membershipType != User.MembershipLevel.GUEST) {
+				ChatMessageResponse savedFollowup = chatMessageService.createAIMessage(roomId, followupResponse);
+				messageSender.sendMessageToRoom(roomId, savedFollowup);
+			} else {
+				messageSender.sendMessageToRoom(roomId, followupResponse);
+			}
+
+			log.info("추천 완료 후 followup 메시지 전송 완료: roomId={}", roomId);
+		} catch (Exception e) {
+			log.error("Followup 메시지 전송 실패: roomId={}, error={}", roomId, e.getMessage(), e);
 		}
 	}
 

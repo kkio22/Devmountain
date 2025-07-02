@@ -12,7 +12,7 @@ services:
       - "--web.enable-lifecycle"
     restart: always
     networks:
-      - devmonntain-net
+      - devmountain-net
     user: root
 
   grafana:
@@ -22,7 +22,7 @@ services:
       - ./monitoring/grafana-volume:/var/lib/grafana
     restart: always
     networks:
-      - devmonntain-net
+      - devmountain-net
     ports:
       - "${GRAFANA_PORT}:3000"
     environment:
@@ -37,8 +37,23 @@ services:
     ports:
       - "${EXPORTER_PORT}:9100"
     networks:
-      - devmonntain-net
+      - devmountain-net
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    container_name: redis-exporter
+    restart: always
+    ports:
+      - "${REDIS_EXPORTER_PORT}:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_EXPORTER_INCL_KEY_PATTERN=lecture:*
+      - REDIS_EXPORTER_INCL_KEYS=1
+    networks:
+      - devmountain-net
+
+
 
 networks:
-  devmonntain-net:
+  devmountain-net:
     external: true

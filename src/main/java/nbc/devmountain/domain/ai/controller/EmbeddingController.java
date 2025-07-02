@@ -17,7 +17,7 @@ public class EmbeddingController {
 	private final EmbeddingService embeddingService;
 
 	@GetMapping("/ai/embedding")
-	public List<Double> embed(@RequestParam String message) {
+	public float[] embed(@RequestParam String message) {
 		return embeddingService.getEmbedding(message);
 	}
 }

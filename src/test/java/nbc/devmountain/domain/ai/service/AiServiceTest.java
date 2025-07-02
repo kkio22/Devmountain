@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nbc.devmountain.common.monitering.CustomMetrics;
 import nbc.devmountain.domain.chat.service.ChatMessageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,7 +30,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.user.model.User;
@@ -54,6 +54,9 @@ class AiServiceTest {
 
 	@Mock
 	private ChatMessageService chatMessageService;
+
+	@Mock
+	private CustomMetrics customMetrics;
 
 	@InjectMocks
 	private AiService aiService;
@@ -82,7 +85,7 @@ class AiServiceTest {
 	void shouldReturnTextResponseForCasualConversation() {
 		// given
 		ChatModel testChatModel = mock(ChatModel.class);
-		AiService testAiService = new AiService(testChatModel, new ObjectMapper(), streamingChatModel, chatMessageService);
+		AiService testAiService = new AiService(testChatModel, new ObjectMapper(), streamingChatModel, chatMessageService, customMetrics);
 
 		String promptText = "대화 요청";
 		String textResponse = "자연스러운 대화 응답입니다.";
@@ -104,7 +107,7 @@ class AiServiceTest {
 	void shouldReturnErrorWhenJsonNotFound() {
 		// given
 		ChatModel testChatModel = mock(ChatModel.class);
-		AiService testAiService = new AiService(testChatModel, new ObjectMapper(), streamingChatModel, chatMessageService);
+		AiService testAiService = new AiService(testChatModel, new ObjectMapper(), streamingChatModel, chatMessageService, customMetrics);
 
 		String promptText = "추천 요청";
 		String nonJsonResponse = "JSON이 아닌 일반 텍스트 응답";
@@ -144,7 +147,7 @@ class AiServiceTest {
          """;
 
 		// 실제 ObjectMapper 사용
-		AiService realAiService = new AiService(chatModel, new ObjectMapper(), streamingChatModel, chatMessageService);
+		AiService realAiService = new AiService(chatModel, new ObjectMapper(), streamingChatModel, chatMessageService, customMetrics);
 		ChatResponse mockChatResponse = createMockChatResponse(jsonResponse);
 
 		when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
@@ -170,7 +173,7 @@ class AiServiceTest {
          }
          """;
 
-		AiService realAiService = new AiService(chatModel, new ObjectMapper(), streamingChatModel, chatMessageService);
+		AiService realAiService = new AiService(chatModel, new ObjectMapper(), streamingChatModel, chatMessageService, customMetrics);
 		ChatResponse mockChatResponse = createMockChatResponse(emptyJsonResponse);
 
 		when(chatModel.call(any(Prompt.class))).thenReturn(mockChatResponse);
@@ -189,7 +192,7 @@ class AiServiceTest {
 		// given
 		ChatModel testChatModel = mock(ChatModel.class);
 		ObjectMapper testObjectMapper = mock(ObjectMapper.class);
-		AiService testAiService = new AiService(testChatModel, testObjectMapper, streamingChatModel, chatMessageService);
+		AiService testAiService = new AiService(testChatModel, testObjectMapper, streamingChatModel, chatMessageService, customMetrics);
 
 		String promptText = "추천 요청";
 		String invalidJsonResponse = "{ invalid json }";
@@ -229,7 +232,7 @@ class AiServiceTest {
 		// given
 		ChatModel testChatModel = mock(ChatModel.class);
 		OpenAiChatModel testStreamingChatModel = mock(OpenAiChatModel.class);
-		AiService testAiService = new AiService(testChatModel, new ObjectMapper(), testStreamingChatModel, chatMessageService);
+		AiService testAiService = new AiService(testChatModel, new ObjectMapper(), testStreamingChatModel, chatMessageService, customMetrics);
 
 		collectedInfo.put(AiConstants.INFO_INTEREST, "자바");
 
@@ -365,7 +368,8 @@ class AiServiceTest {
 			"https://www.example.com/course/",
 			"15000원",
 			"false",
-				"VECTOR"
+			"VECTOR",
+			0.5F
 		);
 	}
 }

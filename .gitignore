@@ -39,7 +39,6 @@ bin/
 .DS_Store
 
 .env
-
 src/main/resources/application*.yml
 monitoring/grafana-volume/*
 src/main/resources/mcp/tools/youtube-mcp.yaml
@@ -55,3 +54,4 @@ ngrinder-controller-*.war
 ngrinder-agent-*.tar
 
 mcp-dist
+

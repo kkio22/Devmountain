@@ -26,11 +26,13 @@ repositories {
 
 ext {
     springAiVersion = "1.0.0-M6"
+    springCloudVersion = "2025.0.0"
 }
 
 dependencyManagement {
     imports {
         mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
     }
 }
 
@@ -86,9 +88,19 @@ dependencies {
     implementation 'org.springframework.ai:spring-ai-redis-store-spring-boot-starter'
     implementation 'redis.clients:jedis:5.1.0'
 
+    //batch
+    implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'org.flywaydb:flyway-core:9.22.3'
+
+
     // Bucket4j + Redis
     implementation 'com.bucket4j:bucket4j-core:8.9.0'
     implementation 'com.bucket4j:bucket4j-redis:8.9.0'
+
+    // Zookeeper + Curator
+    implementation 'org.springframework.cloud:spring-cloud-starter-zookeeper-config'
+    implementation 'org.apache.curator:curator-framework:5.5.0'
+    implementation 'org.apache.curator:curator-recipes:5.5.0'
 
 }
 
