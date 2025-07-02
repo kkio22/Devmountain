@@ -1,0 +1,99 @@
+name: daily-batch-job
+
+on:
+  schedule:
+    - cron: '30 4 * * *'  # 매일 자정(UTC) = 한국 시간 오전 9시
+  workflow_dispatch:     # 수동 실행 버튼 활성화
+
+jobs:
+  run-batch-jobs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 강의 크롤링 Job 실행
+        run: |
+          curl -X GET ${{ secrets.INFLEARN_URL }} \
+               -H "X-API-KEY: ${{ secrets.DEVMOUNTAIN_API_KEY }}"
+
+      - name: 임베딩 Job 실행
+        run: |
+          curl -X POST ${{ secrets.EMBEDDING_URL }} \
+               -H "X-API-KEY: ${{ secrets.DEVMOUNTAIN_API_KEY }}"
+
+      - name: 배치 결과 조회 (inflearn)
+        id: crawling-result
+        run: |
+          result=$(curl -s ${{ secrets.INFLEARN_RESULT_URL }} \
+            -H "X-API-KEY: ${{ secrets.DEVMOUNTAIN_API_KEY }}")
+          {
+            echo "crawling_result<<EOF"
+            echo "$result"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: 배치 결과 조회 (embedding)
+        id: embedding-result
+        run: |
+          result=$(curl -s ${{ secrets.EMBEDDING_RESULT_URL }} \
+            -H "X-API-KEY: ${{ secrets.DEVMOUNTAIN_API_KEY }}")
+          {
+            echo "embedding_result<<EOF"
+            echo "$result"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Notify Slack on Success
+        if: success()
+        id: slack-success
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "✅ 배치 스케줄링 성공"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*✅ 배치 스케줄링 성공했습니다!*"
+              - type: section
+                fields:
+                  - type: mrkdwn
+                    text: "*Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                  - type: mrkdwn
+                    text: "*Tag:*\n${{ github.ref_name }}"
+              - type: divider
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*Inflearn 크롤링 결과:*\n```\n${{ steps.crawling-result.outputs.crawling_result }}\n```"
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*임베딩 결과:*\n```\n${{ steps.embedding-result.outputs.embedding_result }}\n```"
+              - type: context
+                elements:
+                  - type: mrkdwn
+                    text: "이 메시지는 GitHub Actions에 의해 자동 전송되었습니다."
+
+
+      - name: Notify Slack on Failure
+        if: failure() # 이 step은 job이 실패한 경우에만 실행됩니다.
+        id: slack-failure
+        uses: slackapi/slack-github-action@v2.1.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "❌ 배치 스케줄링 실패"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "*❌ 배치 스케줄링에 실패했습니다.*"
+              - type: section
+                fields:
+                  - type: mrkdwn
+                    text: "*Repository:*\n<https://github.com/${{ github.repository }}|${{ github.repository }}>"
+                  - type: mrkdwn
+                    text: "*Tag:*\n${{ github.ref_name }}"

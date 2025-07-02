@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nbc.devmountain.domain.ai.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
@@ -103,24 +103,31 @@ public class ChatMessageService {
 
 				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
 					Lecture lecture = null;
+					Recommendation.LectureType lectureType = null;
 
 					// DB에 저장된 강의인 경우
 					if (recDto.lectureId() != null) {
 						lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
 						if (lecture != null) {
 							log.info("DB 강의 검색 성공: lectureId={}", recDto.lectureId());
+							lectureType = Recommendation.LectureType.VECTOR;
 						} else {
 							log.warn("DB 강의 검색 실패: lectureId={}", recDto.lectureId());
 						}
+					} else if ("YOUTUBE".equalsIgnoreCase(recDto.type())) {
+						lectureType = Recommendation.LectureType.YOUTUBE;
+						log.info("유튜브 검색 결과 추천: title={}", recDto.title());
 					} else {
+						lectureType = Recommendation.LectureType.BRAVE;
 						log.info("브레이브 검색 결과 추천: title={}", recDto.title());
 					}
-					// 추천 기록 저장
+					// 추천 기록 저장 (score 정보 포함)
 					Recommendation recommendation = Recommendation.builder()
 						.chatMessage(savedChatMessage)
 						.user(user)
 						.lecture(lecture)
-						.score(null)
+						.score(recDto.score())
+						.type(lectureType)
 						.build();
 					recommendationRepository.save(recommendation);
 

@@ -43,11 +43,9 @@ public class Lecture {
 	private int likeCount;
 	private double star;
 	private String levelCode;
-	//@JsonProperty("discount")
 	private boolean isDiscount;
 	private BigDecimal payPrice;
 	private BigDecimal regularPrice;
-	//@JsonProperty("free")
 	private boolean isFree;
 	private BigDecimal discountRate;
 	@Column(nullable = false)

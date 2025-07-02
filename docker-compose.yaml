@@ -61,9 +61,19 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SECURITY_API_KEY: ${SECURITY_API_KEY}
     depends_on:
       - redis
       - postgres
+      - redis-stack
+      - zookeeper
+    networks:
+      - devmountain-net
+
+  zookeeper:
+    image: zookeeper:3.8
+    ports:
+        - "2181:2181"
     networks:
       - devmountain-net
 

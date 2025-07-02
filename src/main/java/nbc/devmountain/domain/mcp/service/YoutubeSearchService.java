@@ -25,7 +25,7 @@ public class YoutubeSearchService {
         List<YoutubeSearchResult> results = new ArrayList<>();
 
         try {
-            ProcessBuilder pb = new ProcessBuilder("node", "/app/youtube-mcp-server/dist", keyword);
+            ProcessBuilder pb = new ProcessBuilder("node", "/app/youtube-mcp-server/dist/cli.js", keyword);
             pb.environment().put("YOUTUBE_API_KEY", youtubeSearchProperties.getKey());
             pb.environment().put("YOUTUBE_TRANSCRIPT_LANG", youtubeSearchProperties.getTranscriptLang());
             pb.redirectErrorStream(true);
