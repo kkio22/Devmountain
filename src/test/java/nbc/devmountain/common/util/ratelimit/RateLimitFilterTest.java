@@ -9,6 +9,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.mock.web.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import io.lettuce.core.api.StatefulRedisConnection;
 
 import java.util.function.Supplier;
 
@@ -25,6 +26,7 @@ class RateLimitFilterTest {
 	private BucketProxy bucketMock;
 	private RemoteBucketBuilder<String> bucketBuilderMock;
 	private RateLimitFilter filter;
+	private StatefulRedisConnection<String, byte[]> redisConnectionMock;
 
 	@BeforeEach
 	void setUp() {
@@ -32,9 +34,10 @@ class RateLimitFilterTest {
 		proxyManagerMock = mock(ProxyManager.class);
 		bucketMock = mock(BucketProxy.class);
 		bucketBuilderMock = mock(RemoteBucketBuilder.class);
+		redisConnectionMock = mock(StatefulRedisConnection.class);
 
 		// ProxyManager mock 주입
-		filter = new RateLimitFilter(proxyManagerMock);
+		filter = new RateLimitFilter(proxyManagerMock, redisConnectionMock);
 
 		// Bucket을 생성할 때 mock 반환
 		when(proxyManagerMock.builder()).thenReturn(bucketBuilderMock);

@@ -4,6 +4,9 @@ import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.config.RedisRateLimitProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
@@ -16,11 +19,15 @@ import io.lettuce.core.codec.StringCodec;
 public class RedisRateLimitConfig {
 
 	private final RedisRateLimitProperties properties;
+	private static final Logger log = LoggerFactory.getLogger(RedisRateLimitConfig.class);
 
 	@Bean
-	public RedisClient redisClient() {
-		String url = String.format("redis://%s:%d", properties.getHost(), properties.getPort());
-		System.out.println(url);
+	public RedisClient redisClient(
+		@Value("${ratelimit.redis.host}") String host,
+		@Value("${ratelimit.redis.port}") int port
+	) {
+		String url = String.format("redis://%s:%d", host, port);
+		log.info("Creating RedisClient with url: {}", url);
 		return RedisClient.create(url);
 	}
 
