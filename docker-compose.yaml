@@ -65,6 +65,15 @@ services:
     depends_on:
       - redis
       - postgres
+      - redis-stack
+      - zookeeper
+    networks:
+      - devmountain-net
+
+  zookeeper:
+    image: zookeeper:3.8
+    ports:
+        - "2181:2181"
     networks:
       - devmountain-net
 
