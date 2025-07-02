@@ -65,6 +65,7 @@ services:
     depends_on:
       - redis
       - postgres
+      - redis-stack
     networks:
       - devmountain-net
 
