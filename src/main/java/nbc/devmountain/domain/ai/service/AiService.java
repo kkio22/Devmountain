@@ -289,7 +289,6 @@ public class AiService {
 			rawAiResponse = response.getResult().getOutput().getText();
 		}
 
-		log.info("[AiService] AI 추천 응답 >>>\n{}", rawAiResponse);
 		if (!isFinalRecommendation) {
 			// 일반 대화인 경우 텍스트 그대로 반환
 			return ChatMessageResponse.builder()

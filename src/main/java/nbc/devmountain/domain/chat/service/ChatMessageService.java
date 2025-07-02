@@ -118,49 +118,82 @@ public class ChatMessageService {
 					WebSearch webSearch = null;
 					Recommendation.LectureType lectureType = null;
 
-					if (recDto.lectureId() != null) {
-						//기존강의
-						lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
-						lectureType = Recommendation.LectureType.VECTOR;
-					} else if ("YOUTUBE".equalsIgnoreCase(recDto.type())) {
-						lectureType = Recommendation.LectureType.YOUTUBE;
-						//유튜부 강의 정보 저장
-						 youtube = youtubeRepository.findByUrl(recDto.url());
-						if (youtube == null) {
-							youtube = Youtube.builder()
-								.title(recDto.title())
-								.description(recDto.description())
-								.url(recDto.url())
-								.thumbnailUrl(recDto.thumbnailUrl())
-								.build();
-							youtubeRepository.save(youtube);
-						}
-					} else if ("BRAVE".equalsIgnoreCase(recDto.type())) {
-						lectureType = Recommendation.LectureType.BRAVE;
-						 webSearch = webSearchRepository.findByUrl(recDto.url());
-						if(webSearch==null){
-							webSearch = WebSearch.builder()
-								.title(recDto.title())
-								.description(recDto.description())
-								.url(recDto.url())
-								.build();
-							webSearchRepository.save(webSearch);
+					try {
+						Recommendation.LectureType typeEnum = Recommendation.LectureType.valueOf(
+
+							(recDto.type() != null ? recDto.type() : "VECTOR").toUpperCase()
+						);
+
+						switch (typeEnum) {
+							case VECTOR -> {
+								if (recDto.lectureId() == null) {
+									log.warn("lectureId가 null 입니다. 추천 기록에 저장하지 않음.");
+									continue;
+								}
+								lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
+								if (lecture == null) {
+									log.warn("VECTOR 강의 ID={}를 찾을 수 없습니다.", recDto.lectureId());
+									continue;
+								}
+								if (!lecture.isFree()) {
+									log.info("VECTOR 강의 '{}'은(는) 유료이므로 추천 기록에 저장하지 않음.", lecture.getTitle());
+									continue;
+								}
+								lectureType = Recommendation.LectureType.VECTOR;
+								log.info("VECTOR 무료 강의 추천 기록 저장: {} (ID={})", lecture.getTitle(), lecture.getLectureId());
+							}
+							case YOUTUBE -> {
+								lectureType = Recommendation.LectureType.YOUTUBE;
+								youtube = youtubeRepository.findByUrl(recDto.url());
+								if (youtube == null) {
+									youtube = Youtube.builder()
+										.title(recDto.title())
+										.description(recDto.description())
+										.url(recDto.url())
+										.thumbnailUrl(recDto.thumbnailUrl())
+										.build();
+									youtubeRepository.save(youtube);
+									log.info("YOUTUBE 강의 새로 저장: {}", recDto.title());
+								} else {
+									log.info("YOUTUBE 강의 이미 존재: {}", recDto.title());
+								}
+							}
+							case BRAVE -> {
+								lectureType = Recommendation.LectureType.BRAVE;
+								webSearch = webSearchRepository.findByUrl(recDto.url());
+								if (webSearch == null) {
+									webSearch = WebSearch.builder()
+										.title(recDto.title())
+										.description(recDto.description())
+										.url(recDto.url())
+										.thumbnailUrl(recDto.thumbnailUrl())
+										.build();
+									webSearchRepository.save(webSearch);
+									log.info("BRAVE 강의 새로 저장: {}", recDto.title());
+								} else {
+									log.info("BRAVE 강의 이미 존재: {}", recDto.title());
+								}
+							}
 						}
 
+						Recommendation recommendation = Recommendation.builder()
+							.chatMessage(savedChatMessage)
+							.user(user)
+							.lecture(lecture)
+							.youtube(youtube)
+							.webSearch(webSearch)
+							.score(recDto.score())
+							.type(lectureType)
+							.build();
+						recommendationRepository.save(recommendation);
+
+						log.info("추천 기록 저장 완료 - type: {}, title: {}", typeEnum, recDto.title());
+						savedRecommendations.add(recDto);
+
+					} catch (IllegalArgumentException | NullPointerException e) {
+						log.warn("알 수 없는 타입: {} (title: {})", recDto.type(), recDto.title());
+						continue; // 혹은 예외 던지기
 					}
-
-					Recommendation recommendation = Recommendation.builder()
-						.chatMessage(savedChatMessage)
-						.user(user)
-						.lecture(lecture)
-						.webSearch(webSearch)
-						.youtube(youtube)
-						.score(recDto.score())
-						.type(lectureType)
-						.build();
-					recommendationRepository.save(recommendation);
-
-					savedRecommendations.add(recDto); // 실제 저장된 데이터를 수집
 				}
 
 				return ChatMessageResponse.builder()
