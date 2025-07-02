@@ -1,5 +1,6 @@
 package nbc.devmountain.domain.chat.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -82,24 +83,28 @@ public class ChatMessageService {
 
 		try {
 			String messageContent;
-			MessageType messageType;
-			if (aiResponse.getRecommendations() != null && !aiResponse.getRecommendations().isEmpty()) {
-				messageContent = objectMapper.writeValueAsString(aiResponse.getRecommendations());
-				messageType = MessageType.RECOMMENDATION;
+			MessageType messageType = aiResponse.getMessageType();
+			ChatMessage aiChatMessage;
 
+			if (messageType == MessageType.RECOMMENDATION && aiResponse.getRecommendations() != null
+				&& !aiResponse.getRecommendations().isEmpty()) {
+
+				// 추천 정보 직렬화
+				messageContent = objectMapper.writeValueAsString(aiResponse.getRecommendations());
 				log.info("추천 데이터 JSON 직렬화 완료: {}", messageContent);
 
-				// AI 메시지를 생성
-				ChatMessage aiChatMessage = ChatMessage.builder()
+				// 메시지 저장
+				aiChatMessage = ChatMessage.builder()
 					.chatRoom(chatRoom)
 					.user(null)
 					.message(messageContent)
 					.isAiResponse(true)
-					.messageType(messageType)
+					.messageType(MessageType.RECOMMENDATION)
 					.build();
-
 				chatRoom.addMessages(aiChatMessage);
 				ChatMessage savedChatMessage = chatMessageRepository.save(aiChatMessage);
+
+				List<RecommendationDto> savedRecommendations = new ArrayList<>();
 
 				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
 					Lecture lecture = null;
@@ -121,7 +126,7 @@ public class ChatMessageService {
 						lectureType = Recommendation.LectureType.BRAVE;
 						log.info("브레이브 검색 결과 추천: title={}", recDto.title());
 					}
-					// 추천 기록 저장 (score 정보 포함)
+
 					Recommendation recommendation = Recommendation.builder()
 						.chatMessage(savedChatMessage)
 						.user(user)
@@ -131,32 +136,24 @@ public class ChatMessageService {
 						.build();
 					recommendationRepository.save(recommendation);
 
-					if (lecture != null) {
-						log.info("DB 강의 추천 저장 성공: lectureId={}, userId={}", lecture.getLectureId(), user.getUserId());
-					} else {
-						log.info("브레이브 검색 결과 추천 저장 성공: title={}, userId={}", recDto.title(), user.getUserId());
-					}
+					savedRecommendations.add(recDto); // 실제 저장된 데이터를 수집
 				}
-
-				log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
 
 				return ChatMessageResponse.builder()
 					.chatroomId(savedChatMessage.getChatRoom().getChatroomId())
 					.chatId(savedChatMessage.getChatId())
 					.userId(null)
-					.message(null)
-					.recommendations(aiResponse.getRecommendations())
+					.message(messageContent)
+					.recommendations(savedRecommendations)
 					.isAiResponse(true)
 					.messageType(MessageType.RECOMMENDATION)
 					.createdAt(savedChatMessage.getCreatedAt())
 					.updatedAt(savedChatMessage.getUpdatedAt())
 					.build();
 			} else {
-				// 일반 AI 메시지 처리
+				// 일반 메시지 처리
 				messageContent = aiResponse.getMessage();
-				messageType = aiResponse.getMessageType();
-
-				ChatMessage aiChatMessage = ChatMessage.builder()
+				aiChatMessage = ChatMessage.builder()
 					.chatRoom(chatRoom)
 					.user(null)
 					.message(messageContent)
@@ -166,7 +163,6 @@ public class ChatMessageService {
 
 				chatRoom.addMessages(aiChatMessage);
 				ChatMessage savedChatMessage = chatMessageRepository.save(aiChatMessage);
-				log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
 
 				return ChatMessageResponse.builder()
 					.chatroomId(savedChatMessage.getChatRoom().getChatroomId())

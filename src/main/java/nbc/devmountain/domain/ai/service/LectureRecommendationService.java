@@ -233,7 +233,7 @@ public class LectureRecommendationService {
 		// AI에게 추천 메시지 생성 요청 (score 정보 포함된 recommendations 전달)
 		String promptText = buildRecommendationPrompt(collectedInfo, recommendations);
 
-		ChatMessageResponse recommendationResponse = aiService.getRecommendations(promptText.toString(), true,
+		ChatMessageResponse recommendationResponse = aiService.getRecommendations(promptText, true,
 			membershipLevel);
 
 		// 추천 완료 후 followup 메시지 추가
@@ -279,7 +279,7 @@ public class LectureRecommendationService {
 				rec.lectureId(), rec.thumbnailUrl(), rec.title(),
 				rec.description(), rec.instructor(), rec.level(),
 				rec.url(), rec.payPrice(), rec.isFree(),
-				rec.type(), rec.score() != null ? rec.score().toString() : "null"
+				rec.type(), rec.score() != null ? rec.score() : "null"
 			))
 			.collect(Collectors.joining(",\n"));
 
