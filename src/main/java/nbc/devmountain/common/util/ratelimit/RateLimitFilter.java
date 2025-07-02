@@ -104,9 +104,9 @@ public class RateLimitFilter implements Filter {
 		Supplier<BucketConfiguration> configSupplier = () -> finalConfigToUse;
 		Bucket ipBucket = proxyManager.builder().build(ipKey, configSupplier);
 
-		// 2. 글로벌 리밋: 1시간에 2회
+		// 2. 글로벌 리밋: 1시간에 100회
 		String globalKey = "global_rate_limit";
-		long globalLimit = 2;
+		long globalLimit = 100;
 		long globalWindowSeconds = 3600; // 1시간
 		var sync = redisConnection.sync();
 		log.info("Redis connection info: {}", redisConnection.getOptions());
