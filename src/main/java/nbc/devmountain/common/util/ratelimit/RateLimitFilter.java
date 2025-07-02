@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
-import io.github.bucket4j.distributed.ExpirationAfterWriteStrategy;
 import io.lettuce.core.ScriptOutputType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -51,7 +50,6 @@ public class RateLimitFilter implements Filter {
 		ProxyManager<String> proxyManager,
 		StatefulRedisConnection<String, byte[]> redisConnection
 	) {
-		System.out.println("=== RateLimitFilter 생성자 호출됨 ===");
 		this.proxyManager = proxyManager;
 		this.freeConfig = BucketConfiguration.builder()
 			.addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofHours(1))))
@@ -74,18 +72,15 @@ public class RateLimitFilter implements Filter {
 		log.info("RateLimitFilter 진입: method={}, uri={}", method, requestURI);
 
 		if (!"POST".equals(method)) {
-			log.info("POST 아님, 필터 통과");
 			filterChain.doFilter(servletRequest, servletResponse);
 			return;
 		}
 
 		if (!requestURI.matches("/chatrooms/\\d+/messages")) {
-			log.info("채팅 메시지 경로 아님, 필터 통과");
 			filterChain.doFilter(servletRequest, servletResponse);
 			return;
 		}
 
-		log.info("글로벌 리밋 코드 진입");
 		String ipKey = request.getRemoteAddr();
 
 		// 1. IP별 버킷
@@ -111,7 +106,6 @@ public class RateLimitFilter implements Filter {
 		var sync = redisConnection.sync();
 		log.info("Redis connection info: {}", redisConnection.getOptions());
 		log.info("Redis connection object: {}", redisConnection);
-		log.info("=== 글로벌 리밋 체크 진입 ===");
 		try {
 			String script = "local v = redis.call('incr', KEYS[1]); if v == 1 then redis.call('expire', KEYS[1], ARGV[1]); end; return v;";
 			String[] keys = new String[] { globalKey };
