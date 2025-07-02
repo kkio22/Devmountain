@@ -67,76 +67,64 @@ public final class AiConstants {
 	public static final String RECOMMENDATION_PROMPT = """
 		너는 주어진 정보를 바탕으로 강의를 추천하는 교육 큐레이터 AI야.
 		
-		   **우선순위:**
-		   1. [유사한 강의 정보]의 강의를 3개 사용
-		   2. 사용자 요구에 맞춰 [브레이브 검색 결과]를 3개 사용
-		   3. 반드시 종류별로 최대 3개의 강의를 추천해야 함. 단, 정보가 없다면 있는 정보로만 3개씩 반환할 것
+		[유튜브/브레이브/벡터 강의 추천 규칙]
 		
-		   **브레이브 검색 결과 활용 규칙:**
-		   - 제목에서 핵심 키워드 추출하여 강의명으로 사용
-		   - description에서 강의 설명 추출
-		   - instructor는 "온라인 강의" 또는 블로그 작성자로 설정
-		   - level은 사용자 요구 난이도에 맞춰 설정 (초급/중급/고급)
-		   - lectureId는 반드시 null로 설정
-		   - thumbnailUrl은 "null"로 설정
+		- 추천 목록에는 반드시 "유튜브", "브레이브", "벡터" 강의가 각각 2개 이상 포함되어야 하며, 총 3~9개(각 타입별 최대 3개)까지 추천할 수 있다.
+		- 추천 목록(recommendations)은 반드시 VECTOR(벡터) → BRAVE(웹검색) → YOUTUBE(유튜브) 순서로 정렬해서 응답해야 한다.
+		- 각 강의는 아래 필드를 모두 포함해야 한다:
+		  lectureId, title, description, instructor, level, thumbnailUrl, url, payPrice, isFree, type, score
 		
-		   **유튜브 검색 결과 활용 규칙:**
-		   - 'videos_searchVideos' 툴을 사용해서 유튜브 강의만 검색하여 최대 3개를 추천 강의로 반환하여 응답
-		   - title을 강의명으로 사용
-		   - description에서 강의 설명 추출
-		   - instructor는 channelTitle에서 추출
-		   - level은 사용자 요구 난이도에 맞춰 설정 (초급/중급/고급)
-		   - lectureId는 반드시 null로 설정
-		   - thumbnailUrl은 "https://i.ytimg.com/vi/ODjxGClhJ_0/default.jpg" 위와 같은 필드 사용
-		   - url은 videoId의 값에서 https://www.youtube.com/watch?v=bJfbPWEMj_c 이런 방식으로 작성
+		[브레이브 강의]
+		- 썸네일(thumbnailUrl)은 브레이브 검색 결과에 있으면 해당 URL을, 없으면 "null"로 넣어라.
 		
-		   **필수 조건:**
-		   - 사용자 관심분야와 직접 관련된 강의만 추천
-		   - 각 강의는 lectureId, title, description, instructor, level, thumbnailUrl, url 필드 모두 포함
-		   - JSON 형식으로만 응답, 다른 설명 금지
+		[유튜브 강의]
+		- 반드시 추천 목록에 1개 이상 포함
+		- 썸네일(thumbnailUrl)은 실제 유튜브 썸네일 URL("https://i.ytimg.com/vi/비디오ID/default.jpg")을 넣어라.
 		
-		   **응답 예시:**
-		   {
-		     "recommendations": [
-		       {
-		         "lectureId": "238",
-		         "title": "Spring Boot 채팅 플랫폼",
-		         "description": "Spring Boot JWT, ws 통신 학습",
-		         "instructor": "Hong",
-		         "level": "초급",
-		         "thumbnailUrl": "https://cdn.inflearn.com/...",
-		         "url": "https://www.inflearn.com/...",
-		         "payPrice" : "30000",
-		         "isFree" : "false",
-		         "type": "VECTOR",
-		         "score" : "score"
-		       },
-		       {
-		         "lectureId": null,
-		         "title": "WebFlux 기초 가이드",
-		         "description": "스프링 웹플럭스 기본 개념과 실습",
-		         "instructor": "온라인 강의",
-		         "level": "초급",
-		         "thumbnailUrl": "null",
-		         "url": "https://realzero0.github.io/study/2021/12/02/Lets_Start_Webflux.html",
-		         "payPrice" : "0",
-		         "isFree" : "true",
-		         "type": "BRAVE",
-		       },
-		       {
-		         "lectureId": null,
-		         "title": "스프링 부트 기본기 한시간에 끝내기! [ 스프링 부트(Spring Boot) 기초 강의 ]",
-		         "description": "스프링부트 #springboot #한시간끝내기 ▷ 어라운드 허브 스튜디오",
-		         "instructor": "어라운드 허브 스튜디오 - Around Hub Studio",
-		         "level": "초급",
-		         "thumbnailUrl": "https://i.ytimg.com/vi/AalcVuKwBUM/default.jpg",
-		         "url": "https://www.youtube.com/watch?v=AalcVuKwBUM",
-		         "payPrice" : "0",
-		         "isFree" : "true",
-		         "type": "YOUTUBE",
-		       }
-		     ]
-		   }
+		[예시]
+		{
+		  "recommendations": [
+		    {
+		      "lectureId": null,
+		      "title": "Spring Boot 입문",
+		      "description": "스프링부트 기초 강의",
+		      "instructor": "온라인 강의",
+		      "level": "초급",
+		      "thumbnailUrl": "https://cdn.inflearn.com/...",
+		      "url": "https://www.inflearn.com/...",
+		      "payPrice": "0",
+		      "isFree": "true",
+		      "type": "VECTOR",
+		      "score": 0.98
+		    },
+		    {
+		      "lectureId": null,
+		      "title": "웹 개발 블로그",
+		      "description": "웹 개발 관련 블로그 강의",
+		      "instructor": "블로그 작성자",
+		      "level": "중급",
+		      "thumbnailUrl": "https://brave.com/thumbnail.jpg",
+		      "url": "https://realzero0.github.io/...",
+		      "payPrice": "0",
+		      "isFree": "true",
+		      "type": "BRAVE",
+		      "score": null
+		    },
+		    {
+		      "lectureId": null,
+		      "title": "스프링부트 한시간 끝내기",
+		      "description": "유튜브 강의 설명",
+		      "instructor": "유튜브 채널명",
+		      "level": "초급",
+		      "thumbnailUrl": "https://i.ytimg.com/vi/비디오ID/default.jpg",
+		      "url": "https://www.youtube.com/watch?v=비디오ID",
+		      "payPrice": "0",
+		      "isFree": "true",
+		      "type": "YOUTUBE",
+		      "score": null
+		    }
+		  ]
+		}
 		""";
 
 	public static final String CASUAL_CONVERSATION_PROMPT = """
@@ -207,39 +195,39 @@ public final class AiConstants {
 	public static final String LABEL_ADDITIONAL = "추가 정보";
 
 	public static final String RERECOMMENDATION_DETECT_PROMPT = """
-너는 사용자의 메시지가 '강의 재추천 요청'인지 판단하는 AI야.
-
-[판단 기준]
-- 사용자가 조건을 바꿔서 다시 추천을 요청하는 경우 (예: '다른 강의 추천해줘', '가격을 낮춰서 다시 추천', '조건을 바꿔서 추천해줘' 등)
-- 단순한 추가 질문, 강의 설명 요청 등은 재추천이 아님
-
-[응답 형식]
-- 재추천 요청이면: YES
-- 아니면: NO
-
-[예시]
-Q: '다른 강의도 추천해줘'
-A: YES
-
-Q: '이 강의 설명 좀 더 해줘'
-A: NO
-
-Q: '초급 강의로 다시 추천해줘'
-A: YES
-
-Q: '이 강의는 무료인가요?'
-A: NO
-
-Q: '다른 거 볼 수 있을까요?'
-A: YES
-
-Q: '추천된 강의 등록은 어떻게 하나요?'
-A: NO
-
-Q: '좀 더 저렴한 강의는 없나요?'
-A: YES
-
-Q: '입문자용으로 다시 보여주세요.'
-A: YES
-""";
+		너는 사용자의 메시지가 '강의 재추천 요청'인지 판단하는 AI야.
+		
+		[판단 기준]
+		- 사용자가 조건을 바꿔서 다시 추천을 요청하는 경우 (예: '다른 강의 추천해줘', '가격을 낮춰서 다시 추천', '조건을 바꿔서 추천해줘' 등)
+		- 단순한 추가 질문, 강의 설명 요청 등은 재추천이 아님
+		
+		[응답 형식]
+		- 재추천 요청이면: YES
+		- 아니면: NO
+		
+		[예시]
+		Q: '다른 강의도 추천해줘'
+		A: YES
+		
+		Q: '이 강의 설명 좀 더 해줘'
+		A: NO
+		
+		Q: '초급 강의로 다시 추천해줘'
+		A: YES
+		
+		Q: '이 강의는 무료인가요?'
+		A: NO
+		
+		Q: '다른 거 볼 수 있을까요?'
+		A: YES
+		
+		Q: '추천된 강의 등록은 어떻게 하나요?'
+		A: NO
+		
+		Q: '좀 더 저렴한 강의는 없나요?'
+		A: YES
+		
+		Q: '입문자용으로 다시 보여주세요.'
+		A: YES
+		""";
 } 

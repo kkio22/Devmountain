@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -30,7 +31,7 @@ public class WebSearch {
 	@Column(columnDefinition = "TEXT")
 	private String thumbnailUrl;
 
-
+	@Builder
 	public WebSearch(String title, String description, String url, String thumbnailUrl) {
 		this.title=title;
 		this.description=description;

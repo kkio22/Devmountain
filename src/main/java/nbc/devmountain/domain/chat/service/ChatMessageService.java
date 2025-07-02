@@ -15,6 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nbc.devmountain.domain.lecture.model.WebSearch;
+import nbc.devmountain.domain.lecture.model.Youtube;
+import nbc.devmountain.domain.lecture.repository.WebSearchRepository;
+import nbc.devmountain.domain.lecture.repository.YoutubeRepository;
 import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.chat.model.ChatRoom;
@@ -40,6 +44,8 @@ public class ChatMessageService {
 	private final ObjectMapper objectMapper;
 	private final RecommendationRepository recommendationRepository;
 	private final LectureRepository lectureRepository;
+	private final YoutubeRepository youtubeRepository;
+	private final WebSearchRepository webSearchRepository;
 
 	@Transactional
 	public ChatMessageResponse createMessage(Long userId, Long chatRoomId, String message) {
@@ -108,29 +114,47 @@ public class ChatMessageService {
 
 				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
 					Lecture lecture = null;
+					Youtube youtube = null;
+					WebSearch webSearch = null;
 					Recommendation.LectureType lectureType = null;
 
-					// DB에 저장된 강의인 경우
 					if (recDto.lectureId() != null) {
+						//기존강의
 						lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
-						if (lecture != null) {
-							log.info("DB 강의 검색 성공: lectureId={}", recDto.lectureId());
-							lectureType = Recommendation.LectureType.VECTOR;
-						} else {
-							log.warn("DB 강의 검색 실패: lectureId={}", recDto.lectureId());
-						}
+						lectureType = Recommendation.LectureType.VECTOR;
 					} else if ("YOUTUBE".equalsIgnoreCase(recDto.type())) {
 						lectureType = Recommendation.LectureType.YOUTUBE;
-						log.info("유튜브 검색 결과 추천: title={}", recDto.title());
-					} else {
+						//유튜부 강의 정보 저장
+						 youtube = youtubeRepository.findByUrl(recDto.url());
+						if (youtube == null) {
+							youtube = Youtube.builder()
+								.title(recDto.title())
+								.description(recDto.description())
+								.url(recDto.url())
+								.thumbnailUrl(recDto.thumbnailUrl())
+								.build();
+							youtubeRepository.save(youtube);
+						}
+					} else if ("BRAVE".equalsIgnoreCase(recDto.type())) {
 						lectureType = Recommendation.LectureType.BRAVE;
-						log.info("브레이브 검색 결과 추천: title={}", recDto.title());
+						 webSearch = webSearchRepository.findByUrl(recDto.url());
+						if(webSearch==null){
+							webSearch = WebSearch.builder()
+								.title(recDto.title())
+								.description(recDto.description())
+								.url(recDto.url())
+								.build();
+							webSearchRepository.save(webSearch);
+						}
+
 					}
 
 					Recommendation recommendation = Recommendation.builder()
 						.chatMessage(savedChatMessage)
 						.user(user)
 						.lecture(lecture)
+						.webSearch(webSearch)
+						.youtube(youtube)
 						.score(recDto.score())
 						.type(lectureType)
 						.build();

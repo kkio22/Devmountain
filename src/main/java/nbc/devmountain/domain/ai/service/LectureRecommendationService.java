@@ -208,18 +208,18 @@ public class LectureRecommendationService {
 			List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
 			if (braveResults != null && !braveResults.isEmpty()) {
 				List<RecommendationDto> braveRecommendations = braveResults.stream()
-					.map(r -> new RecommendationDto(  //BraveSearch : title,description,url,thumbnailWrapper
-						null,  //lectureId
-						r.thumbnail(), // thumbnailUrl
-						r.title(),     // title
-						r.description(), // description
-						null,          // instructor
-						null,          // level
-						r.url(),       // url
-						null,          // payPrice
-						null,          // isFree
-						"BRAVE",       // type
-						null       	   // score
+					.map(r -> new RecommendationDto(
+						null,  // lectureId
+						(r.thumbnail() == null || r.thumbnail().isBlank()) ? null : r.thumbnail(),
+						r.title(),
+						r.description(),
+						"웹검색",
+						"웹검색",
+						r.url(),
+						null,
+						null,
+						"BRAVE",
+						null
 					))
 					.toList();
 

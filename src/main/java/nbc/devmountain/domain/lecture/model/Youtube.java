@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -31,7 +32,7 @@ public class Youtube {
 	private String thumbnailUrl;
 
 
-
+	@Builder
 	public Youtube(String title, String description, String url, String thumbnailUrl) {
 		this.title=title;
 		this.description=description;
