@@ -122,6 +122,8 @@ public class RateLimitFilter implements Filter {
 				HttpServletResponse res = (HttpServletResponse)servletResponse;
 				res.setStatus(429);
 				res.setHeader("Retry-After", "3600");
+				res.setCharacterEncoding("UTF-8");
+				res.setContentType("application/json; charset=UTF-8");
 				res.getWriter().write("글로벌 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
 				log.warn("Global rate limit exceeded: count={}", count);
 				return;
@@ -137,7 +139,9 @@ public class RateLimitFilter implements Filter {
 			HttpServletResponse res = (HttpServletResponse)servletResponse;
 			res.setStatus(429);
 			res.setHeader("Retry-After", "3600");
-			res.getWriter().write("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+			res.setCharacterEncoding("UTF-8");
+			res.setContentType("application/json; charset=UTF-8");
+			res.getWriter().write("{\"message\":\"요청이 너무 많습니다. 잠시 후 다시 시도해주세요.\"}");
 			log.warn("Rate limit exceeded for IP: {}", ipKey);
 		}
 	}
