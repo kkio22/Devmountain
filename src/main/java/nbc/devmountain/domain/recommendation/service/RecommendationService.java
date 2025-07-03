@@ -1,12 +1,13 @@
 package nbc.devmountain.domain.recommendation.service;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.recommendation.dto.RecommendationHistory;
 import nbc.devmountain.domain.recommendation.model.Recommendation;
 import nbc.devmountain.domain.recommendation.repository.RecommendationRepository;
@@ -19,7 +20,13 @@ public class RecommendationService {
 	private final RecommendationRepository recommendationRepository;
 
 	@Transactional(readOnly = true)
-	public Page<RecommendationHistory> getRecommendationByUserId(Long userId, Pageable pageable) {
+	public List<RecommendationHistory> getRecommendationV1(Long userId) {
+		List<Recommendation> recList = recommendationRepository.findAllByUserUserId(userId);
+		return recList.stream().map(this::toDto).toList();
+	}
+
+	@Transactional(readOnly = true)
+	public Page<RecommendationHistory> getRecommendationV2(Long userId, Pageable pageable) {
 		Page<Recommendation> page = recommendationRepository.findByUserUserIdOrderByCreatedAtDesc(userId, pageable);
 
 		return page.map(this::toDto);
