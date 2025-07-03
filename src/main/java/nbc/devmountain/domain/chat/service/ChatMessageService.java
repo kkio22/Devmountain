@@ -1,5 +1,6 @@
 package nbc.devmountain.domain.chat.service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -14,6 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nbc.devmountain.domain.lecture.model.WebSearch;
+import nbc.devmountain.domain.lecture.model.Youtube;
+import nbc.devmountain.domain.lecture.repository.WebSearchRepository;
+import nbc.devmountain.domain.lecture.repository.YoutubeRepository;
 import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.chat.model.ChatRoom;
@@ -39,6 +44,8 @@ public class ChatMessageService {
 	private final ObjectMapper objectMapper;
 	private final RecommendationRepository recommendationRepository;
 	private final LectureRepository lectureRepository;
+	private final YoutubeRepository youtubeRepository;
+	private final WebSearchRepository webSearchRepository;
 
 	@Transactional
 	public ChatMessageResponse createMessage(Long userId, Long chatRoomId, String message) {
@@ -82,81 +89,128 @@ public class ChatMessageService {
 
 		try {
 			String messageContent;
-			MessageType messageType;
-			if (aiResponse.getRecommendations() != null && !aiResponse.getRecommendations().isEmpty()) {
-				messageContent = objectMapper.writeValueAsString(aiResponse.getRecommendations());
-				messageType = MessageType.RECOMMENDATION;
+			MessageType messageType = aiResponse.getMessageType();
+			ChatMessage aiChatMessage;
 
+			if (messageType == MessageType.RECOMMENDATION && aiResponse.getRecommendations() != null
+				&& !aiResponse.getRecommendations().isEmpty()) {
+
+				// 추천 정보 직렬화
+				messageContent = objectMapper.writeValueAsString(aiResponse.getRecommendations());
 				log.info("추천 데이터 JSON 직렬화 완료: {}", messageContent);
 
-				// AI 메시지를 생성
-				ChatMessage aiChatMessage = ChatMessage.builder()
+				// 메시지 저장
+				aiChatMessage = ChatMessage.builder()
 					.chatRoom(chatRoom)
 					.user(null)
 					.message(messageContent)
 					.isAiResponse(true)
-					.messageType(messageType)
+					.messageType(MessageType.RECOMMENDATION)
 					.build();
-
 				chatRoom.addMessages(aiChatMessage);
 				ChatMessage savedChatMessage = chatMessageRepository.save(aiChatMessage);
 
+				List<RecommendationDto> savedRecommendations = new ArrayList<>();
+
 				for (RecommendationDto recDto : aiResponse.getRecommendations()) {
 					Lecture lecture = null;
+					Youtube youtube = null;
+					WebSearch webSearch = null;
 					Recommendation.LectureType lectureType = null;
 
-					// DB에 저장된 강의인 경우
-					if (recDto.lectureId() != null) {
-						lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
-						if (lecture != null) {
-							log.info("DB 강의 검색 성공: lectureId={}", recDto.lectureId());
-							lectureType = Recommendation.LectureType.VECTOR;
-						} else {
-							log.warn("DB 강의 검색 실패: lectureId={}", recDto.lectureId());
-						}
-					} else if ("YOUTUBE".equalsIgnoreCase(recDto.type())) {
-						lectureType = Recommendation.LectureType.YOUTUBE;
-						log.info("유튜브 검색 결과 추천: title={}", recDto.title());
-					} else {
-						lectureType = Recommendation.LectureType.BRAVE;
-						log.info("브레이브 검색 결과 추천: title={}", recDto.title());
-					}
-					// 추천 기록 저장 (score 정보 포함)
-					Recommendation recommendation = Recommendation.builder()
-						.chatMessage(savedChatMessage)
-						.user(user)
-						.lecture(lecture)
-						.score(recDto.score())
-						.type(lectureType)
-						.build();
-					recommendationRepository.save(recommendation);
+					try {
+						Recommendation.LectureType typeEnum = Recommendation.LectureType.valueOf(
 
-					if (lecture != null) {
-						log.info("DB 강의 추천 저장 성공: lectureId={}, userId={}", lecture.getLectureId(), user.getUserId());
-					} else {
-						log.info("브레이브 검색 결과 추천 저장 성공: title={}, userId={}", recDto.title(), user.getUserId());
+							(recDto.type() != null ? recDto.type() : "VECTOR").toUpperCase()
+						);
+
+						switch (typeEnum) {
+							case VECTOR -> {
+								if (recDto.lectureId() == null) {
+									log.warn("lectureId가 null 입니다. 추천 기록에 저장하지 않음.");
+									continue;
+								}
+								lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
+								if (lecture == null) {
+									log.warn("VECTOR 강의 ID={}를 찾을 수 없습니다.", recDto.lectureId());
+									continue;
+								}
+								if (!lecture.isFree()) {
+									log.info("VECTOR 강의 '{}'은(는) 유료이므로 추천 기록에 저장하지 않음.", lecture.getTitle());
+									continue;
+								}
+								lectureType = Recommendation.LectureType.VECTOR;
+								log.info("VECTOR 무료 강의 추천 기록 저장: {} (ID={})", lecture.getTitle(), lecture.getLectureId());
+							}
+							case YOUTUBE -> {
+								lectureType = Recommendation.LectureType.YOUTUBE;
+								youtube = youtubeRepository.findByUrl(recDto.url());
+								if (youtube == null) {
+									youtube = Youtube.builder()
+										.title(recDto.title())
+										.description(recDto.description())
+										.url(recDto.url())
+										.thumbnailUrl(recDto.thumbnailUrl())
+										.build();
+									youtubeRepository.save(youtube);
+									log.info("YOUTUBE 강의 새로 저장: {}", recDto.title());
+								} else {
+									log.info("YOUTUBE 강의 이미 존재: {}", recDto.title());
+								}
+							}
+							case BRAVE -> {
+								lectureType = Recommendation.LectureType.BRAVE;
+								webSearch = webSearchRepository.findByUrl(recDto.url());
+								if (webSearch == null) {
+									webSearch = WebSearch.builder()
+										.title(recDto.title())
+										.description(recDto.description())
+										.url(recDto.url())
+										.thumbnailUrl(recDto.thumbnailUrl())
+										.build();
+									webSearchRepository.save(webSearch);
+									log.info("BRAVE 강의 새로 저장: {}", recDto.title());
+								} else {
+									log.info("BRAVE 강의 이미 존재: {}", recDto.title());
+								}
+							}
+						}
+
+						Recommendation recommendation = Recommendation.builder()
+							.chatMessage(savedChatMessage)
+							.user(user)
+							.lecture(lecture)
+							.youtube(youtube)
+							.webSearch(webSearch)
+							.score(recDto.score())
+							.type(lectureType)
+							.build();
+						recommendationRepository.save(recommendation);
+
+						log.info("추천 기록 저장 완료 - type: {}, title: {}", typeEnum, recDto.title());
+						savedRecommendations.add(recDto);
+
+					} catch (IllegalArgumentException | NullPointerException e) {
+						log.warn("알 수 없는 타입: {} (title: {})", recDto.type(), recDto.title());
+						continue; // 혹은 예외 던지기
 					}
 				}
-
-				log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
 
 				return ChatMessageResponse.builder()
 					.chatroomId(savedChatMessage.getChatRoom().getChatroomId())
 					.chatId(savedChatMessage.getChatId())
 					.userId(null)
-					.message(null)
-					.recommendations(aiResponse.getRecommendations())
+					.message(messageContent)
+					.recommendations(savedRecommendations)
 					.isAiResponse(true)
 					.messageType(MessageType.RECOMMENDATION)
 					.createdAt(savedChatMessage.getCreatedAt())
 					.updatedAt(savedChatMessage.getUpdatedAt())
 					.build();
 			} else {
-				// 일반 AI 메시지 처리
+				// 일반 메시지 처리
 				messageContent = aiResponse.getMessage();
-				messageType = aiResponse.getMessageType();
-
-				ChatMessage aiChatMessage = ChatMessage.builder()
+				aiChatMessage = ChatMessage.builder()
 					.chatRoom(chatRoom)
 					.user(null)
 					.message(messageContent)
@@ -166,7 +220,6 @@ public class ChatMessageService {
 
 				chatRoom.addMessages(aiChatMessage);
 				ChatMessage savedChatMessage = chatMessageRepository.save(aiChatMessage);
-				log.info("AI 메시지 생성 완료 - 타입: {}", aiResponse.getMessageType());
 
 				return ChatMessageResponse.builder()
 					.chatroomId(savedChatMessage.getChatRoom().getChatroomId())

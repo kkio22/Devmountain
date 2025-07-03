@@ -212,18 +212,18 @@ public class LectureRecommendationService {
 			List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
 			if (braveResults != null && !braveResults.isEmpty()) {
 				List<RecommendationDto> braveRecommendations = braveResults.stream()
-					.map(r -> new RecommendationDto(  //BraveSearch : title,description,url,thumbnailWrapper
-						null,  //lectureId
-						r.thumbnail(), // thumbnailUrl
-						r.title(),     // title
-						r.description(), // description
-						null,          // instructor
-						null,          // level
-						r.url(),       // url
-						null,          // payPrice
-						null,          // isFree
-						"BRAVE",       // type
-						null       	   // score
+					.map(r -> new RecommendationDto(
+						null,  // lectureId
+						(r.thumbnail() == null || r.thumbnail().isBlank()) ? null : r.thumbnail(),
+						r.title(),
+						r.description(),
+						"웹검색",
+						"웹검색",
+						r.url(),
+						null,
+						null,
+						"BRAVE",
+						null
 					))
 					.toList();
 
@@ -237,7 +237,7 @@ public class LectureRecommendationService {
 		// AI에게 추천 메시지 생성 요청 (score 정보 포함된 recommendations 전달)
 		String promptText = buildRecommendationPrompt(collectedInfo, recommendations);
 
-		ChatMessageResponse recommendationResponse = aiService.getRecommendations(promptText.toString(), true,
+		ChatMessageResponse recommendationResponse = aiService.getRecommendations(promptText, true,
 			membershipLevel);
 
 		// 추천 완료 후 followup 메시지 추가

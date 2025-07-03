@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat.chatroom.service;
+package nbc.devmountain.domain.chat.service;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;

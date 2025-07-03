@@ -1,4 +1,4 @@
-package nbc.devmountain.domain.chat;
+package nbc.devmountain.domain.chat.model;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
