@@ -21,7 +21,6 @@ import nbc.devmountain.common.util.security.CustomUserPrincipal;
 import nbc.devmountain.domain.chat.dto.ChatRoomRequest;
 import nbc.devmountain.domain.chat.dto.ChatRoomDetailResponse;
 import nbc.devmountain.domain.chat.dto.ChatRoomResponse;
-import nbc.devmountain.domain.chat.model.ChatRoom;
 import nbc.devmountain.domain.chat.service.ChatRoomService;
 
 @RestController
@@ -34,8 +33,7 @@ public class ChatRoomController {
 
 	@PostMapping
 	public ResponseEntity<ApiResponse<ChatRoomResponse>> createChatRoom(
-		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
-		@RequestBody ChatRoomRequest request) {
+		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal) {
 
 		ChatRoomResponse chatRoom = chatRoomService.createChatRoom(customUserPrincipal.getUserId());
 		customMetrics.incrementChatroomCount(); // 모니터링(채팅방 수 체크)
@@ -68,7 +66,6 @@ public class ChatRoomController {
 		@AuthenticationPrincipal CustomUserPrincipal customUserPrincipal,
 		@RequestBody ChatRoomRequest request) {
 
-		ChatRoom chatRoom = chatRoomService.getChatRoomOrThrow(chatroomId);
 		ChatRoomResponse response = chatRoomService.updateChatRoomName(customUserPrincipal.getUserId(), chatroomId,
 			request.chatroomName());
 		return ResponseEntity.ok(

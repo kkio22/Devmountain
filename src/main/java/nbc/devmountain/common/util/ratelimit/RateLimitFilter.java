@@ -61,7 +61,7 @@ public class RateLimitFilter implements Filter {
 			// Free: 1시간 10개
 			this.freeConfig = BucketConfiguration.builder()
 				// intervally: 전체 기간이 경과할 때까지 기다린 후 전체 토큰을 재생성(현재 설정: 1시간마다 10개 토큰)
-				.addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofHours(1))))
+				.addLimit(Bandwidth.classic(10, Refill.intervally(20, Duration.ofMinutes(1))))
 				.build();
 			// Pro: 1시간 20개
 			this.proConfig = BucketConfiguration.builder()

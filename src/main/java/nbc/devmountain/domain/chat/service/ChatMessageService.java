@@ -29,6 +29,8 @@ import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
 import nbc.devmountain.domain.lecture.model.Lecture;
 import nbc.devmountain.domain.lecture.repository.LectureRepository;
 import nbc.devmountain.domain.recommendation.model.Recommendation;
+import nbc.devmountain.domain.recommendation.model.RecommendationCount;
+import nbc.devmountain.domain.recommendation.repository.RecommendationCountRepository;
 import nbc.devmountain.domain.recommendation.repository.RecommendationRepository;
 import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
@@ -46,6 +48,7 @@ public class ChatMessageService {
 	private final LectureRepository lectureRepository;
 	private final YoutubeRepository youtubeRepository;
 	private final WebSearchRepository webSearchRepository;
+	private final RecommendationCountRepository recommendationCountRepository;
 
 	@Transactional
 	public ChatMessageResponse createMessage(Long userId, Long chatRoomId, String message) {
@@ -120,7 +123,6 @@ public class ChatMessageService {
 
 					try {
 						Recommendation.LectureType typeEnum = Recommendation.LectureType.valueOf(
-
 							(recDto.type() != null ? recDto.type() : "VECTOR").toUpperCase()
 						);
 
@@ -133,10 +135,6 @@ public class ChatMessageService {
 								lecture = lectureRepository.findById(recDto.lectureId()).orElse(null);
 								if (lecture == null) {
 									log.warn("VECTOR 강의 ID={}를 찾을 수 없습니다.", recDto.lectureId());
-									continue;
-								}
-								if (!lecture.isFree()) {
-									log.info("VECTOR 강의 '{}'은(는) 유료이므로 추천 기록에 저장하지 않음.", lecture.getTitle());
 									continue;
 								}
 								lectureType = Recommendation.LectureType.VECTOR;
@@ -187,8 +185,30 @@ public class ChatMessageService {
 							.build();
 						recommendationRepository.save(recommendation);
 
-						log.info("추천 기록 저장 완료 - type: {}, title: {}", typeEnum, recDto.title());
-						savedRecommendations.add(recDto);
+						if (lecture != null) {
+							Lecture finalLecture = lecture;
+							RecommendationCount count = recommendationCountRepository.findByLecture(lecture)
+								.orElseGet(() -> RecommendationCount.builder().lecture(finalLecture).count(0L).build());
+							count.increase();
+							recommendationCountRepository.save(count);
+						}
+						if (youtube != null) {
+							Youtube finalYoutube = youtube;
+							RecommendationCount count = recommendationCountRepository.findByYoutube(youtube)
+								.orElseGet(() -> RecommendationCount.builder().youtube(finalYoutube).count(0L).build());
+							count.increase();
+							recommendationCountRepository.save(count);
+						}
+						if (webSearch != null) {
+							WebSearch finalWebSearch = webSearch;
+							RecommendationCount count = recommendationCountRepository.findByWebSearch(webSearch)
+								.orElseGet(() -> RecommendationCount.builder().webSearch(finalWebSearch).count(0L).build());
+							count.increase();
+							recommendationCountRepository.save(count);
+						}
+
+				log.info("추천 기록 저장 완료 - type: {}, title: {}", typeEnum, recDto.title());
+				savedRecommendations.add(recDto);
 
 					} catch (IllegalArgumentException | NullPointerException e) {
 						log.warn("알 수 없는 타입: {} (title: {})", recDto.type(), recDto.title());
