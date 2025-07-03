@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import nbc.devmountain.domain.recommendation.dto.RecommendationHistory;
 import nbc.devmountain.domain.recommendation.model.Recommendation;
 import nbc.devmountain.domain.recommendation.repository.RecommendationRepository;
+import nbc.devmountain.domain.recommendation.repository.RecommendationCountRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +19,7 @@ import nbc.devmountain.domain.recommendation.repository.RecommendationRepository
 public class RecommendationService {
 
 	private final RecommendationRepository recommendationRepository;
+	private final RecommendationCountRepository recommendationCountRepository;
 
 	@Transactional(readOnly = true)
 	public List<RecommendationHistory> getRecommendationV1(Long userId) {
@@ -33,10 +35,33 @@ public class RecommendationService {
 	}
 
 	private RecommendationHistory toDto(Recommendation rec) {
-		return switch (rec.getType()) {
-			case VECTOR -> RecommendationHistory.fromLecture(rec);
-			case YOUTUBE -> RecommendationHistory.fromYoutube(rec);
-			case BRAVE -> RecommendationHistory.fromWebSearch(rec);
-		};
+		Long count = 0L;
+		switch (rec.getType()) {
+			case VECTOR -> {
+				if (rec.getLecture() != null) {
+					count = recommendationCountRepository.findByLecture(rec.getLecture())
+						.map(c -> c.getCount() != null ? c.getCount() : 0L)
+						.orElse(0L);
+				}
+				return RecommendationHistory.fromLecture(rec, count);
+			}
+			case YOUTUBE -> {
+				if (rec.getYoutube() != null) {
+					count = recommendationCountRepository.findByYoutube(rec.getYoutube())
+						.map(c -> c.getCount() != null ? c.getCount() : 0L)
+						.orElse(0L);
+				}
+				return RecommendationHistory.fromYoutube(rec, count);
+			}
+			case BRAVE -> {
+				if (rec.getWebSearch() != null) {
+					count = recommendationCountRepository.findByWebSearch(rec.getWebSearch())
+						.map(c -> c.getCount() != null ? c.getCount() : 0L)
+						.orElse(0L);
+				}
+				return RecommendationHistory.fromWebSearch(rec, count);
+			}
+		}
+		return null;
 	}
 }

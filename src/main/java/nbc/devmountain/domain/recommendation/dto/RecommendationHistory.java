@@ -18,9 +18,10 @@ public record RecommendationHistory(
 	String thumbnailUrl,
 	String url,
 	String lectureType,
-	Float score
+	Float score,
+	Long recommendCount
 ) {
-	public static RecommendationHistory fromLecture(Recommendation r) {
+	public static RecommendationHistory fromLecture(Recommendation r, Long count) {
 		return new RecommendationHistory(
 			r.getChatMessage().getChatRoom().getChatroomId(),
 			r.getUser().getUserId(),
@@ -32,12 +33,12 @@ public record RecommendationHistory(
 			r.getLecture().getThumbnailUrl(),
 			"https://www.inflearn.com/search?s=" +r.getLecture().getTitle(),
 			r.getType().name(),
-			r.getScore()
+			r.getScore(),
+			count
 		);
 	}
 
-	public static RecommendationHistory fromYoutube(Recommendation r) {
-
+	public static RecommendationHistory fromYoutube(Recommendation r, Long count) {
 		return new RecommendationHistory(
 			r.getChatMessage().getChatRoom().getChatroomId(),
 			r.getUser().getUserId(),
@@ -49,12 +50,12 @@ public record RecommendationHistory(
 			r.getYoutube().getThumbnailUrl(),
 			r.getYoutube().getUrl(),
 			r.getType().name(),
-			r.getScore()
+			r.getScore(),
+			count
 		);
 	}
 
-	public static RecommendationHistory fromWebSearch(Recommendation r) {
-
+	public static RecommendationHistory fromWebSearch(Recommendation r, Long count) {
 		return new RecommendationHistory(
 			r.getChatMessage().getChatRoom().getChatroomId(),
 			r.getUser().getUserId(),
@@ -66,7 +67,8 @@ public record RecommendationHistory(
 			r.getWebSearch().getThumbnailUrl(),
 			r.getWebSearch().getUrl(),
 			r.getType().name(),
-			r.getScore()
+			r.getScore(),
+			count
 		);
 	}
 }
