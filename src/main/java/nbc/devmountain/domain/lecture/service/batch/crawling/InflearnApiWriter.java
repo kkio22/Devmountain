@@ -25,18 +25,6 @@ public class InflearnApiWriter implements ItemWriter<List<LectureWithSkillTag>> 
 	@Override
 	public void write(Chunk<? extends List<LectureWithSkillTag>> items) {
 
-		/*
-		chunk = list, list<list<LectureWithSkillTag> 구조
-		 */
-
-			/*
-			 컨트롤러에서 batch job 돌리는 것
-			 여기서 구현할 예외는 스케줄러에 관한 친구
-			 1. 강의 없으면 전체 저장 -> 처음 실행 필요한 로직 ok
-			 2. 강의 있으면 id 비교해서 없는 것만 저장 => 새로운 강의 업데이트 ok
-			 3. 삭제 강의 확인 -> step으로 관리 ok
-			 aws lambda -> 로 스케줄 사용도 고려
-			 */
 
 		for (List<LectureWithSkillTag> lectureWithSkillTag : items) {
 

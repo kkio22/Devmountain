@@ -21,9 +21,7 @@ public class EmbeddingWriter implements ItemWriter<Document> {
 	@Override
 	public void write(Chunk<? extends Document> documents) throws Exception {
 
-	/*
-	chunk<List<? extends Document>> document 형태 즉 List<Documnet> document이고 document 500개가 한번에 들어온 것임
-	 */
+
 
 		List<? extends Document> items = documents.getItems();
 
