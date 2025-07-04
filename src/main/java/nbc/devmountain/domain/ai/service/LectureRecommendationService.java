@@ -12,16 +12,15 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
 import nbc.devmountain.domain.chat.service.ChatRoomService;
 import nbc.devmountain.domain.lecture.model.Lecture;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.search.dto.BraveSearchResponseDto;
 import nbc.devmountain.domain.search.sevice.BraveSearchService;
 import nbc.devmountain.domain.user.model.User;
@@ -36,7 +35,6 @@ public class LectureRecommendationService {
 	private final CacheService cacheService;
 	private final ChatRoomService chatRoomService;
 	private final ChatRoomRepository chatRoomRepository;
-	private final MeterRegistry meterRegistry;
 
 	// 대화 히스토리를 저장 (chatRoomId -> 대화 내용들)
 	private final Map<Long, StringBuilder> conversationHistory = new ConcurrentHashMap<>();
@@ -150,8 +148,7 @@ public class LectureRecommendationService {
 			}
 
 			// cache에 저장된거 없으면 db조회
-			List<Lecture> similarLectures =  meterRegistry.timer("recommendation.response.time", "source", "db")
-				.record(() ->ragService.searchSimilarLectures(searchQuery));
+			List<Lecture> similarLectures =  ragService.searchSimilarLectures(searchQuery);
 
 			// 유료회원(Pro 회원) 가격 필터
 			if (User.MembershipLevel.PRO.equals(membershipLevel)) {
@@ -212,18 +209,18 @@ public class LectureRecommendationService {
 			List<BraveSearchResponseDto.Result> braveResults = braveResponse.web().results();
 			if (braveResults != null && !braveResults.isEmpty()) {
 				List<RecommendationDto> braveRecommendations = braveResults.stream()
-					.map(r -> new RecommendationDto(  //BraveSearch : title,description,url,thumbnailWrapper
-						null,  //lectureId
-						r.thumbnail(), // thumbnailUrl
-						r.title(),     // title
-						r.description(), // description
-						null,          // instructor
-						null,          // level
-						r.url(),       // url
-						null,          // payPrice
-						null,          // isFree
-						"BRAVE",       // type
-						null       	   // score
+					.map(r -> new RecommendationDto(
+						null,  // lectureId
+						(r.thumbnail() == null || r.thumbnail().isBlank()) ? null : r.thumbnail(),
+						r.title(),
+						r.description(),
+						"웹검색",
+						"웹검색",
+						r.url(),
+						null,
+						null,
+						"BRAVE",
+						null
 					))
 					.toList();
 
@@ -237,7 +234,7 @@ public class LectureRecommendationService {
 		// AI에게 추천 메시지 생성 요청 (score 정보 포함된 recommendations 전달)
 		String promptText = buildRecommendationPrompt(collectedInfo, recommendations);
 
-		ChatMessageResponse recommendationResponse = aiService.getRecommendations(promptText.toString(), true,
+		ChatMessageResponse recommendationResponse = aiService.getRecommendations(promptText, true,
 			membershipLevel);
 
 		// 추천 완료 후 followup 메시지 추가
@@ -283,7 +280,7 @@ public class LectureRecommendationService {
 				rec.lectureId(), rec.thumbnailUrl(), rec.title(),
 				rec.description(), rec.instructor(), rec.level(),
 				rec.url(), rec.payPrice(), rec.isFree(),
-				rec.type(), rec.score() != null ? rec.score().toString() : "null"
+				rec.type(), rec.score() != null ? rec.score() : "null"
 			))
 			.collect(Collectors.joining(",\n"));
 
@@ -308,15 +305,34 @@ public class LectureRecommendationService {
 			return lectures;
 		}
 
-		Integer minPrice = null;
-		Integer maxPrice = null;
+		// 무료 키워드 필터링
+		if (priceCondition.contains("무료")) {
+			log.info("무료 강의만 필터링");
+			return lectures.stream()
+				.filter(Lecture::isFree)
+				.collect(Collectors.toList());
+		}
 
-		Pattern p = Pattern.compile("(\\d + )(만원)?\\s*(이하||이상)?");
-		Matcher m = p.matcher(priceCondition);
+		try {
+			Integer minPrice = null;
+			Integer maxPrice = null;
 
-		if (m.find()) {
-			int price = Integer.parseInt(m.group(1)) * 10000;
+			// 허용된 형식만 통화 (예 : "3만원 이상", "4만원 이상")
+			Pattern p = Pattern.compile("(\\d+)(만원|원)?\\s*(이하|이상)?");
+			Matcher m = p.matcher(priceCondition.trim());
+
+			if (!m.matches()) {
+				throw new IllegalArgumentException("올바른 가격 형태가 아닙니다.");
+			}
+
+
+			int price = Integer.parseInt(m.group(1));
+			String unit = m.group(2);
 			String condition = m.group(3);
+
+			if("만원".equals(unit)){
+				price *= 10000;
+			}
 
 			if ("이하".equals(condition)) {
 				maxPrice = price;
@@ -325,25 +341,28 @@ public class LectureRecommendationService {
 			} else {
 				maxPrice = price;
 			}
+
+			final Integer finalMinPrice = minPrice;
+			final Integer finalMaxPrice = maxPrice;
+
+			log.info("적용할 가격 필터 - minPrice: {} , maxPrice: {}", finalMinPrice, finalMaxPrice);
+
+			return lectures.stream()
+				.filter(l -> {
+					BigDecimal lecturePrice = l.isFree() ? BigDecimal.ZERO : l.getPayPrice();
+					if (finalMinPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMinPrice)) < 0) {
+						return false;
+					}
+					if (finalMaxPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMaxPrice)) > 0) {
+						return false;
+					}
+					return true;
+				})
+				.collect(Collectors.toList());
+		} catch (IllegalArgumentException e) {
+			log.warn("잘못된 가격 필터 입력: {}", priceCondition);
+			throw new IllegalArgumentException("가격 형식이 올바르지 않습니다. 예:'15000원 이상', '30000원 이하'");
 		}
-
-		final Integer finalMinPrice = minPrice;
-		final Integer finalMaxPrice = maxPrice;
-
-		log.info("적용할 가격 필터 - minPrice: {} , maxPrice: {}", finalMinPrice, finalMaxPrice);
-
-		return lectures.stream()
-			.filter(l -> {
-				BigDecimal lecturePrice = l.isFree() ? BigDecimal.ZERO : l.getPayPrice();
-				if (finalMinPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMinPrice)) < 0) {
-					return false;
-				}
-				if (finalMaxPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMaxPrice)) > 0) {
-					return false;
-				}
-				return true;
-			})
-			.collect(Collectors.toList());
 	}
 
 	private String buildSearchQuery(Map<String, String> info) {

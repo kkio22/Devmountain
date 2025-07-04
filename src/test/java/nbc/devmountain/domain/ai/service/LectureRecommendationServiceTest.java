@@ -7,7 +7,6 @@ import static org.mockito.BDDMockito.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,8 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.socket.WebSocketSession;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import nbc.devmountain.domain.ai.constant.AiConstants;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.ChatRoom;
@@ -51,11 +48,6 @@ class LectureRecommendationServiceTest {
 
 	private LectureRecommendationService lectureRecommendationService;
 
-	@Mock
-	private Timer timer;
-
-	@Mock
-	private  MeterRegistry meterRegistry;
 
 	private Long chatRoomId;
 	private User.MembershipLevel memberType;
@@ -68,7 +60,7 @@ class LectureRecommendationServiceTest {
 		session = mock(WebSocketSession.class);
 
 		lectureRecommendationService = new LectureRecommendationService(ragService, aiService, braveSearchService,
-			cacheService, chatRoomService, chatRoomRepository, meterRegistry);
+			cacheService, chatRoomService, chatRoomRepository);
 	}
 
 
@@ -217,12 +209,6 @@ class LectureRecommendationServiceTest {
 				.messageType(MessageType.RECOMMENDATION)
 				.build();
 
-			when(meterRegistry.timer(eq("recommendation.response.time"), eq("source"), eq("db")))
-				.thenReturn(timer);
-			when(timer.record(any(Supplier.class))).thenAnswer(invocation -> {
-				Supplier<?> supplier = invocation.getArgument(0);
-				return supplier.get();
-			});
 
 			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(firstQuery),
 				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong())).thenReturn(firstResponse);
@@ -236,8 +222,6 @@ class LectureRecommendationServiceTest {
 			ChatMessageResponse response = lectureRecommendationService.recommendationResponse(secondQuery, memberType,
 				chatRoomId, session);
 
-			verify(meterRegistry, times(1)).timer("recommendation.response.time", "source", "db");
-			verify(timer, times(1)).record(any(Supplier.class));
 
 			verify(ragService, times(1)).searchSimilarLectures(anyString());
 			verify(aiService, times(1)).getRecommendations(anyString(), eq(true), eq(memberType));
@@ -272,11 +256,8 @@ class LectureRecommendationServiceTest {
 				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong())).thenReturn(firstResponse);
 			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(secondQuery),
 				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong())).thenReturn(readyResponse);
-			lenient().when(meterRegistry.timer(eq("recommendation.response.time"), eq("source"), eq("db"))).thenReturn(timer);
-			lenient().when(timer.record(any(Supplier.class))).thenAnswer(invocation -> {
-				Supplier<?> supplier = invocation.getArgument(0);
-				return Collections.emptyList(); // 강의 없음 시뮬레이션
-			});
+			when(ragService.searchSimilarLectures(anyString())).thenReturn(Collections.emptyList());
+
 
 			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId, session);
 			ChatMessageResponse response = lectureRecommendationService.recommendationResponse(secondQuery, memberType,
@@ -308,11 +289,7 @@ class LectureRecommendationServiceTest {
 				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong())).thenReturn(firstResponse);
 			when(aiService.analyzeConversationAndDecideNext(anyString(), anyMap(), eq(secondQuery),
 				any(User.MembershipLevel.class), any(WebSocketSession.class), anyLong())).thenReturn(readyResponse);
-			lenient().when(meterRegistry.timer(eq("recommendation.response.time"), eq("source"), eq("db"))).thenReturn(timer);
-			lenient().when(timer.record(any(Supplier.class))).thenAnswer(invocation -> {
-				Supplier<?> supplier = invocation.getArgument(0);
-				throw new RuntimeException("RAG 검색 실패"); // 강제 예외
-			});;
+			when(ragService.searchSimilarLectures(anyString())).thenThrow(new RuntimeException("RAG 검색 실패"));
 
 			lectureRecommendationService.recommendationResponse(firstQuery, memberType, chatRoomId, session);
 			ChatMessageResponse response = lectureRecommendationService.recommendationResponse(secondQuery, memberType,

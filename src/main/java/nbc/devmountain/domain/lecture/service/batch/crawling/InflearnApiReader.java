@@ -12,12 +12,7 @@ import nbc.devmountain.domain.lecture.dto.InflearnResponse;
 @RequiredArgsConstructor
 @StepScope
 public class InflearnApiReader implements ItemReader<InflearnResponse> {
-	/*
-	chunk 단위가 페이지 1개임
-	그러면 그 페이지 40개의 강의가 들어옴
-	processor에도 1페이지 40개 강의가 가공되어서
-	writer에서 페이지 여러개가 한번에 올 수 있는 구조인건가?
-	 */
+
 
 	private final LectureClient lectureClient;
 	private int currentPage = 1;

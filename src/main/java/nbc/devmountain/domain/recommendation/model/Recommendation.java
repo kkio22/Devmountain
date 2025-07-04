@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import nbc.devmountain.domain.chat.model.ChatMessage;
 import nbc.devmountain.domain.lecture.model.Lecture;
+import nbc.devmountain.domain.lecture.model.WebSearch;
+import nbc.devmountain.domain.lecture.model.Youtube;
 import nbc.devmountain.domain.user.model.User;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -33,6 +35,14 @@ public class Recommendation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lecture_id")
     private Lecture lecture;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "youtube_id")
+    private Youtube youtube;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "websearch_id")
+    private WebSearch webSearch;
 
     @JsonProperty("score")
     private Float score;

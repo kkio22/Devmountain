@@ -18,12 +18,7 @@ public class EmbeddingJobResultListener implements JobExecutionListener {
 	@Override
 	public void afterJob(JobExecution jobExecution) {
 
-		// 배치 Job 끝난 후 동작
-		/*
-		읽기에 몇개의 데이터가 들어왔고, -> step
-		쓰기애 몇개의 데이터를 넣었는지 알고 싶음 -> step
-		그리고 job이 시작 시간, 끝난 시간도 표시할 수 있으면 표시하고 싶음 -> job
-		 */
+
 
 		//포맷 정의
 		DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

@@ -4,6 +4,7 @@ import java.util.List;
 
 import java.util.Objects;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,6 +27,7 @@ public class RagService {
 	private final LectureRepository lectureRepository;
 	private final JdbcTemplate jdbcTemplate;
 	private final EmbeddingService embeddingService;
+	private final MeterRegistry meterRegistry;
 
 	/**
 	 * 유사한 강의를 검색하는 메서드
@@ -48,7 +50,8 @@ public class RagService {
 			return similarDocuments.stream()
 				.map(doc -> {
 					Long lectureId = Long.valueOf(doc.getMetadata().get("lectureId").toString());
-					return lectureRepository.findById(lectureId).orElse(null);
+					return meterRegistry.timer("recommendation.response.time", "source", "db")
+						.record(() ->lectureRepository.findById(lectureId).orElse(null));
 				})
 				.filter(Objects::nonNull)
 				.toList();

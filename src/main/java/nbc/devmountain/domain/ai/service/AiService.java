@@ -289,7 +289,6 @@ public class AiService {
 			rawAiResponse = response.getResult().getOutput().getText();
 		}
 
-		log.info("[AiService] AI 추천 응답 >>>\n{}", rawAiResponse);
 		if (!isFinalRecommendation) {
 			// 일반 대화인 경우 텍스트 그대로 반환
 			return ChatMessageResponse.builder()
@@ -378,9 +377,8 @@ public class AiService {
 		
 		SystemMessage systemMessage = new SystemMessage(AiConstants.POST_RECOMMENDATION_CONVERSATION_PROMPT);
 		String promptText = String.format(
-			"사용자 메시지: %s\n\n회원 등급: %s",
-			userMessage,
-			membershipLevel
+			"사용자 메시지: %s",
+			userMessage
 		);
 		Prompt prompt = new Prompt(List.of(systemMessage, new UserMessage(promptText)));
 		log.info("[AiService] 추천 완료 후 대화 프롬프트 전송 >>>\n{}", promptText);

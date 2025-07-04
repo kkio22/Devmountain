@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 import nbc.devmountain.common.response.ApiResponse;
 import nbc.devmountain.common.util.security.CustomUserPrincipal;
-import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
+import nbc.devmountain.domain.recommendation.dto.RecommendationHistory;
 import nbc.devmountain.domain.recommendation.service.RecommendationService;
 
 @RestController
@@ -25,13 +25,18 @@ public class RecommendationController {
 
 	private final RecommendationService recommendationService;
 
-	@GetMapping("/history")
-	public ResponseEntity<ApiResponse<List<RecommendationDto>>> getRecommendationHistory(
-		@AuthenticationPrincipal CustomUserPrincipal loginUser,
-		@PageableDefault(size = 10) Pageable pageable
-	) {
-		Page<RecommendationDto> page = recommendationService.getRecommendationByUserId(loginUser.getUserId(), pageable);
-		return ResponseEntity.ok(
-			ApiResponse.of(true, "강의 추천 기록 조회", HttpStatus.OK.value(), page.getContent()));
+	@GetMapping("/v1/history")
+	public ResponseEntity<ApiResponse<List<RecommendationHistory>>> getRecommendationHistoryV1(
+		@AuthenticationPrincipal CustomUserPrincipal loginUser) {
+		List<RecommendationHistory> recommendations = recommendationService.getRecommendationV1(loginUser.getUserId());
+		return ResponseEntity.ok(ApiResponse.of(true, "강의 추천 기록 조회 v1", HttpStatus.OK.value(), recommendations));
+	}
+
+	@GetMapping("/v2/history")
+	public ResponseEntity<ApiResponse<List<RecommendationHistory>>> getRecommendationHistoryV2(
+		@AuthenticationPrincipal CustomUserPrincipal loginUser, @PageableDefault(size = 10) Pageable pageable) {
+		Page<RecommendationHistory> page = recommendationService.getRecommendationV2(loginUser.getUserId(),
+			pageable);
+		return ResponseEntity.ok(ApiResponse.of(true, "강의 추천 기록 조회 v2", HttpStatus.OK.value(), page.getContent()));
 	}
 }
