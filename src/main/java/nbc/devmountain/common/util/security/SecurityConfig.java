@@ -49,8 +49,6 @@ public class SecurityConfig {
 				.userInfoEndpoint(userInfo -> userInfo
 					.userService(customOAuth2UserService)) // 사용자 정보 처리
 				// .defaultSuccessUrl("/") // 로그인 성공 후 이동할 페이지
-				// 추후 프론트 개발 후 url 수정
-				// localhost:5173/chatrooms -> ? 이게 맞나? -> 아니다 홈으로 가야하는데 "/" ?
 				.successHandler((request, response, authentication) -> {
 					response.sendRedirect("http://localhost:5173/home");
 				})

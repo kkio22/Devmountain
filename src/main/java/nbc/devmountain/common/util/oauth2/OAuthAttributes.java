@@ -73,23 +73,6 @@ public class OAuthAttributes {
 			.build();
 	}
 
-	// /oauth2/authorization/kakao
-	// kakao 사용자 매핑
-	// 카카오에서 email을 가져오려면 사업자 정보 등록해야함
-	// private static OAuthAttributes ofKakao(String userNameAttribute,
-	// 	Map<String, Object> attributes) {
-	//
-	// 	Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-	// 	Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
-	//
-	// 	return OAuthAttributes.builder()
-	// 		.name((String) profile.get("nickname"))
-	// 		.attributes(attributes)
-	// 		.attributeKey(userNameAttribute)
-	// 		.loginType(User.LoginType.KAKAO)
-	// 		.build();
-	// }
-
 	// OAuth2에서 받은 정보를 바탕으로 User 생성
 	public User toEntity() {
 		return User.builder()
