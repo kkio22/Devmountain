@@ -2,7 +2,6 @@ package nbc.devmountain.domain.chat.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import nbc.devmountain.domain.chat.RoomType;
 import nbc.devmountain.domain.user.model.User;
 
 import org.springframework.data.annotation.CreatedDate;
