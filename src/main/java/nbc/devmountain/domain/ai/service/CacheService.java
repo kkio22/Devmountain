@@ -51,7 +51,7 @@ public class CacheService {
 		List<Document> results = redisVectorStore.similaritySearch(
 			SearchRequest.builder()
 				.query(searchQuery)
-				.similarityThreshold(0.98) // 이거 계속 한번 해봐야 함
+				.similarityThreshold(0.98)
 				.topK(1) // 그리고 레디스 스택 안의 벡터 인덱스에서 검색 -> 1개 나옴
 				.build());
 

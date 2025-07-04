@@ -12,16 +12,15 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nbc.devmountain.domain.ai.constant.AiConstants;
-import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.chat.dto.ChatMessageResponse;
 import nbc.devmountain.domain.chat.model.MessageType;
 import nbc.devmountain.domain.chat.repository.ChatRoomRepository;
 import nbc.devmountain.domain.chat.service.ChatRoomService;
 import nbc.devmountain.domain.lecture.model.Lecture;
+import nbc.devmountain.domain.recommendation.dto.RecommendationDto;
 import nbc.devmountain.domain.search.dto.BraveSearchResponseDto;
 import nbc.devmountain.domain.search.sevice.BraveSearchService;
 import nbc.devmountain.domain.user.model.User;
@@ -36,7 +35,6 @@ public class LectureRecommendationService {
 	private final CacheService cacheService;
 	private final ChatRoomService chatRoomService;
 	private final ChatRoomRepository chatRoomRepository;
-	private final MeterRegistry meterRegistry;
 
 	// 대화 히스토리를 저장 (chatRoomId -> 대화 내용들)
 	private final Map<Long, StringBuilder> conversationHistory = new ConcurrentHashMap<>();
@@ -150,8 +148,7 @@ public class LectureRecommendationService {
 			}
 
 			// cache에 저장된거 없으면 db조회
-			List<Lecture> similarLectures =  meterRegistry.timer("recommendation.response.time", "source", "db")
-				.record(() ->ragService.searchSimilarLectures(searchQuery));
+			List<Lecture> similarLectures =  ragService.searchSimilarLectures(searchQuery);
 
 			// 유료회원(Pro 회원) 가격 필터
 			if (User.MembershipLevel.PRO.equals(membershipLevel)) {
