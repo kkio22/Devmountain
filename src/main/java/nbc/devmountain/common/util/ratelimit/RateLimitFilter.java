@@ -52,7 +52,7 @@ public class RateLimitFilter implements Filter {
 	) {
 		this.proxyManager = proxyManager;
 		this.freeConfig = BucketConfiguration.builder()
-			.addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofHours(1))))
+			.addLimit(Bandwidth.classic(10000, Refill.intervally(10000, Duration.ofHours(1))))
 			.build();
 		this.proConfig = BucketConfiguration.builder()
 			.addLimit(Bandwidth.classic(20, Refill.intervally(20, Duration.ofHours(1))))
@@ -101,7 +101,7 @@ public class RateLimitFilter implements Filter {
 
 		// 2. 글로벌 리밋: 1초에 5회
 		String globalKey = "global_rate_limit";
-		long globalLimit = 5;
+		long globalLimit = 100;
 		long globalWindowSeconds = 1; // 1초
 		var sync = redisConnection.sync();
 		log.info("Redis connection info: {}", redisConnection.getOptions());
