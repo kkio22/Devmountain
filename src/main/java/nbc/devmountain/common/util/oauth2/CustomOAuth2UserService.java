@@ -27,17 +27,14 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
 	@Override
 	public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
-		// provider 추출(google 등)
+
 		String provider = userRequest.getClientRegistration().getRegistrationId();
 
-		// OAuth2로 사용자 정보 load
 		OAuth2User oAuth2User = new DefaultOAuth2UserService().loadUser(userRequest);
 
-		// email 정보 저장
 		String email = oAuth2User.getAttribute("email");
 		String name = oAuth2User.getAttribute("name");
 
-		// 네이버는 response 안에 email이 있으므로
 		if ("naver".equals(provider)) {
 			Object responseObj = oAuth2User.getAttribute("response");
 			if (responseObj instanceof Map) {
@@ -52,7 +49,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 		}
 
 		// OAuth2 등록 ID 추출
-		String registrationId = userRequest.getClientRegistration().getRegistrationId(); // google, naver, kakao
+		String registrationId = userRequest.getClientRegistration().getRegistrationId();
 		// id 추출
 		String userNameAttribute = userRequest.getClientRegistration()
 			.getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();

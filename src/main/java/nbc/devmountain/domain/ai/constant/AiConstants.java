@@ -171,9 +171,6 @@ public final class AiConstants {
 	public static final String RECOMMENDATION_FOLLOWUP =
 		"지금 추천드린 강의는 [%s] 조건에 맞춰 골라봤어요. 혹시 '난이도', '가격' 등 바꾸고 싶은 조건이 있다면 편하게 말씀해주세요! 바로 다른 강의를 찾아드릴게요.";
 
-	public static final String RECOMMENDATION_FOLLOWUP_RETRY =
-		"변경하신 조건에 맞춰 다시 추천드렸어요. 추가로 궁금한 점이나 더 바꾸고 싶은 조건이 있으신가요?";
-
 	// 추천 완료 후 대화 처리를 위한 프롬프트
 	public static final String POST_RECOMMENDATION_CONVERSATION_PROMPT = """
 		너는 강의 추천을 완료한 후 사용자와 자연스럽게 대화하는 교육 큐레이터 AI야.

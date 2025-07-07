@@ -296,29 +296,6 @@ public class LectureRecommendationService {
 		);
 	}
 
-	// private List<Lecture> applyPriceFilter(List<Lecture> lectures, String priceCondition){
-	// 	if (priceCondition == null || priceCondition.isBlank()){
-	// 		log.info("가격 필터 없음 - 전체 강의 사용");
-	// 		return lectures;
-	// 	}
-	//
-	// 	if (priceCondition.contains("무료")){
-	// 		log.info("무료 강의만 필터링");
-	// 		return lectures.stream()
-	// 			.filter(Lecture::isFree)
-	// 			.collect(Collectors.toList());
-	// 	}
-	//
-	// 	if (priceCondition.contains("유료")){
-	// 		log.info("유료 강의만 필터링");
-	// 		return lectures.stream()
-	// 			.filter(l -> !l.isFree())
-	// 			.collect(Collectors.toList());
-	// 	}
-	// 	log.info("알 수 없는 가격 조건 - 전체 강의 사용");
-	// 	return lectures;
-	//
-	// }
 
 	private String buildSearchQuery(Map<String, String> info) {
 		StringBuilder query = new StringBuilder();

@@ -33,7 +33,6 @@ public class ChatRoom {
 	@Column(nullable = false)
 	private RoomType type;
 
-	//채팅방 단건 조회를 위한 양방향 맵핑
 	@OneToMany(mappedBy = "chatRoom"
 		, cascade = CascadeType.ALL
 		, orphanRemoval = true)
@@ -45,7 +44,6 @@ public class ChatRoom {
 
 	private LocalDateTime deletedAt;
 
-	//연관관계 편의메서드
 	public void addMessages(ChatMessage message) {
 		messages.add(message);
 		message.setChatRoom(this);
