@@ -1,7 +1,9 @@
 package nbc.devmountain.recommendation;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -27,9 +29,7 @@ import nbc.devmountain.domain.user.model.User;
 import nbc.devmountain.domain.user.repository.UserRepository;
 
 @SpringBootTest
-@TestPropertySource(properties = {
-	"security.api.key=6ed9e5eb29ec62a95f23040086dd804e14ac3c8f6b9476625138475bc7a9f1fc"
-})
+@TestPropertySource
 @Transactional
 @Rollback(false)
 @Disabled("추천기록 더미 데이터")

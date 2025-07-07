@@ -23,7 +23,7 @@ public class BraveSearchService {
         headers.set("X-Subscription-Token", braveSearchProperties.getNextKey());
 
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-        String url = braveSearchProperties.getUrl() + "?q=" + query;
+        String url = braveSearchProperties.getUrl() + "?q=" + query + "&count=5";
 
         ResponseEntity<BraveSearchResponseDto> response = restTemplate.exchange(
                 url, HttpMethod.GET, requestEntity, BraveSearchResponseDto.class);

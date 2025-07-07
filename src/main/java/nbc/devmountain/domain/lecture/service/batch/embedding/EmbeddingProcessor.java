@@ -38,7 +38,7 @@ public class EmbeddingProcessor implements ItemProcessor<Lecture, Document> {
 				강사: %s
 				설명: %s
 				기술 태그: %s
-				""".formatted(lecture.getTitle(), lecture.getInstructor(), lecture.getDescription(), tag);
+				""".formatted(lecture.getTitle(), lecture.getInstructor(), lecture.getDescription(), lecture.getPayPrice(),lecture.isFree(), tag);
 
 			Map<String, Object> metadata = Map.of(
 				"lectureId", lecture.getLectureId(),
