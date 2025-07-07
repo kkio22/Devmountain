@@ -16,7 +16,6 @@ public class SessionUser implements Serializable {
 	private User.MembershipLevel membershipLevel;
 
 	public SessionUser(User user) {
-		// this.name = user.getName();
 		this.userId = user.getUserId();
 		this.email = user.getEmail();
 		this.membershipLevel=user.getMembershipLevel();

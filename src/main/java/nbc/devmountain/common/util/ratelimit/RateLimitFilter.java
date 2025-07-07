@@ -41,7 +41,6 @@ public class RateLimitFilter implements Filter {
 	private final StatefulRedisConnection<String, byte[]> redisConnection;
 
 	private final List<String> excludedPaths = Arrays.asList(
-		// "/chatrooms/", // 채팅방 관련 조회 API
 		"/api/test"    // 테스트 API
 	);
 

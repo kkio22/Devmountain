@@ -15,10 +15,5 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
 	void deleteByCrawledAtBefore(LocalDateTime today);
 	List<Lecture> findTop5ByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String title,
 		String description);
-
-	List<Lecture> findByTitle(String title);
-
-	List<Lecture> findByTitleAndInstructor(String title, String instructor);
-
 	List<Lecture> findAllByItemIdIn(List<Integer> itemId);
 }

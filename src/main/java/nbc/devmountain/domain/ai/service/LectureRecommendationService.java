@@ -1,12 +1,9 @@
 package nbc.devmountain.domain.ai.service;
 
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -77,7 +74,7 @@ public class LectureRecommendationService {
 
 		// 첫 번째 메시지인 경우
 		if (history.toString().trim().equals("사용자: " + userMessage)) {
-			return handleFirstConversation(userMessage, chatRoomId, membershipLevel, session);
+			return handleFirstConversation(userMessage, chatRoomId, membershipLevel, session,info);
 		}
 
 		// 추천 완료 후 대화인지 확인
@@ -106,11 +103,11 @@ public class LectureRecommendationService {
 	}
 
 	private ChatMessageResponse handleFirstConversation(String userMessage, Long chatRoomId,
-		User.MembershipLevel membershipLevel, WebSocketSession session) {
+		User.MembershipLevel membershipLevel, WebSocketSession session, Map<String, String> info) {
 		// 첫 대화에서도 AI가 자연스럽게 응답하도록 처리
-		Map<String, String> emptyInfo = new HashMap<>();
+		collectedInfo.put(chatRoomId, info);
 		ChatMessageResponse response = aiService.analyzeConversationAndDecideNext("사용자: " + userMessage + "\n",
-			emptyInfo, userMessage, membershipLevel, session, chatRoomId);
+		info, userMessage, membershipLevel, session, chatRoomId);
 
 		// AI 응답을 히스토리에 추가
 		if (response.getMessage() != null) {
@@ -153,7 +150,7 @@ public class LectureRecommendationService {
 			// 유료회원(Pro 회원) 가격 필터
 			if (User.MembershipLevel.PRO.equals(membershipLevel)) {
 				String priceCondition = collectedInfo.getOrDefault(AiConstants.INFO_PRICE, " ").trim();
-				similarLectures = applyPriceFilter(similarLectures, priceCondition);
+				// similarLectures = applyPriceFilter(similarLectures, priceCondition);
 			}
 
 			if (similarLectures.isEmpty()) {
@@ -265,7 +262,7 @@ public class LectureRecommendationService {
 		String lectureInfo = recommendations.stream()
 			.map(rec -> String.format("""
                 {
-                    "lectureId": "%s",
+                    "lectureId": %s,
                     "thumbnailUrl": "%s",
                     "title": "%s",
                     "description": "%s",
@@ -277,7 +274,7 @@ public class LectureRecommendationService {
                     "type": "%s",
                     "score": %s
                 }""",
-				rec.lectureId(), rec.thumbnailUrl(), rec.title(),
+				rec.lectureId() != null ? rec.lectureId().toString() : "null", rec.thumbnailUrl(), rec.title(),
 				rec.description(), rec.instructor(), rec.level(),
 				rec.url(), rec.payPrice(), rec.isFree(),
 				rec.type(), rec.score() != null ? rec.score() : "null"
@@ -299,71 +296,6 @@ public class LectureRecommendationService {
 		);
 	}
 
-	private List<Lecture> applyPriceFilter(List<Lecture> lectures, String priceCondition) {
-		if (priceCondition.isBlank()) {
-			log.info("가격 필터 없음 - 전체 강의 사용");
-			return lectures;
-		}
-
-		// 무료 키워드 필터링
-		if (priceCondition.contains("무료")) {
-			log.info("무료 강의만 필터링");
-			return lectures.stream()
-				.filter(Lecture::isFree)
-				.collect(Collectors.toList());
-		}
-
-		try {
-			Integer minPrice = null;
-			Integer maxPrice = null;
-
-			// 허용된 형식만 통화 (예 : "3만원 이상", "4만원 이상")
-			Pattern p = Pattern.compile("(\\d+)(만원|원)?\\s*(이하|이상)?");
-			Matcher m = p.matcher(priceCondition.trim());
-
-			if (!m.matches()) {
-				throw new IllegalArgumentException("올바른 가격 형태가 아닙니다.");
-			}
-
-
-			int price = Integer.parseInt(m.group(1));
-			String unit = m.group(2);
-			String condition = m.group(3);
-
-			if("만원".equals(unit)){
-				price *= 10000;
-			}
-
-			if ("이하".equals(condition)) {
-				maxPrice = price;
-			} else if ("이상".equals(condition)) {
-				minPrice = price;
-			} else {
-				maxPrice = price;
-			}
-
-			final Integer finalMinPrice = minPrice;
-			final Integer finalMaxPrice = maxPrice;
-
-			log.info("적용할 가격 필터 - minPrice: {} , maxPrice: {}", finalMinPrice, finalMaxPrice);
-
-			return lectures.stream()
-				.filter(l -> {
-					BigDecimal lecturePrice = l.isFree() ? BigDecimal.ZERO : l.getPayPrice();
-					if (finalMinPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMinPrice)) < 0) {
-						return false;
-					}
-					if (finalMaxPrice != null && lecturePrice.compareTo(BigDecimal.valueOf(finalMaxPrice)) > 0) {
-						return false;
-					}
-					return true;
-				})
-				.collect(Collectors.toList());
-		} catch (IllegalArgumentException e) {
-			log.warn("잘못된 가격 필터 입력: {}", priceCondition);
-			throw new IllegalArgumentException("가격 형식이 올바르지 않습니다. 예:'15000원 이상', '30000원 이하'");
-		}
-	}
 
 	private String buildSearchQuery(Map<String, String> info) {
 		StringBuilder query = new StringBuilder();
