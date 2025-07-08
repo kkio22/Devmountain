@@ -10,7 +10,7 @@ import nbc.devmountain.domain.chat.model.ChatRoom;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom,Long> {
 
-	@Query("SELECT c FROM ChatRoom c WHERE c.user.userId = :userId AND c.deletedAt IS NULL")
+	@Query("SELECT c FROM ChatRoom c WHERE c.user.userId = :userId AND c.deletedAt IS NULL ORDER BY c.createdAt desc ")
 	List<ChatRoom> findAllByUserId(@Param("userId") Long userId);
 
 

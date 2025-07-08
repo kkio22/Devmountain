@@ -255,6 +255,7 @@ public class AiService {
 				case AiConstants.INFO_INTEREST -> AiConstants.LABEL_INTEREST;
 				case AiConstants.INFO_LEVEL -> AiConstants.LABEL_LEVEL;
 				case AiConstants.INFO_GOAL -> AiConstants.LABEL_GOAL;
+				case AiConstants.INFO_PRICE -> AiConstants.LABEL_PRICE;
 				case AiConstants.INFO_ADDITIONAL -> AiConstants.LABEL_ADDITIONAL;
 				default -> key;
 			};
