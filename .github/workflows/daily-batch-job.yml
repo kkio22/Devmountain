@@ -1,8 +1,8 @@
 name: daily-batch-job
 
 on:
-  schedule:
-    - cron: '30 4 * * *'  # 매일 자정(UTC) = 한국 시간 오전 9시
+#  schedule:
+#    - cron: '30 4 * * *'  # 매일 자정(UTC) = 한국 시간 오전 9시
   workflow_dispatch:     # 수동 실행 버튼 활성화
 
 jobs:
