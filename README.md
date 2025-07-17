@@ -172,9 +172,7 @@ src/
 
 ---
 
-## 회의록 및 문서
-
-### 프로젝트 문서
+## 프로젝트 문서
 - [ERD 설계](https://www.erdcloud.com/d/xvcpvfeg59EAM6Xri)
 - [Figma 와이어프레임](https://www.figma.com/design/WtFELy49m1xkLrWcycSOSb/Devmountain?node-id=13-247&p=f&m=draw)
 - [API 명세서](https://www.notion.so/teamsparta/2262dc3ef5148157b485e2e53a71895e?v=2262dc3ef51481fdb91c000c54e694f8)
