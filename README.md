@@ -15,9 +15,6 @@
 
 ---
 
-## 시스템 아키텍처
-![img_6.png](img_6.png)
----
 
 ## API 명세서
 - [DevMountain API 명세서](https://www.notion.so/teamsparta/2262dc3ef5148157b485e2e53a71895e?v=2262dc3ef51481fdb91c000c54e694f8)
@@ -187,7 +184,7 @@ src/
 | 이윤혁   | AI 챗봇 기능 개발, pg vector 사용, 가격 필터, 사용자 실시간 피드백을 통한 강의 재추천 |
 | 윤소현   | Spring Security + OAuth2 + session(인증인가), Rate Limit 설정, 모니터링 시각화, 프론트 |
 | 류형철   | 웹소켓 채팅, AI 응답 포맷팅, 채팅방 이름 설정, 타이핑 효과 |
-| 김나현   | Spring Batch,  데이터 크롤링, 데이터 임베딩, Git Action으로 스케줄링,  Slack 알림, 모니터링  |
+| 김나현   | Spring Batch 사용, 데이터 크롤링 & 임베딩, 캐싱, Git Action으로 스케줄링, Slack 알림 & 모니터링  |
 | 박화랑   | 키 스와핑, 토스 API 연동, CI/CD, Docker, Brave Search, MCP client 구축, 모니터링, Zookeeper |
 
 ---
