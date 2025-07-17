@@ -4,23 +4,6 @@
 
 ---
 
-## 🔗 링크
-
-- [팀 노션](https://www.notion.so/teamsparta/15-1ff2dc3ef5148051ac5fd58216bacc5f)
-- [API 명세서](https://www.notion.so/teamsparta/2262dc3ef5148157b485e2e53a71895e?v=2262dc3ef51481fdb91c000c54e694f8)
-- [5분 기록 보드](https://www.notion.so/15-5-1ff2dc3ef5148134a664edc611bade8a?pvs=21)
-
-- [ERD 설계](https://www.erdcloud.com/d/xvcpvfeg59EAM6Xri)
-- [Figma 와이어프레임](https://www.figma.com/design/WtFELy49m1xkLrWcycSOSb/Devmountain?node-id=13-247&p=f&m=draw)
-
----
-
-
-## API 명세서
-- [DevMountain API 명세서](https://www.notion.so/teamsparta/2262dc3ef5148157b485e2e53a71895e?v=2262dc3ef51481fdb91c000c54e694f8)
-
----
-
 ## 서비스 개요
 
 > 개발 공부를 시작하면서, 어떤 강의를 선택해야 할지 몰라 고민만 하다 소중한 시간을 허비했던 경험이 있으신가요?  
@@ -191,13 +174,9 @@ src/
 
 ## 회의록 및 문서
 
-### 팀 협업
-- [오늘 계획 & 회의록](https://www.notion.so/1ff2dc3ef51481bb9324c7308ea87f27?pvs=21)
-- [5분 기록 보드](https://www.notion.so/15-5-1ff2dc3ef5148134a664edc611bade8a?pvs=21)
-- [테스트코드 체크리스트](https://www.notion.so/1ff2dc3ef5148112b919f3a6320ab0f4?pvs=21)
-
 ### 프로젝트 문서
 - [ERD 설계](https://www.erdcloud.com/d/xvcpvfeg59EAM6Xri)
 - [Figma 와이어프레임](https://www.figma.com/design/WtFELy49m1xkLrWcycSOSb/Devmountain?node-id=13-247&p=f&m=draw)
+- [API 명세서](https://www.notion.so/teamsparta/2262dc3ef5148157b485e2e53a71895e?v=2262dc3ef51481fdb91c000c54e694f8)
 
 ---
